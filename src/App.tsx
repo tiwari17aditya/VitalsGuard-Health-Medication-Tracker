@@ -8,17 +8,12 @@ import { MedicationTracker } from "./components/MedicationTracker";
 import { MedicationCalendar } from "./components/MedicationCalendar";
 import { ReportsManager } from "./components/ReportsManager";
 import { ProfileModal } from "./components/ProfileModal";
-import { SettingsModal } from "./components/SettingsModal";
-import { TechStackModal } from "./components/TechStackModal";
 import { ToastContainer } from "./components/ToastContainer";
 import { APP_CONFIG } from "./config/app.config";
 
 const DashboardContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("vitals");
-  
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
-  const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
-  const [showTechStackModal, setShowTechStackModal] = useState<boolean>(false);
 
   const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications } = useApp();
 
@@ -36,23 +31,34 @@ const DashboardContent: React.FC = () => {
   const logsToday = medicationLogs.filter(l => l.profileId === currentProfile.id && l.timestamp.startsWith(todayStr));
   const takenTodayCount = logsToday.filter(l => l.status === "taken").length;
   const totalProfileMeds = profileMeds.length;
-  const todayAdherence = totalProfileMeds > 0 ? Math.round((takenTodayCount / totalProfileMeds) * 100) : 100;
+  const todayAdherence = totalProfileMeds > 0 ? Math.round((takenTodayCount / totalProfileMeds) * 100) : 0;
 
   return (
     <div className="app-container">
       {/* Header */}
-      <Header
-        onOpenProfileModal={() => setShowProfileModal(true)}
-        onOpenSettingsModal={() => setShowSettingsModal(true)}
-        onOpenTechStackModal={() => setShowTechStackModal(true)}
-      />
+      <Header onOpenProfileModal={() => setShowProfileModal(true)} />
 
       {/* Top Overview KPI Quick Cards */}
       <div className="grid-3" style={{ marginBottom: "20px" }}>
         
         {/* Card 1: Today's Adherence */}
         <div className="glass-card" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ width: "46px", height: "46px", borderRadius: "12px", background: "rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#10b981", fontWeight: "bold", fontSize: "1.2rem" }}>
+          <div 
+            style={{ 
+              minWidth: "60px", 
+              height: "46px", 
+              padding: "0 10px", 
+              borderRadius: "12px", 
+              background: todayAdherence > 0 ? "rgba(16, 185, 129, 0.2)" : "rgba(100, 116, 139, 0.2)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center", 
+              color: todayAdherence > 0 ? "#10b981" : "#94a3b8", 
+              fontWeight: "bold", 
+              fontSize: "0.95rem",
+              whiteSpace: "nowrap"
+            }}
+          >
             {todayAdherence}%
           </div>
           <div>
@@ -102,8 +108,6 @@ const DashboardContent: React.FC = () => {
 
       {/* Modals */}
       {showProfileModal && <ProfileModal onClose={() => setShowProfileModal(false)} />}
-      {showSettingsModal && <SettingsModal onClose={() => setShowSettingsModal(false)} />}
-      {showTechStackModal && <TechStackModal onClose={() => setShowTechStackModal(false)} />}
 
       {/* Floating Toast Notification Container */}
       <ToastContainer />

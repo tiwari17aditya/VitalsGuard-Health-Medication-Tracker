@@ -1,58 +1,48 @@
 import React, { useState } from "react";
 import { 
   Heart, Users, AlertTriangle, ShieldCheck, 
-  Settings, Code, Phone, CheckCircle2, WifiOff, Lock
+  Phone, CheckCircle2, WifiOff, Wrench
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
 import { AdminAuthModal } from "./AdminAuthModal";
+import { DeveloperModal } from "./DeveloperModal";
 
 interface HeaderProps {
   onOpenProfileModal: () => void;
-  onOpenSettingsModal: () => void;
-  onOpenTechStackModal: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
-  onOpenProfileModal, 
-  onOpenSettingsModal, 
-  onOpenTechStackModal 
-}) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
   const { 
     profiles, 
     activeProfile, 
     setActiveProfileId, 
     isOffline, 
     isSupabaseActive, 
-    lowStockMeds 
+    medications
   } = useApp();
 
-  const [pendingAdminAction, setPendingAdminAction] = useState<"settings" | "techstack" | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [showDevModal, setShowDevModal] = useState<boolean>(false);
 
-  // Check if admin is currently authenticated in session
+  // Filter low stock meds ONLY for current active user profile
+  const profileLowStockMeds = medications.filter(
+    m => m.profileId === activeProfile?.id && m.stockCount <= m.minStockAlert
+  );
+
   const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
 
-  const handleOpenSettings = () => {
+  const handleDeveloperClick = () => {
     if (isAdminAuthed()) {
-      onOpenSettingsModal();
+      setShowDevModal(true);
     } else {
-      setPendingAdminAction("settings");
-    }
-  };
-
-  const handleOpenTechStack = () => {
-    if (isAdminAuthed()) {
-      onOpenTechStackModal();
-    } else {
-      setPendingAdminAction("techstack");
+      setShowAuthModal(true);
     }
   };
 
   const handleAuthSuccess = () => {
-    const action = pendingAdminAction;
-    setPendingAdminAction(null);
-    if (action === "settings") onOpenSettingsModal();
-    if (action === "techstack") onOpenTechStackModal();
+    setShowAuthModal(false);
+    setShowDevModal(true);
   };
 
   return (
@@ -139,10 +129,10 @@ export const Header: React.FC<HeaderProps> = ({
             </a>
           )}
 
-          {/* Low Stock Warning Counter Pill */}
-          {lowStockMeds.length > 0 && (
-            <span className="badge badge-warning" title={`${lowStockMeds.length} medications require refill`}>
-              <AlertTriangle size={14} /> {lowStockMeds.length} Low Stock
+          {/* Low Stock Warning Counter Pill (Only shows for current profile if meds exist) */}
+          {profileLowStockMeds.length > 0 && (
+            <span className="badge badge-warning" title={`${profileLowStockMeds.length} medications require refill`}>
+              <AlertTriangle size={14} /> {profileLowStockMeds.length} Low Stock
             </span>
           )}
 
@@ -156,40 +146,36 @@ export const Header: React.FC<HeaderProps> = ({
               <ShieldCheck size={14} /> Supabase Live
             </span>
           ) : (
-            <span className="badge badge-primary" title="Local Browser Storage Active (Configure Supabase in Settings)">
+            <span className="badge badge-primary" title="Local Browser Storage Active">
               <CheckCircle2 size={14} /> Local Storage
             </span>
           )}
 
-          {/* Admin Protected Tech Stack Trigger */}
+          {/* Single Clean Developer Settings Button */}
           <button
-            onClick={handleOpenTechStack}
+            onClick={handleDeveloperClick}
             className="btn btn-secondary btn-sm"
-            title="Admin Protected: Tech Stack & System Architecture"
+            title="Developer Settings Hub (Protected by passcode)"
           >
-            <Code size={16} /> Tech Stack {isAdminAuthed() ? '' : <Lock size={12} style={{ color: "#f59e0b" }} />}
-          </button>
-
-          {/* Admin Protected Settings Trigger */}
-          <button
-            onClick={handleOpenSettings}
-            className="btn btn-secondary btn-sm"
-            title="Admin Protected: Database & System Settings"
-          >
-            <Settings size={16} /> Config {isAdminAuthed() ? '' : <Lock size={12} style={{ color: "#f59e0b" }} />}
+            <Wrench size={15} /> Developer Settings
           </button>
 
         </div>
 
       </div>
 
-      {/* Admin Passcode Modal Gate */}
-      {pendingAdminAction && (
+      {/* Passcode Authentication Modal */}
+      {showAuthModal && (
         <AdminAuthModal
           onSuccess={handleAuthSuccess}
-          onClose={() => setPendingAdminAction(null)}
-          title={`Admin Passcode Required for ${pendingAdminAction === "settings" ? "System Config" : "Tech Stack"}`}
+          onClose={() => setShowAuthModal(false)}
+          title="Developer Passcode Required"
         />
+      )}
+
+      {/* Developer Settings Hub Modal */}
+      {showDevModal && (
+        <DeveloperModal onClose={() => setShowDevModal(false)} />
       )}
 
     </header>

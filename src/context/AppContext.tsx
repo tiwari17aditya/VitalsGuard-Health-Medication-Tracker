@@ -150,8 +150,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || APP_CONFIG.defaultProfiles[0];
 
-  // Compute Low Stock Medications
-  const lowStockMeds = medications.filter(m => m.stockCount <= m.minStockAlert);
+  // Scoped Low Stock Medications ONLY for current active profile
+  const lowStockMeds = medications.filter(
+    m => m.profileId === activeProfile?.id && m.stockCount <= m.minStockAlert
+  );
 
   // PROFILES CRUD
   const addOrUpdateProfile = async (profile: UserProfile) => {
