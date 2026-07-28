@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Code, Database, FileCode, CheckCircle, Lock, Key, Terminal 
+  Code, Database, FileCode, CheckCircle, Lock, Key, Terminal, History 
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
@@ -12,7 +12,7 @@ interface DeveloperModalProps {
 export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
   const { isSupabaseActive, showToast } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"techstack" | "database" | "config" | "passcode">("techstack");
+  const [activeTab, setActiveTab] = useState<"techstack" | "database" | "config" | "changelog" | "passcode">("techstack");
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
   const resendKey = import.meta.env.VITE_RESEND_API_KEY || "";
@@ -71,14 +71,53 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
     }
   ];
 
+  const versionHistory = [
+    {
+      version: "v1.4.0",
+      date: "2026-07-28",
+      title: "Doctor Timestamps & Custom Time Pickers",
+      highlights: "Added exact doctor intake timestamps, interactive HH:MM time pickers, schedule timeline logging, and doctor export timestamps."
+    },
+    {
+      version: "v1.3.0",
+      date: "2026-07-28",
+      title: "User Profile Security & Central Config Passcode",
+      highlights: "Protected user addition and deletion behind Admin Passcode gate. Centralized passcode under APP_CONFIG.security.adminPasscode."
+    },
+    {
+      version: "v1.2.0",
+      date: "2026-07-28",
+      title: "UI Polish & Profile-Scoped Warnings",
+      highlights: "Fixed 100% adherence badge overflow, scoped low stock warnings to active user profile, and unified Developer Settings Hub."
+    },
+    {
+      version: "v1.1.0",
+      date: "2026-07-28",
+      title: "Admin Passcode Security & HTML Email Reports",
+      highlights: "Added session passcode authentication gate, strict email format validator, and rich HTML tabular email reports with live preview."
+    },
+    {
+      version: "v1.0.1",
+      date: "2026-07-28",
+      title: "Supabase Empty Table Auto-Seeding & Loading Fix",
+      highlights: "Fixed infinite loading spinner on empty Supabase database tables by implementing automated seeding for default profiles."
+    },
+    {
+      version: "v1.0.0",
+      date: "2026-07-28",
+      title: "Initial Production Release",
+      highlights: "Core React 18 + Vite 5 + TypeScript + Supabase + PWA app scaffolding with ADA Glucose, ACC/AHA BP, and Pill Inventory management."
+    }
+  ];
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: "720px" }} onClick={e => e.stopPropagation()}>
+      <div className="modal-content" style={{ maxWidth: "760px" }} onClick={e => e.stopPropagation()}>
         
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Terminal color="var(--primary)" /> Developer & Admin Hub
+            <Terminal color="var(--primary)" /> Developer & Admin Hub (v1.4.0)
           </h2>
           <button onClick={onClose} className="btn btn-secondary btn-sm">✕</button>
         </div>
@@ -90,6 +129,12 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
             className={`btn ${activeTab === "techstack" ? "btn-primary" : "btn-secondary"}`}
           >
             <Code size={16} /> Tech Stack
+          </button>
+          <button
+            onClick={() => setActiveTab("changelog")}
+            className={`btn ${activeTab === "changelog" ? "btn-primary" : "btn-secondary"}`}
+          >
+            <History size={16} /> Version History
           </button>
           <button
             onClick={() => setActiveTab("database")}
@@ -132,7 +177,28 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* TAB 2: DATABASE & KEYS */}
+        {/* TAB 2: VERSION HISTORY & CHANGELOG */}
+        {activeTab === "changelog" && (
+          <div>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "12px" }}>
+              Full release version history and changelog (See <code>CHANGELOG.md</code> in project root):
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "350px", overflowY: "auto" }}>
+              {versionHistory.map(v => (
+                <div key={v.version} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "12px 14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span className="badge badge-primary" style={{ fontSize: "0.8rem", fontWeight: "bold" }}>{v.version}</span>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Released: {v.date}</span>
+                  </div>
+                  <h4 style={{ fontSize: "0.95rem", margin: "4px 0", color: "var(--text-primary)" }}>{v.title}</h4>
+                  <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>{v.highlights}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: DATABASE & KEYS */}
         {activeTab === "database" && (
           <div>
             <div style={{ background: "var(--bg-primary)", padding: "14px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "14px" }}>
@@ -169,7 +235,7 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* TAB 3: CENTRAL CONFIG */}
+        {/* TAB 4: CENTRAL CONFIG */}
         {activeTab === "config" && (
           <div>
             <p style={{ color: "var(--text-secondary)", marginBottom: "10px" }}>
@@ -183,7 +249,7 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* TAB 4: PASSCODE & SECURITY */}
+        {/* TAB 5: PASSCODE & SECURITY */}
         {activeTab === "passcode" && (
           <div>
             <form onSubmit={handleUpdatePin} style={{ background: "var(--bg-primary)", padding: "16px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
