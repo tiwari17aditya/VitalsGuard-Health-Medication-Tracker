@@ -73,6 +73,12 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
 
   const versionHistory = [
     {
+      version: "v1.5.0",
+      date: "2026-07-28",
+      title: "Mobile Responsiveness & Viewport Optimization",
+      highlights: "Hides top navigation bar on mobile in favor of bottom nav bar, fixes mobile header stacking, single column grid collapse, and eliminates horizontal side scrolling."
+    },
+    {
       version: "v1.4.0",
       date: "2026-07-28",
       title: "Doctor Timestamps & Custom Time Pickers",
@@ -117,7 +123,7 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Terminal color="var(--primary)" /> Developer & Admin Hub (v1.4.0)
+            <Terminal color="var(--primary)" /> Developer & Admin Hub (v1.5.0)
           </h2>
           <button onClick={onClose} className="btn btn-secondary btn-sm">✕</button>
         </div>

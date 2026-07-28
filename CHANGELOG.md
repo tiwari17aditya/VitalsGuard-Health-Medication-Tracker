@@ -6,6 +6,21 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## 📱 [v1.5.0] — 2026-07-28 (Mobile Viewport Optimization & Responsiveness)
+
+### 🛠️ Fixed
+- **Mobile Horizontal Tab Distortion**:
+  - Hidden desktop top navigation bar (`.desktop-nav`) on mobile viewports ($\le 768\text{px}$) to prevent top tab overflow.
+  - Activated fixed Glassmorphism **Bottom Navigation Bar** (`.bottom-nav`) exclusively for mobile devices.
+- **Mobile Header Stack & Overflow**:
+  - Restructured top header layout in `Header.tsx` so user profile selection, doctor emergency button, and status pills stack cleanly without exceeding screen boundaries.
+- **Grid Layout Collapsing**:
+  - Updated grid containers (`.grid-2`, `.grid-3`) to collapse into single column (`1fr`) on mobile screens for pixel-perfect card rendering.
+- **Horizontal Page Scroll Prevention**:
+  - Applied `overflow-x: hidden` to `html, body` preventing side scroll distortion.
+
+---
+
 ## 🚀 [v1.4.0] — 2026-07-28 (Doctor Timestamps & Custom Time Pickers)
 
 ### 🌟 Added

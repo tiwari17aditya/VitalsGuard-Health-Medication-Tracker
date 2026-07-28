@@ -11,13 +11,12 @@ interface NavigationProps {
 export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
   return (
     <>
-      {/* Desktop & Tablet Top Navigation Tabs */}
+      {/* Desktop & Tablet Top Navigation Tabs (Hidden on mobile via CSS) */}
       <div 
-        className="glass-card" 
+        className="glass-card desktop-nav" 
         style={{ 
           marginBottom: "20px", 
           padding: "8px", 
-          display: "flex", 
           gap: "8px",
           justifyContent: "space-around",
           borderRadius: "var(--radius-md)"
@@ -56,34 +55,38 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
         </button>
       </div>
 
-      {/* Mobile Fixed Bottom Navigation Bar */}
+      {/* Mobile Fixed Bottom Navigation Bar (Hidden on desktop via CSS) */}
       <div className="bottom-nav">
         <button 
           onClick={() => setActiveTab("vitals")}
           className={`nav-item ${activeTab === "vitals" ? "active" : ""}`}
         >
-          <Activity /> Vitals
+          <Activity />
+          <span>Vitals</span>
         </button>
 
         <button 
           onClick={() => setActiveTab("medications")}
           className={`nav-item ${activeTab === "medications" ? "active" : ""}`}
         >
-          <Pill /> Meds
+          <Pill />
+          <span>Meds</span>
         </button>
 
         <button 
           onClick={() => setActiveTab("calendar")}
           className={`nav-item ${activeTab === "calendar" ? "active" : ""}`}
         >
-          <Calendar /> Calendar
+          <Calendar />
+          <span>Calendar</span>
         </button>
 
         <button 
           onClick={() => setActiveTab("reports")}
           className={`nav-item ${activeTab === "reports" ? "active" : ""}`}
         >
-          <FileText /> Reports
+          <FileText />
+          <span>Reports</span>
         </button>
       </div>
     </>

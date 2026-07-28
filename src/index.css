@@ -54,6 +54,11 @@
   padding: 0;
 }
 
+html, body {
+  width: 100%;
+  overflow-x: hidden; /* Prevent horizontal page distortion */
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
@@ -61,13 +66,13 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  padding-bottom: 80px; /* Space for mobile navigation bar */
+  padding-bottom: 20px;
 }
 
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
@@ -82,6 +87,7 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 16px;
+  width: 100%;
 }
 
 /* Glassmorphism Card Style */
@@ -94,6 +100,7 @@ body {
   padding: 20px;
   box-shadow: var(--shadow-md);
   transition: transform 0.2s ease, border-color 0.2s ease;
+  width: 100%;
 }
 
 .glass-card:hover {
@@ -106,9 +113,9 @@ h1, h2, h3, h4 {
   letter-spacing: -0.02em;
 }
 
-h1 { font-size: 1.75rem; }
-h2 { font-size: 1.4rem; }
-h3 { font-size: 1.15rem; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.1rem; }
 
 /* Accessible Tap Targets & Buttons */
 .btn {
@@ -116,15 +123,16 @@ h3 { font-size: 1.15rem; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 20px;
-  font-size: 1rem;
+  padding: 12px 18px;
+  font-size: 0.95rem;
   font-weight: 600;
   border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 48px; /* High contrast elderly touch target */
+  min-height: 46px; /* High contrast touch target */
   user-select: none;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -162,7 +170,7 @@ h3 { font-size: 1.15rem; }
 
 .btn-sm {
   padding: 8px 14px;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   min-height: 38px;
 }
 
@@ -185,14 +193,14 @@ h3 { font-size: 1.15rem; }
 
 /* Form Controls */
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .form-label {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -204,7 +212,7 @@ h3 { font-size: 1.15rem; }
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -221,13 +229,13 @@ h3 { font-size: 1.15rem; }
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 16px;
+  padding: 12px;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -239,7 +247,7 @@ h3 { font-size: 1.15rem; }
   max-width: 550px;
   max-height: 90vh;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px;
   box-shadow: var(--shadow-lg);
 }
 
@@ -251,34 +259,34 @@ h3 { font-size: 1.15rem; }
 /* Grid Layouts */
 .grid-2 {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
 /* Toast Banners */
 .toast-container {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 80px;
+  right: 16px;
   z-index: 2000;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 400px;
-  width: calc(100% - 48px);
+  gap: 8px;
+  max-width: 380px;
+  width: calc(100% - 32px);
 }
 
 .toast {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: 10px;
+  padding: 12px 16px;
   border-radius: var(--radius-md);
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -304,18 +312,18 @@ h3 { font-size: 1.15rem; }
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .table th {
   background: var(--bg-card-hover);
-  padding: 12px 16px;
+  padding: 10px 14px;
   color: var(--text-secondary);
   font-weight: 600;
 }
 
 .table td {
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -323,44 +331,110 @@ h3 { font-size: 1.15rem; }
   border-bottom: none;
 }
 
-/* Bottom Navigation Bar for Mobile */
+/* NAVIGATION VISIBILITY CONTROLS */
+.desktop-nav {
+  display: flex;
+}
+
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 68px;
-  background: var(--bg-glass);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 900;
+  display: none;
 }
 
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  transition: color 0.2s ease;
-}
+/* ==========================================================================
+   MOBILE RESPONSIVE BREAKPOINTS (Max Width 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  
+  body {
+    padding-bottom: 84px; /* Room for bottom navigation bar */
+  }
 
-.nav-item.active {
-  color: var(--primary);
-}
+  .app-container {
+    padding: 10px 8px;
+  }
 
-.nav-item svg {
-  width: 22px;
-  height: 22px;
+  .glass-card {
+    padding: 14px;
+    border-radius: var(--radius-md);
+  }
+
+  h1 { font-size: 1.35rem; }
+  h2 { font-size: 1.15rem; }
+  h3 { font-size: 1.025rem; }
+
+  /* Hide Desktop Top Navigation Tabs on Mobile */
+  .desktop-nav {
+    display: none !important;
+  }
+
+  /* Show Fixed Bottom Navigation Bar on Mobile */
+  .bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-color);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 900;
+    padding: 0 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.725rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: color 0.2s ease;
+    flex: 1;
+  }
+
+  .nav-item.active {
+    color: var(--primary);
+  }
+
+  .nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Stack Grid Layouts into Single Column on Mobile */
+  .grid-2, .grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  /* Toast position on mobile */
+  .toast-container {
+    bottom: 74px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+  }
+
+  .btn {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+
+  .btn-sm {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    min-height: 36px;
+  }
 }

@@ -46,40 +46,41 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
   };
 
   return (
-    <header className="glass-card" style={{ marginBottom: "20px", borderRadius: "0 0 16px 16px" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
+    <header className="glass-card" style={{ marginBottom: "16px", padding: "14px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
         
         {/* Logo & Branding */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{
-            width: "44px",
-            height: "44px",
-            borderRadius: "12px",
+            width: "38px",
+            height: "38px",
+            borderRadius: "10px",
             background: "linear-gradient(135deg, #ef4444, #3b82f6)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             color: "#ffffff",
-            boxShadow: "0 4px 12px rgba(239, 68, 68, 0.4)"
+            boxShadow: "0 4px 10px rgba(239, 68, 68, 0.3)",
+            flexShrink: 0
           }}>
-            <Heart size={26} fill="white" />
+            <Heart size={22} fill="white" />
           </div>
           <div>
-            <h1 style={{ fontSize: "1.35rem", display: "flex", alignItems: "center", gap: "8px" }}>
+            <h1 style={{ fontSize: "1.2rem", display: "flex", alignItems: "center", gap: "6px", margin: 0 }}>
               {APP_CONFIG.meta.appName}
             </h1>
-            <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>
+            <p style={{ fontSize: "0.775rem", color: "var(--text-secondary)", margin: 0 }}>
               {APP_CONFIG.meta.tagline}
             </p>
           </div>
         </div>
 
         {/* User Profiles Switcher & Status Badges */}
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", width: "100%", maxWidth: "100%", marginTop: "4px" }}>
           
           {/* Profile Selector */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "var(--bg-primary)", padding: "4px 8px 4px 12px", borderRadius: "var(--radius-full)", border: "1px solid var(--border-color)" }}>
-            <Users size={18} color="var(--primary)" />
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--bg-primary)", padding: "4px 8px", borderRadius: "var(--radius-full)", border: "1px solid var(--border-color)", flex: "1 1 auto" }}>
+            <Users size={16} color="var(--primary)" />
             <select
               value={activeProfile?.id || ""}
               onChange={(e) => setActiveProfileId(e.target.value)}
@@ -88,14 +89,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
                 border: "none",
                 color: "var(--text-primary)",
                 fontWeight: "600",
-                fontSize: "0.95rem",
+                fontSize: "0.875rem",
                 outline: "none",
-                cursor: "pointer"
+                cursor: "pointer",
+                maxWidth: "140px",
+                textOverflow: "ellipsis"
               }}
             >
               {profiles.map(p => (
                 <option key={p.id} value={p.id} style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>
-                  {p.name} ({p.role})
+                  {p.name}
                 </option>
               ))}
             </select>
@@ -106,14 +109,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
                 background: "var(--bg-card-hover)",
                 border: "none",
                 color: "var(--text-primary)",
-                padding: "6px 10px",
+                padding: "4px 8px",
                 borderRadius: "var(--radius-full)",
-                fontSize: "0.8rem",
+                fontSize: "0.75rem",
                 fontWeight: "600",
-                cursor: "pointer"
+                cursor: "pointer",
+                whiteSpace: "nowrap"
               }}
             >
-              + Edit Users
+              + Users
             </button>
           </div>
 
@@ -122,42 +126,43 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
             <a
               href={`tel:${activeProfile.emergencyContact}`}
               className="badge badge-danger"
-              style={{ textDecoration: "none", cursor: "pointer", padding: "8px 12px" }}
+              style={{ textDecoration: "none", cursor: "pointer", padding: "6px 10px", fontSize: "0.775rem" }}
               title={`Call Emergency: ${activeProfile.emergencyContact}`}
             >
-              <Phone size={14} /> Call Dr / Emergency
+              <Phone size={12} /> Call Dr
             </a>
           )}
 
-          {/* Low Stock Warning Counter Pill (Only shows for current profile if meds exist) */}
+          {/* Low Stock Warning Counter Pill */}
           {profileLowStockMeds.length > 0 && (
-            <span className="badge badge-warning" title={`${profileLowStockMeds.length} medications require refill`}>
-              <AlertTriangle size={14} /> {profileLowStockMeds.length} Low Stock
+            <span className="badge badge-warning" style={{ fontSize: "0.775rem", padding: "6px 10px" }} title={`${profileLowStockMeds.length} medications require refill`}>
+              <AlertTriangle size={12} /> {profileLowStockMeds.length} Low Stock
             </span>
           )}
 
           {/* Database / Connection Status Pill */}
           {isOffline ? (
-            <span className="badge badge-warning" title="Working offline in browser storage mode">
-              <WifiOff size={14} /> Offline Mode
+            <span className="badge badge-warning" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
+              <WifiOff size={12} /> Offline
             </span>
           ) : isSupabaseActive ? (
-            <span className="badge badge-success" title="Connected to Supabase PostgreSQL Database">
-              <ShieldCheck size={14} /> Supabase Live
+            <span className="badge badge-success" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
+              <ShieldCheck size={12} /> Supabase Live
             </span>
           ) : (
-            <span className="badge badge-primary" title="Local Browser Storage Active">
-              <CheckCircle2 size={14} /> Local Storage
+            <span className="badge badge-primary" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
+              <CheckCircle2 size={12} /> Local Storage
             </span>
           )}
 
-          {/* Single Clean Developer Settings Button */}
+          {/* Developer Settings Button */}
           <button
             onClick={handleDeveloperClick}
             className="btn btn-secondary btn-sm"
-            title="Developer Settings Hub (Protected by passcode)"
+            style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px" }}
+            title="Developer Settings Hub"
           >
-            <Wrench size={15} /> Developer Settings
+            <Wrench size={13} /> Developer Settings
           </button>
 
         </div>
