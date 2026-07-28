@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
   Heart, Users, AlertTriangle, ShieldCheck, 
-  Settings, Code, Phone, CheckCircle2, WifiOff 
+  Settings, Code, Phone, CheckCircle2, WifiOff, Lock
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
+import { AdminAuthModal } from "./AdminAuthModal";
 
 interface HeaderProps {
   onOpenProfileModal: () => void;
@@ -25,6 +26,34 @@ export const Header: React.FC<HeaderProps> = ({
     isSupabaseActive, 
     lowStockMeds 
   } = useApp();
+
+  const [pendingAdminAction, setPendingAdminAction] = useState<"settings" | "techstack" | null>(null);
+
+  // Check if admin is currently authenticated in session
+  const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+
+  const handleOpenSettings = () => {
+    if (isAdminAuthed()) {
+      onOpenSettingsModal();
+    } else {
+      setPendingAdminAction("settings");
+    }
+  };
+
+  const handleOpenTechStack = () => {
+    if (isAdminAuthed()) {
+      onOpenTechStackModal();
+    } else {
+      setPendingAdminAction("techstack");
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    const action = pendingAdminAction;
+    setPendingAdminAction(null);
+    if (action === "settings") onOpenSettingsModal();
+    if (action === "techstack") onOpenTechStackModal();
+  };
 
   return (
     <header className="glass-card" style={{ marginBottom: "20px", borderRadius: "0 0 16px 16px" }}>
@@ -132,27 +161,37 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           )}
 
-          {/* Tech Stack Modal Trigger */}
+          {/* Admin Protected Tech Stack Trigger */}
           <button
-            onClick={onOpenTechStackModal}
+            onClick={handleOpenTechStack}
             className="btn btn-secondary btn-sm"
-            title="View Tech Stack & Free Architecture"
+            title="Admin Protected: Tech Stack & System Architecture"
           >
-            <Code size={16} /> Tech Stack
+            <Code size={16} /> Tech Stack {isAdminAuthed() ? '' : <Lock size={12} style={{ color: "#f59e0b" }} />}
           </button>
 
-          {/* Settings Trigger */}
+          {/* Admin Protected Settings Trigger */}
           <button
-            onClick={onOpenSettingsModal}
+            onClick={handleOpenSettings}
             className="btn btn-secondary btn-sm"
-            title="Database & Email Settings"
+            title="Admin Protected: Database & System Settings"
           >
-            <Settings size={16} /> Config
+            <Settings size={16} /> Config {isAdminAuthed() ? '' : <Lock size={12} style={{ color: "#f59e0b" }} />}
           </button>
 
         </div>
 
       </div>
+
+      {/* Admin Passcode Modal Gate */}
+      {pendingAdminAction && (
+        <AdminAuthModal
+          onSuccess={handleAuthSuccess}
+          onClose={() => setPendingAdminAction(null)}
+          title={`Admin Passcode Required for ${pendingAdminAction === "settings" ? "System Config" : "Tech Stack"}`}
+        />
+      )}
+
     </header>
   );
 };

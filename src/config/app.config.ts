@@ -22,7 +22,13 @@ export const APP_CONFIG = {
     version: "1.0.0",
     developer: "Open Source Free Tech Project",
     license: "MIT Lifetime Free",
-    githubRepo: "https://github.com/user/medication-tracker",
+    githubRepo: "https://github.com/tiwari17aditya/VitalsGuard-Health-Medication-Tracker",
+  },
+
+  // Security & Admin Gate Settings
+  security: {
+    defaultAdminPin: "1234", // Password to unlock Admin Config & Tech Stack
+    adminSessionTimeoutMinutes: 30,
   },
 
   // Medical Reference Standards (ACC/AHA BP & ADA Diabetes Standards)
