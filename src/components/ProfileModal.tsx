@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Users, Plus, Trash2, Edit2 } from "lucide-react";
+import { Users, Plus, Trash2, Edit2, Lock } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
+import { AdminAuthModal } from "./AdminAuthModal";
 
 interface ProfileModalProps {
   onClose: () => void;
@@ -11,8 +12,27 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   const { profiles, activeProfile, addOrUpdateProfile, deleteProfile, setActiveProfileId } = useApp();
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete"; deleteId?: string } | null>(null);
 
-  const handleCreateNew = () => {
+  const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+
+  const handleCreateNewClick = () => {
+    if (isAdminAuthed()) {
+      startCreatingProfile();
+    } else {
+      setPendingAction({ type: "add" });
+    }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    if (isAdminAuthed()) {
+      deleteProfile(id);
+    } else {
+      setPendingAction({ type: "delete", deleteId: id });
+    }
+  };
+
+  const startCreatingProfile = () => {
     setEditingProfile({
       id: `profile-${Date.now()}`,
       name: "",
@@ -23,6 +43,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       doctorName: "",
       notes: ""
     });
+  };
+
+  const handleAuthSuccess = () => {
+    const act = pendingAction;
+    setPendingAction(null);
+    if (act?.type === "add") {
+      startCreatingProfile();
+    } else if (act?.type === "delete" && act.deleteId) {
+      deleteProfile(act.deleteId);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -47,7 +77,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
         {!editingProfile ? (
           <div>
             <p style={{ color: "var(--text-secondary)", marginBottom: "16px" }}>
-              Switch or manage family member profiles (e.g. Mom, Dad, Self).
+              Switch or manage family member profiles. <em>(Adding or deleting users requires Admin Passcode)</em>
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
@@ -81,14 +111,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                     <button
                       onClick={() => setEditingProfile(p)}
                       className="btn btn-secondary btn-sm"
+                      title="Edit Profile"
                     >
                       <Edit2 size={14} />
                     </button>
                     {profiles.length > 1 && (
                       <button
-                        onClick={() => deleteProfile(p.id)}
+                        onClick={() => handleDeleteClick(p.id)}
                         className="btn btn-secondary btn-sm"
                         style={{ color: "#ef4444" }}
+                        title="Delete Profile (Passcode Protected)"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -98,8 +130,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
               ))}
             </div>
 
-            <button onClick={handleCreateNew} className="btn btn-success" style={{ width: "100%" }}>
-              <Plus size={18} /> Add New Family User
+            <button onClick={handleCreateNewClick} className="btn btn-success" style={{ width: "100%" }}>
+              <Plus size={18} /> Add New Family User {isAdminAuthed() ? '' : <Lock size={14} style={{ opacity: 0.8 }} />}
             </button>
           </div>
         ) : (
@@ -198,6 +230,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
               </button>
             </div>
           </form>
+        )}
+
+        {/* Passcode Authentication Modal Gate */}
+        {pendingAction && (
+          <AdminAuthModal
+            onSuccess={handleAuthSuccess}
+            onClose={() => setPendingAction(null)}
+            title={`Passcode Required to ${pendingAction.type === "add" ? "Add New User" : "Delete User"}`}
+          />
         )}
 
       </div>

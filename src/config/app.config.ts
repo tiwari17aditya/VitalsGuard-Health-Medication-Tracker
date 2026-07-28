@@ -1,7 +1,7 @@
 /**
  * SINGLE CENTRAL CONFIGURATION FILE
  * All application defaults, medical reference ranges, notification settings,
- * database mapping, and feature flags are maintained in this file.
+ * security passcodes, database mapping, and feature flags are maintained in this file.
  */
 
 export interface MedicalRange {
@@ -25,9 +25,9 @@ export const APP_CONFIG = {
     githubRepo: "https://github.com/tiwari17aditya/VitalsGuard-Health-Medication-Tracker",
   },
 
-  // Security & Admin Gate Settings
+  // Central Security & Admin Passcode Configuration
   security: {
-    defaultAdminPin: "1234", // Password to unlock Admin Config & Tech Stack
+    adminPasscode: "1234", // <-- 🔑 CENTRAL PASSCODE (Used for Developer Settings & Adding/Deleting Users)
     adminSessionTimeoutMinutes: 30,
   },
 

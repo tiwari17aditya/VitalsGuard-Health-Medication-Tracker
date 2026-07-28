@@ -12,7 +12,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
   const [pinInput, setPinInput] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
 
-  const savedPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.defaultAdminPin;
+  const savedPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +20,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
       sessionStorage.setItem("vitalsguard_admin_authed", "true");
       onSuccess();
     } else {
-      setErrorMsg("Incorrect Admin Passcode! (Default PIN is 1234)");
+      setErrorMsg(`Incorrect Passcode! (Default passcode is ${APP_CONFIG.security.adminPasscode})`);
     }
   };
 
@@ -44,18 +44,18 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
           </div>
           <h2>{title}</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Restricted Area: Enter your Admin Password to access system settings, database credentials, and tech stack options.
+            Restricted Action: Enter your Admin Passcode to proceed.
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Key size={14} /> Admin Passcode / PIN
+              <Key size={14} /> Admin Passcode
             </label>
             <input
               type="password"
-              placeholder="Enter passcode (Default: 1234)"
+              placeholder={`Enter passcode (Default: ${APP_CONFIG.security.adminPasscode})`}
               value={pinInput}
               onChange={(e) => { setPinInput(e.target.value); setErrorMsg(""); }}
               className="form-input"
@@ -72,7 +72,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
 
           <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
             <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-              <ShieldCheck size={18} /> Unlock Admin Access
+              <ShieldCheck size={18} /> Unlock & Continue
             </button>
             <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancel
@@ -81,7 +81,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
         </form>
 
         <div style={{ textAlign: "center", marginTop: "16px", fontSize: "0.775rem", color: "var(--text-muted)" }}>
-          💡 Default passcode is <code>1234</code>. You can change this in System Config after unlocking.
+          💡 Passcode is configured in <code>src/config/app.config.ts</code>.
         </div>
 
       </div>

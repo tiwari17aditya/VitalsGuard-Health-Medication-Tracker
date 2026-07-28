@@ -18,7 +18,7 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
   const resendKey = import.meta.env.VITE_RESEND_API_KEY || "";
 
   // Passcode Management
-  const currentPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.defaultAdminPin;
+  const currentPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
   const [newPin, setNewPin] = useState("");
 
   const handleUpdatePin = (e: React.FormEvent) => {
