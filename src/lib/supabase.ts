@@ -79,7 +79,6 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
             avatarColor: item.avatar_color || item.avatarColor || "#3b82f6"
           })) as UserProfile[];
         } else {
-          // Table exists but is empty -> seed initial default profiles into Supabase
           console.log("Supabase profiles table is empty. Seeding defaults...");
           for (const p of APP_CONFIG.defaultProfiles) {
             await saveProfileDB(p as UserProfile);
@@ -161,7 +160,6 @@ export async function fetchMedications(profileId?: string): Promise<Medication[]
             created_at: item.created_at
           })) as Medication[];
         } else if (!profileId) {
-          // Table empty -> Seed default medications
           console.log("Supabase medications table is empty. Seeding defaults...");
           for (const m of APP_CONFIG.defaultMedications) {
             await saveMedicationDB(m as Medication);
@@ -220,18 +218,19 @@ export async function deleteMedicationDB(id: string): Promise<boolean> {
   return true;
 }
 
-// --- MEDICATION ADHERENCE LOGS & STOCK AUTO-SUBTRACT ---
+// --- MEDICATION ADHERENCE LOGS & STOCK AUTO-SUBTRACT WITH CUSTOM TIMESTAMPS ---
 export async function logAdherenceDB(
   medicationId: string,
   profileId: string,
   status: "taken" | "missed" | "skipped",
-  quantityTaken: number = 1
+  quantityTaken: number = 1,
+  customTimestamp?: string
 ): Promise<{ log: MedicationLog; updatedMed?: Medication }> {
   const newLog: MedicationLog = {
     id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
     medicationId,
     profileId,
-    timestamp: new Date().toISOString(),
+    timestamp: customTimestamp || new Date().toISOString(),
     status,
     quantityTaken
   };

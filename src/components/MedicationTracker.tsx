@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pill, Plus, CheckCircle, AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
+import { Pill, Plus, CheckCircle, AlertTriangle, RefreshCw, Trash2, Clock } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { Medication, FoodRelation } from "../types";
 
@@ -7,6 +7,7 @@ export const MedicationTracker: React.FC = () => {
   const { 
     activeProfile, 
     medications, 
+    medicationLogs,
     takeMedication, 
     refillStock, 
     addOrUpdateMedication, 
@@ -17,6 +18,13 @@ export const MedicationTracker: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [refillMedId, setRefillMedId] = useState<string | null>(null);
   const [addedPills, setAddedPills] = useState<number>(30);
+
+  // Time picker state for taking dose (defaults to current HH:MM)
+  const getCurrentHHMM = () => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  };
+  const [takeTime, setTakeTime] = useState<string>(getCurrentHHMM());
 
   // New Medication Form State
   const [name, setName] = useState("");
@@ -30,6 +38,7 @@ export const MedicationTracker: React.FC = () => {
   if (!activeProfile) return null;
 
   const profileMeds = medications.filter(m => m.profileId === activeProfile.id);
+  const profileLogs = medicationLogs.filter(l => l.profileId === activeProfile.id);
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,14 +79,28 @@ export const MedicationTracker: React.FC = () => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Pill size={22} color="var(--primary)" /> Medication Inventory & Adherence
+            <Pill size={22} color="var(--primary)" /> Medication Inventory & Dose Timestamps
           </h2>
           <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-            Managing active prescriptions & remaining stock for {activeProfile.name}
+            Managing active prescriptions, exact intake times & stock count for {activeProfile.name}
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: "8px" }}>
+        {/* Global Intake Time Selector */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--bg-primary)", padding: "6px 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+            <Clock size={16} color="var(--primary)" />
+            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: "600" }}>Intake Time:</span>
+            <input
+              type="time"
+              value={takeTime}
+              onChange={(e) => setTakeTime(e.target.value)}
+              className="form-input"
+              style={{ width: "auto", padding: "2px 6px", fontSize: "0.9rem" }}
+              title="Select exact time medication was taken"
+            />
+          </div>
+
           <button
             onClick={() => sendRefillAlertEmail(activeProfile.id)}
             className="btn btn-secondary btn-sm"
@@ -112,6 +135,12 @@ export const MedicationTracker: React.FC = () => {
           {profileMeds.map(med => {
             const isLow = med.stockCount <= med.minStockAlert;
             const stockPercent = Math.min(100, Math.round((med.stockCount / 30) * 100));
+
+            // Find last dose taken log for this medication
+            const lastLog = profileLogs.find(l => l.medicationId === med.id && l.status === "taken");
+            const lastTakenFormatted = lastLog ? new Date(lastLog.timestamp).toLocaleString([], { 
+              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+            }) : null;
 
             return (
               <div 
@@ -151,6 +180,16 @@ export const MedicationTracker: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Last Recorded Dose Time */}
+                  <div style={{ marginBottom: "12px", fontSize: "0.825rem", color: lastTakenFormatted ? "var(--success)" : "var(--text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Clock size={14} />
+                    {lastTakenFormatted ? (
+                      <span><strong>Last Taken:</strong> {lastTakenFormatted}</span>
+                    ) : (
+                      <span>No dose logged yet today</span>
+                    )}
+                  </div>
+
                   {/* Instructions */}
                   {med.instructions && (
                     <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "14px", background: "var(--bg-card)", padding: "8px 12px", borderRadius: "var(--radius-sm)" }}>
@@ -182,12 +221,13 @@ export const MedicationTracker: React.FC = () => {
                 {/* Bottom Action Controls */}
                 <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
                   <button
-                    onClick={() => takeMedication(med.id)}
+                    onClick={() => takeMedication(med.id, takeTime)}
                     className="btn btn-success"
                     style={{ flex: 1 }}
                     disabled={med.stockCount <= 0}
+                    title={`Log dose taken at ${takeTime}`}
                   >
-                    <CheckCircle size={18} /> Take Dose (-1 Pill)
+                    <CheckCircle size={18} /> Take Dose at {takeTime} (-1 Pill)
                   </button>
 
                   <button
@@ -249,7 +289,7 @@ export const MedicationTracker: React.FC = () => {
                   <label className="form-label">Frequency</label>
                   <input
                     type="text"
-                    placeholder="e.g. Twice Daily, Once Daily"
+                    placeholder="e.g. Twice Daily, Morning & Evening"
                     value={frequency}
                     onChange={(e) => setFrequency(e.target.value)}
                     className="form-input"

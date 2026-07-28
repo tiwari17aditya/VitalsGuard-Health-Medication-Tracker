@@ -1,203 +1,145 @@
 import React, { useState } from "react";
-import { Calendar as CalendarIcon, CheckCircle2, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { useApp } from "../context/AppContext";
 
 export const MedicationCalendar: React.FC = () => {
   const { activeProfile, medications, medicationLogs } = useApp();
 
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [selectedDateStr, setSelectedDateStr] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
 
   if (!activeProfile) return null;
 
   const profileMeds = medications.filter(m => m.profileId === activeProfile.id);
+  const profileLogs = medicationLogs.filter(l => l.profileId === activeProfile.id);
 
-  // Generate calendar days for current month view
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+  // Generate 14 days dates array
+  const datesList: { dateStr: string; dayName: string; dayNum: number }[] = [];
+  const today = new Date();
+  for (let i = 6; i >= -7; i--) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    datesList.push({
+      dateStr: d.toISOString().split("T")[0],
+      dayName: d.toLocaleDateString("en-US", { weekday: "short" }),
+      dayNum: d.getDate()
+    });
+  }
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
-
-  // Helper to get adherence status for a given day string "YYYY-MM-DD"
-  const getDayStatus = (dateStr: string) => {
-    const dayLogs = medicationLogs.filter(l => l.profileId === activeProfile.id && l.timestamp.startsWith(dateStr));
-    const takenCount = dayLogs.filter(l => l.status === "taken").length;
-    if (dayLogs.length === 0) return "none";
-    if (takenCount >= profileMeds.length && profileMeds.length > 0) return "full";
-    if (takenCount > 0) return "partial";
-    return "missed";
-  };
-
-  // Selected Day Timeline Logs
-  const selectedDayLogs = medicationLogs.filter(
-    l => l.profileId === activeProfile.id && l.timestamp.startsWith(selectedDateStr)
-  );
+  // Selected date logs
+  const selectedDateLogs = profileLogs.filter(l => l.timestamp.startsWith(selectedDateStr));
 
   return (
     <div className="glass-card">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap" }}>
+      
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <CalendarIcon size={22} color="var(--primary)" /> Medication Schedule Calendar
+            <Calendar size={22} color="var(--primary)" /> Adherence Calendar & Dose Timeline
           </h2>
           <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-            Monthly visual adherence tracking for {activeProfile.name}
+            Daily history & exact intake timestamps for doctor compliance review ({activeProfile.name})
           </p>
-        </div>
-
-        {/* Month Navigation Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button onClick={handlePrevMonth} className="btn btn-secondary btn-sm">
-            <ChevronLeft size={16} /> Prev
-          </button>
-          <span style={{ fontSize: "1.1rem", fontWeight: "700", minWidth: "140px", textAlign: "center" }}>
-            {monthNames[month]} {year}
-          </span>
-          <button onClick={handleNextMonth} className="btn btn-secondary btn-sm">
-            Next <ChevronRight size={16} />
-          </button>
         </div>
       </div>
 
-      <div className="grid-2">
-        
-        {/* Calendar Grid View */}
-        <div style={{ background: "var(--bg-primary)", padding: "16px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-          
-          {/* Day Headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", fontWeight: "bold", fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "10px" }}>
-            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-          </div>
+      {/* Date Picker Ribbon */}
+      <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "12px", marginBottom: "20px" }}>
+        {datesList.map(item => {
+          const isSelected = item.dateStr === selectedDateStr;
+          const dayLogs = profileLogs.filter(l => l.timestamp.startsWith(item.dateStr));
+          const takenCount = dayLogs.filter(l => l.status === "taken").length;
+          const isComplete = profileMeds.length > 0 && takenCount >= profileMeds.length;
 
-          {/* Days Cells */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px" }}>
-            {/* Empty Offset Cells */}
-            {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-              <div key={`empty-${i}`} style={{ height: "42px" }} />
-            ))}
+          return (
+            <button
+              key={item.dateStr}
+              onClick={() => setSelectedDateStr(item.dateStr)}
+              style={{
+                flex: "0 0 70px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                padding: "10px 8px",
+                borderRadius: "var(--radius-md)",
+                background: isSelected ? "var(--primary)" : "var(--bg-primary)",
+                color: isSelected ? "#ffffff" : "var(--text-primary)",
+                border: isSelected ? "2px solid var(--primary)" : "1px solid var(--border-color)",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+            >
+              <span style={{ fontSize: "0.75rem", opacity: 0.8, textTransform: "uppercase" }}>{item.dayName}</span>
+              <span style={{ fontSize: "1.2rem", fontWeight: "bold", margin: "2px 0" }}>{item.dayNum}</span>
+              
+              <span style={{ fontSize: "0.7rem", marginTop: "4px" }}>
+                {isComplete ? "✅ All" : takenCount > 0 ? `💊 ${takenCount}` : "—"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-            {/* Days of Month */}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const dayNum = i + 1;
-              const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-              const isSelected = dateStr === selectedDateStr;
-              const isToday = dateStr === new Date().toISOString().split("T")[0];
-              const status = getDayStatus(dateStr);
+      {/* Detailed Log Timeline for Selected Date */}
+      <div style={{ background: "var(--bg-primary)", padding: "20px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+        <h3 style={{ marginBottom: "16px", fontSize: "1.05rem" }}>
+          Prescription Schedule for Date: <strong>{new Date(selectedDateStr).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+        </h3>
 
-              let badgeBg = "transparent";
-              if (status === "full") badgeBg = "rgba(16, 185, 129, 0.25)";
-              else if (status === "partial") badgeBg = "rgba(245, 158, 11, 0.25)";
-              else if (status === "missed") badgeBg = "rgba(239, 68, 68, 0.25)";
+        {profileMeds.length === 0 ? (
+          <p style={{ color: "var(--text-muted)" }}>No medications registered for this profile.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {profileMeds.map(m => {
+              const medLog = selectedDateLogs.find(l => l.medicationId === m.id && l.status === "taken");
+              const isTaken = Boolean(medLog);
+              const exactTimeFormatted = medLog ? new Date(medLog.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
 
               return (
-                <button
-                  key={dateStr}
-                  onClick={() => setSelectedDateStr(dateStr)}
+                <div
+                  key={m.id}
                   style={{
-                    height: "44px",
                     display: "flex",
-                    flexDirection: "column",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "var(--radius-sm)",
-                    background: isSelected ? "var(--primary)" : badgeBg || "var(--bg-card)",
-                    color: isSelected ? "#ffffff" : "var(--text-primary)",
-                    border: isToday ? "2px solid var(--primary)" : "1px solid var(--border-color)",
-                    cursor: "pointer",
-                    fontWeight: isToday || isSelected ? "bold" : "normal"
+                    padding: "14px 16px",
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border-color)"
                   }}
                 >
-                  <span style={{ fontSize: "0.95rem" }}>{dayNum}</span>
-                  {status !== "none" && (
-                    <span style={{ fontSize: "0.65rem", textTransform: "uppercase", opacity: 0.9 }}>
-                      {status === "full" ? "✓ Done" : status === "partial" ? "• Part" : "✕ Miss"}
-                    </span>
-                  )}
-                </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    {isTaken ? (
+                      <CheckCircle2 size={24} color="#10b981" />
+                    ) : (
+                      <XCircle size={24} color="#f59e0b" />
+                    )}
+                    <div>
+                      <h4 style={{ fontSize: "1rem" }}>{m.name} ({m.dosage})</h4>
+                      <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>
+                        Schedule: {m.frequency} • {m.foodRelation}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Exact Doctor Timestamp */}
+                  <div>
+                    {isTaken ? (
+                      <span className="badge badge-success" style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.85rem" }}>
+                        <Clock size={14} /> Taken at {exactTimeFormatted}
+                      </span>
+                    ) : (
+                      <span className="badge badge-warning" style={{ fontSize: "0.85rem" }}>
+                        ⏳ Pending Intake
+                      </span>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
-
-          <div style={{ display: "flex", gap: "12px", marginTop: "16px", fontSize: "0.775rem", color: "var(--text-secondary)", justifyContent: "center" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#10b981" }} /> All Taken
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#f59e0b" }} /> Partial Doses
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ef4444" }} /> Missed / Pending
-            </span>
-          </div>
-
-        </div>
-
-        {/* Selected Day Details Timeline */}
-        <div style={{ background: "var(--bg-primary)", padding: "16px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-          <h3 style={{ marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-            <Clock size={18} color="var(--primary)" /> Timeline for {new Date(selectedDateStr).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
-          </h3>
-
-          {profileMeds.length === 0 ? (
-            <p style={{ color: "var(--text-muted)" }}>No medications assigned to this user profile.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {profileMeds.map(med => {
-                const log = selectedDayLogs.find(l => l.medicationId === med.id && l.status === "taken");
-                const isTaken = Boolean(log);
-
-                return (
-                  <div
-                    key={med.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px",
-                      borderRadius: "var(--radius-sm)",
-                      background: isTaken ? "rgba(16, 185, 129, 0.1)" : "var(--bg-card)",
-                      border: isTaken ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid var(--border-color)"
-                    }}
-                  >
-                    <div>
-                      <h4 style={{ fontSize: "0.95rem" }}>{med.name} ({med.dosage})</h4>
-                      <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                        Scheduled: {med.frequency} • {med.foodRelation}
-                      </p>
-                    </div>
-
-                    <div>
-                      {isTaken ? (
-                        <span className="badge badge-success">
-                          <CheckCircle2 size={14} /> Taken at {new Date(log!.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      ) : (
-                        <span className="badge badge-warning">
-                          <Clock size={14} /> Pending / Missed
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
+        )}
       </div>
 
     </div>

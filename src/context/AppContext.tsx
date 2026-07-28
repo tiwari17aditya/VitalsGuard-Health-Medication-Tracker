@@ -27,14 +27,14 @@ interface AppContextType {
   medicationLogs: MedicationLog[];
   addOrUpdateMedication: (med: Medication) => Promise<void>;
   deleteMedication: (id: string) => Promise<void>;
-  takeMedication: (medId: string) => Promise<void>;
+  takeMedication: (medId: string, customTimeStr?: string) => Promise<void>;
   refillStock: (medId: string, addedCount: number) => Promise<void>;
 
   // Vitals
   glucoseLogs: GlucoseLog[];
-  addGlucoseLog: (val: number, mealType: MealType, notes?: string) => Promise<void>;
+  addGlucoseLog: (val: number, mealType: MealType, notes?: string, customTimeStr?: string) => Promise<void>;
   bpLogs: BPLog[];
-  addBPLog: (sys: number, dia: number, pulse: number, notes?: string) => Promise<void>;
+  addBPLog: (sys: number, dia: number, pulse: number, notes?: string, customTimeStr?: string) => Promise<void>;
 
   // Reports & Email
   caretakerEmail: string;
@@ -204,7 +204,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       showToast("success", "Medication Saved", `${saved.name} (${saved.dosage}) saved.`);
 
-      // Check if newly saved med has low stock
       if (saved.stockCount <= saved.minStockAlert) {
         showToast("warning", "Low Stock Alert", `Only ${saved.stockCount} pills left for ${saved.name}!`);
       }
@@ -223,8 +222,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // TAKE MEDICATION & AUTO-SUBTRACT INVENTORY
-  const takeMedication = async (medId: string) => {
+  // TAKE MEDICATION WITH CUSTOM TIME SUPPORT
+  const takeMedication = async (medId: string, customTimeStr?: string) => {
     const targetMed = medications.find(m => m.id === medId);
     if (!targetMed) return;
 
@@ -233,26 +232,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    let timestampToLog = new Date().toISOString();
+    if (customTimeStr) {
+      // Parse custom HH:MM time for today's date
+      const [hours, minutes] = customTimeStr.split(":").map(Number);
+      const customDate = new Date();
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        customDate.setHours(hours, minutes, 0, 0);
+        timestampToLog = customDate.toISOString();
+      }
+    }
+
     try {
-      const { log, updatedMed } = await logAdherenceDB(medId, targetMed.profileId, "taken", 1);
+      const { log, updatedMed } = await logAdherenceDB(medId, targetMed.profileId, "taken", 1, timestampToLog);
       setMedicationLogs(prev => [log, ...prev]);
 
       if (updatedMed) {
         setMedications(prev => prev.map(m => m.id === updatedMed.id ? updatedMed : m));
         
-        // Refill Warning check after subtraction
         if (updatedMed.stockCount <= updatedMed.minStockAlert) {
           showToast(
             "warning", 
             "⚠️ Refill Alert Needed!", 
-            `${updatedMed.name} stock is down to ${updatedMed.stockCount} pills! Alert notice created.`
+            `${updatedMed.name} stock is down to ${updatedMed.stockCount} pills!`
           );
         }
       }
 
-      showToast("success", "Medication Taken", `Logged 1 dose of ${targetMed.name}. ${updatedMed ? updatedMed.stockCount : targetMed.stockCount - 1} pills remaining.`);
+      const formattedTime = new Date(timestampToLog).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      showToast("success", "Medication Logged", `Taken ${targetMed.name} at ${formattedTime}. ${updatedMed ? updatedMed.stockCount : targetMed.stockCount - 1} pills remaining.`);
 
-      // Check if all today's medications for this profile are completed -> trigger confetti celebration!
       if (APP_CONFIG.featureFlags.enableConfettiOnAdherence) {
         const profileMeds = medications.filter(m => m.profileId === targetMed.profileId && m.active);
         const todayStr = new Date().toISOString().split("T")[0];
@@ -285,14 +294,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast("success", "Stock Refilled", `Added ${addedCount} pills to ${targetMed.name}. Total stock: ${newStock} pills.`);
   };
 
-  // DIABETES GLUCOSE LOGGING & MEDICAL CLASSIFICATION
-  const addGlucoseLog = async (val: number, mealType: MealType, notes?: string) => {
+  // DIABETES GLUCOSE LOGGING
+  const addGlucoseLog = async (val: number, mealType: MealType, notes?: string, customTimeStr?: string) => {
     if (!activeProfile) {
       showToast("error", "No User Profile", "Please select or create a user profile first.");
       return;
     }
 
-    // Determine Ada glucose status
     const ranges = mealType === "fasting" 
       ? APP_CONFIG.medicalStandards.bloodGlucose.ranges.fasting 
       : APP_CONFIG.medicalStandards.bloodGlucose.ranges.postMeal;
@@ -300,12 +308,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const statusMatch = ranges.find(r => val >= r.min && val <= r.max);
     const status = statusMatch ? statusMatch.name : "High (Diabetes)";
 
+    let timestampToLog = new Date().toISOString();
+    if (customTimeStr) {
+      const [hours, minutes] = customTimeStr.split(":").map(Number);
+      const customDate = new Date();
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        customDate.setHours(hours, minutes, 0, 0);
+        timestampToLog = customDate.toISOString();
+      }
+    }
+
     const newLog: GlucoseLog = {
       id: `gl-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       profileId: activeProfile.id,
       value: val,
       mealType,
-      timestamp: new Date().toISOString(),
+      timestamp: timestampToLog,
       status,
       notes
     };
@@ -314,31 +332,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await saveGlucoseLogDB(newLog);
       setGlucoseLogs(prev => [newLog, ...prev]);
       
-      const isHigh = val >= 180 || status.includes("High");
-      const isLow = val < 70;
-      if (isHigh || isLow) {
-        showToast("warning", `Glucose Alert (${val} mg/dL)`, `Reading categorized as: ${status}. Notes logged.`);
-      } else {
-        showToast("success", "Glucose Logged", `${val} mg/dL (${mealType}) recorded successfully.`);
-      }
+      const formattedTime = new Date(timestampToLog).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      showToast("success", "Glucose Logged", `${val} mg/dL logged at ${formattedTime} (${mealType}).`);
     } catch (err: any) {
       showToast("error", "Glucose Log Error", err.message || "Could not save blood glucose record.");
     }
   };
 
-  // BLOOD PRESSURE LOGGING & CATEGORY COMPUTATION
-  const addBPLog = async (sys: number, dia: number, pulse: number, notes?: string) => {
+  // BLOOD PRESSURE LOGGING
+  const addBPLog = async (sys: number, dia: number, pulse: number, notes?: string, customTimeStr?: string) => {
     if (!activeProfile) {
       showToast("error", "No User Profile", "Please select or create a user profile first.");
       return;
     }
 
-    // Calculate BP Category (ACC/AHA Standard)
     let category: BPCategory = "Normal";
     if (sys >= 180 || dia >= 120) category = "Hypertensive Crisis";
     else if (sys >= 140 || dia >= 90) category = "Stage 2 Hypertension";
     else if ((sys >= 130 && sys <= 139) || (dia >= 80 && dia <= 89)) category = "Stage 1 Hypertension";
     else if (sys >= 120 && sys <= 129 && dia < 80) category = "Elevated";
+
+    let timestampToLog = new Date().toISOString();
+    if (customTimeStr) {
+      const [hours, minutes] = customTimeStr.split(":").map(Number);
+      const customDate = new Date();
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        customDate.setHours(hours, minutes, 0, 0);
+        timestampToLog = customDate.toISOString();
+      }
+    }
 
     const newLog: BPLog = {
       id: `bp-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -347,7 +369,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       diastolic: dia,
       pulse,
       category,
-      timestamp: new Date().toISOString(),
+      timestamp: timestampToLog,
       notes
     };
 
@@ -355,13 +377,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await saveBPLogDB(newLog);
       setBpLogs(prev => [newLog, ...prev]);
 
-      if (category === "Hypertensive Crisis") {
-        showToast("error", "🚨 EMERGENCY BP ALERT", `Reading ${sys}/${dia} mmHg is Hypertensive Crisis level! Consult doctor immediately!`);
-      } else if (category.includes("Stage")) {
-        showToast("warning", `BP Alert: ${category}`, `Reading ${sys}/${dia} mmHg logged.`);
-      } else {
-        showToast("success", "BP Recorded", `${sys}/${dia} mmHg (Pulse: ${pulse} bpm) logged.`);
-      }
+      const formattedTime = new Date(timestampToLog).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      showToast("success", "BP Recorded", `${sys}/${dia} mmHg logged at ${formattedTime}.`);
     } catch (err: any) {
       showToast("error", "BP Log Error", err.message || "Could not save BP reading.");
     }
