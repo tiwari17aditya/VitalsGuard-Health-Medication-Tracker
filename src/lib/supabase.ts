@@ -36,7 +36,12 @@ function loadFromStorage<T>(key: string, defaultData: T): T {
       localStorage.setItem(key, JSON.stringify(defaultData));
       return defaultData;
     }
-    return JSON.parse(raw) as T;
+    const parsed = JSON.parse(raw) as T;
+    if (Array.isArray(parsed) && parsed.length === 0 && Array.isArray(defaultData) && defaultData.length > 0) {
+      localStorage.setItem(key, JSON.stringify(defaultData));
+      return defaultData;
+    }
+    return parsed;
   } catch (err) {
     console.warn(`[LocalStorage] Error reading ${key}:`, err);
     return defaultData;
@@ -58,7 +63,30 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).select("*");
-      if (!error && data) return data as UserProfile[];
+      if (!error && data) {
+        if (data.length > 0) {
+          return data.map(item => ({
+            id: item.id,
+            name: item.name,
+            role: item.role || "Parent",
+            age: item.age,
+            targetGlucoseFasting: item.target_glucose_fasting || item.targetGlucoseFasting,
+            targetGlucosePostMeal: item.target_glucose_post_meal || item.targetGlucosePostMeal,
+            targetBP: item.target_bp || item.targetBP,
+            emergencyContact: item.emergency_contact || item.emergencyContact,
+            doctorName: item.doctor_name || item.doctorName,
+            notes: item.notes,
+            avatarColor: item.avatar_color || item.avatarColor || "#3b82f6"
+          })) as UserProfile[];
+        } else {
+          // Table exists but is empty -> seed initial default profiles into Supabase
+          console.log("Supabase profiles table is empty. Seeding defaults...");
+          for (const p of APP_CONFIG.defaultProfiles) {
+            await saveProfileDB(p as UserProfile);
+          }
+          return APP_CONFIG.defaultProfiles as UserProfile[];
+        }
+      }
     } catch (err) {
       console.warn("Supabase fetchProfiles fallback to LocalStorage:", err);
     }
@@ -69,8 +97,20 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
 export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(profile).select().single();
-      if (!error && data) return data as UserProfile;
+      const payload = {
+        id: profile.id,
+        name: profile.name,
+        role: profile.role,
+        age: profile.age,
+        target_glucose_fasting: profile.targetGlucoseFasting,
+        target_glucose_post_meal: profile.targetGlucosePostMeal,
+        target_bp: profile.targetBP,
+        emergency_contact: profile.emergencyContact,
+        doctor_name: profile.doctorName,
+        notes: profile.notes,
+        avatar_color: profile.avatarColor
+      };
+      await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
     } catch (err) {
       console.warn("Supabase saveProfile fallback to LocalStorage:", err);
     }
@@ -105,20 +145,29 @@ export async function fetchMedications(profileId?: string): Promise<Medication[]
       if (profileId) query = query.eq("profile_id", profileId);
       const { data, error } = await query;
       if (!error && data) {
-        return data.map(item => ({
-          id: item.id,
-          profileId: item.profile_id || item.profileId,
-          name: item.name,
-          dosage: item.dosage,
-          frequency: item.frequency,
-          times: item.times || [],
-          stockCount: item.stock_count ?? item.stockCount ?? 0,
-          minStockAlert: item.min_stock_alert ?? item.minStockAlert ?? 5,
-          instructions: item.instructions || "",
-          foodRelation: item.food_relation || item.foodRelation || "After Food",
-          active: item.active ?? true,
-          created_at: item.created_at
-        })) as Medication[];
+        if (data.length > 0) {
+          return data.map(item => ({
+            id: item.id,
+            profileId: item.profile_id || item.profileId,
+            name: item.name,
+            dosage: item.dosage,
+            frequency: item.frequency,
+            times: item.times || [],
+            stockCount: item.stock_count ?? item.stockCount ?? 0,
+            minStockAlert: item.min_stock_alert ?? item.minStockAlert ?? 5,
+            instructions: item.instructions || "",
+            foodRelation: item.food_relation || item.foodRelation || "After Food",
+            active: item.active ?? true,
+            created_at: item.created_at
+          })) as Medication[];
+        } else if (!profileId) {
+          // Table empty -> Seed default medications
+          console.log("Supabase medications table is empty. Seeding defaults...");
+          for (const m of APP_CONFIG.defaultMedications) {
+            await saveMedicationDB(m as Medication);
+          }
+          return APP_CONFIG.defaultMedications as Medication[];
+        }
       }
     } catch (err) {
       console.warn("Supabase fetchMedications fallback:", err);

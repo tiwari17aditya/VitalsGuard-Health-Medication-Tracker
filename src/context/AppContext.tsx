@@ -57,9 +57,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [profiles, setProfiles] = useState<UserProfile[]>([]);
-  const [activeProfileId, setActiveProfileIdState] = useState<string>("");
-  const [medications, setMedications] = useState<Medication[]>([]);
+  const [profiles, setProfiles] = useState<UserProfile[]>(APP_CONFIG.defaultProfiles as UserProfile[]);
+  const [activeProfileId, setActiveProfileIdState] = useState<string>(APP_CONFIG.defaultProfiles[0].id);
+  const [medications, setMedications] = useState<Medication[]>(APP_CONFIG.defaultMedications as Medication[]);
   const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
   const [glucoseLogs, setGlucoseLogs] = useState<GlucoseLog[]>([]);
   const [bpLogs, setBpLogs] = useState<BPLog[]>([]);
@@ -107,16 +107,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshAllData = async () => {
     setIsLoading(true);
     try {
-      const loadedProfiles = await fetchProfiles();
+      let loadedProfiles = await fetchProfiles();
+      if (!loadedProfiles || loadedProfiles.length === 0) {
+        loadedProfiles = APP_CONFIG.defaultProfiles as UserProfile[];
+      }
       setProfiles(loadedProfiles);
       
-      if (loadedProfiles.length > 0) {
-        const savedId = localStorage.getItem("carepulse_active_profile");
-        const match = loadedProfiles.find(p => p.id === savedId);
-        setActiveProfileIdState(match ? match.id : loadedProfiles[0].id);
-      }
+      const savedId = localStorage.getItem("carepulse_active_profile");
+      const match = loadedProfiles.find(p => p.id === savedId);
+      setActiveProfileIdState(match ? match.id : loadedProfiles[0].id);
 
-      const loadedMeds = await fetchMedications();
+      let loadedMeds = await fetchMedications();
+      if (!loadedMeds || loadedMeds.length === 0) {
+        loadedMeds = APP_CONFIG.defaultMedications as Medication[];
+      }
       setMedications(loadedMeds);
 
       const loadedMedLogs = await fetchMedicationLogs();
@@ -144,7 +148,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem("carepulse_active_profile", id);
   };
 
-  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || null;
+  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || APP_CONFIG.defaultProfiles[0];
 
   // Compute Low Stock Medications
   const lowStockMeds = medications.filter(m => m.stockCount <= m.minStockAlert);
@@ -375,7 +379,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const htmlContent = generateDailyCheckHTML(prof, profMeds, logsToday, glucoseToday, bpToday);
     const res = await sendEmailNotification({
       to: caretakerEmail,
-      subject: `Daily CarePulse Health Check: ${prof.name} (${new Date().toLocaleDateString()})`,
+      subject: `Daily VitalsGuard Health Check: ${prof.name} (${new Date().toLocaleDateString()})`,
       htmlContent,
       type: "daily_check"
     });
@@ -400,7 +404,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const htmlContent = generateRefillAlertHTML(prof, lowMeds);
     const res = await sendEmailNotification({
       to: caretakerEmail,
-      subject: `⚠️ Urgent Refill Needed for ${prof.name} - CarePulse Alert`,
+      subject: `⚠️ Urgent Refill Needed for ${prof.name} - VitalsGuard Alert`,
       htmlContent,
       type: "refill_alert"
     });

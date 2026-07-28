@@ -11,6 +11,7 @@ import { ProfileModal } from "./components/ProfileModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { TechStackModal } from "./components/TechStackModal";
 import { ToastContainer } from "./components/ToastContainer";
+import { APP_CONFIG } from "./config/app.config";
 
 const DashboardContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("vitals");
@@ -21,24 +22,18 @@ const DashboardContent: React.FC = () => {
 
   const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications } = useApp();
 
-  if (!activeProfile) {
-    return (
-      <div style={{ textAlign: "center", padding: "60px 20px" }}>
-        <h2>Loading Profile Records...</h2>
-      </div>
-    );
-  }
+  const currentProfile = activeProfile || (APP_CONFIG.defaultProfiles[0] as any);
 
   // Calculate top KPI statistics for current active profile
-  const profileGlucose = glucoseLogs.filter(g => g.profileId === activeProfile.id);
-  const profileBP = bpLogs.filter(b => b.profileId === activeProfile.id);
-  const profileMeds = medications.filter(m => m.profileId === activeProfile.id);
+  const profileGlucose = glucoseLogs.filter(g => g.profileId === currentProfile.id);
+  const profileBP = bpLogs.filter(b => b.profileId === currentProfile.id);
+  const profileMeds = medications.filter(m => m.profileId === currentProfile.id);
 
   const latestGlucose = profileGlucose.length > 0 ? profileGlucose[0] : null;
   const latestBP = profileBP.length > 0 ? profileBP[0] : null;
 
   const todayStr = new Date().toISOString().split("T")[0];
-  const logsToday = medicationLogs.filter(l => l.profileId === activeProfile.id && l.timestamp.startsWith(todayStr));
+  const logsToday = medicationLogs.filter(l => l.profileId === currentProfile.id && l.timestamp.startsWith(todayStr));
   const takenTodayCount = logsToday.filter(l => l.status === "taken").length;
   const totalProfileMeds = profileMeds.length;
   const todayAdherence = totalProfileMeds > 0 ? Math.round((takenTodayCount / totalProfileMeds) * 100) : 100;
