@@ -1,0 +1,206 @@
+import React, { useState } from "react";
+import { Users, Plus, Trash2, Edit2 } from "lucide-react";
+import { useApp } from "../context/AppContext";
+import type { UserProfile } from "../types";
+
+interface ProfileModalProps {
+  onClose: () => void;
+}
+
+export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
+  const { profiles, activeProfile, addOrUpdateProfile, deleteProfile, setActiveProfileId } = useApp();
+
+  const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
+
+  const handleCreateNew = () => {
+    setEditingProfile({
+      id: `profile-${Date.now()}`,
+      name: "",
+      role: "Parent",
+      targetGlucoseFasting: "70-110 mg/dL",
+      targetBP: "120/80 mmHg",
+      emergencyContact: "",
+      doctorName: "",
+      notes: ""
+    });
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProfile || !editingProfile.name) return;
+
+    await addOrUpdateProfile(editingProfile as UserProfile);
+    setEditingProfile(null);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Users color="var(--primary)" /> Multi-User Management
+          </h2>
+          <button onClick={onClose} className="btn btn-secondary btn-sm">✕</button>
+        </div>
+
+        {!editingProfile ? (
+          <div>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "16px" }}>
+              Switch or manage family member profiles (e.g. Mom, Dad, Self).
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+              {profiles.map(p => (
+                <div
+                  key={p.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    borderRadius: "var(--radius-md)",
+                    background: p.id === activeProfile?.id ? "var(--primary-light)" : "var(--bg-primary)",
+                    border: p.id === activeProfile?.id ? "2px solid var(--primary)" : "1px solid var(--border-color)"
+                  }}
+                >
+                  <div>
+                    <h4 style={{ fontSize: "1.05rem" }}>{p.name}</h4>
+                    <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>
+                      {p.role} • Target BP: {p.targetBP || "N/A"}
+                    </p>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <button
+                      onClick={() => { setActiveProfileId(p.id); onClose(); }}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Select Profile
+                    </button>
+                    <button
+                      onClick={() => setEditingProfile(p)}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    {profiles.length > 1 && (
+                      <button
+                        onClick={() => deleteProfile(p.id)}
+                        className="btn btn-secondary btn-sm"
+                        style={{ color: "#ef4444" }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={handleCreateNew} className="btn btn-success" style={{ width: "100%" }}>
+              <Plus size={18} /> Add New Family User
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSave}>
+            <h3 style={{ marginBottom: "14px" }}>
+              {editingProfile.id ? "Edit User Profile" : "Add User Profile"}
+            </h3>
+
+            <div className="form-group">
+              <label className="form-label">Full Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Mom (Sarah), Dad (James)"
+                value={editingProfile.name || ""}
+                onChange={(e) => setEditingProfile({ ...editingProfile, name: e.target.value })}
+                className="form-input"
+                required
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div className="form-group">
+                <label className="form-label">Relationship / Role</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Mother, Father, Self"
+                  value={editingProfile.role || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, role: e.target.value })}
+                  className="form-input"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Age</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 62"
+                  value={editingProfile.age || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, age: Number(e.target.value) })}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div className="form-group">
+                <label className="form-label">Target Glucose (Fasting)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 70-100 mg/dL"
+                  value={editingProfile.targetGlucoseFasting || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, targetGlucoseFasting: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Target Blood Pressure</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 120/80 mmHg"
+                  value={editingProfile.targetBP || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, targetBP: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Emergency Phone Number</label>
+              <input
+                type="text"
+                placeholder="e.g. +1 (555) 234-5678"
+                value={editingProfile.emergencyContact || ""}
+                onChange={(e) => setEditingProfile({ ...editingProfile, emergencyContact: e.target.value })}
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Doctor Name & Hospital</label>
+              <input
+                type="text"
+                placeholder="e.g. Dr. Smith (Cardiology)"
+                value={editingProfile.doctorName || ""}
+                onChange={(e) => setEditingProfile({ ...editingProfile, doctorName: e.target.value })}
+                className="form-input"
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                Save Profile
+              </button>
+              <button type="button" onClick={() => setEditingProfile(null)} className="btn btn-secondary">
+                Back
+              </button>
+            </div>
+          </form>
+        )}
+
+      </div>
+    </div>
+  );
+};

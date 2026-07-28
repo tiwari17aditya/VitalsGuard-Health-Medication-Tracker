@@ -1,0 +1,90 @@
+export type MealType = "fasting" | "post_meal" | "bedtime" | "random";
+export type AdherenceStatus = "taken" | "missed" | "skipped";
+export type FoodRelation = "Before Food" | "After Food" | "With Food";
+export type BPCategory = "Normal" | "Elevated" | "Stage 1 Hypertension" | "Stage 2 Hypertension" | "Hypertensive Crisis";
+export type GlucoseStatus = "Low (Hypoglycemia)" | "Normal Target" | "Pre-Diabetes" | "High (Diabetes)" | "Low" | "High Glucose";
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: string; // e.g., "Mother", "Father", "Self"
+  age?: number;
+  targetGlucoseFasting?: string;
+  targetGlucosePostMeal?: string;
+  targetBP?: string;
+  emergencyContact?: string;
+  doctorName?: string;
+  notes?: string;
+  avatarColor?: string;
+  created_at?: string;
+}
+
+export interface Medication {
+  id: string;
+  profileId: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  times: string[]; // e.g. ["08:00", "20:00"]
+  stockCount: number;
+  minStockAlert: number;
+  instructions: string;
+  foodRelation: FoodRelation;
+  active: boolean;
+  created_at?: string;
+}
+
+export interface MedicationLog {
+  id: string;
+  medicationId: string;
+  profileId: string;
+  timestamp: string; // ISO String
+  status: AdherenceStatus;
+  quantityTaken: number;
+  notes?: string;
+}
+
+export interface GlucoseLog {
+  id: string;
+  profileId: string;
+  value: number; // mg/dL
+  mealType: MealType;
+  timestamp: string; // ISO String
+  status: string;
+  notes?: string;
+}
+
+export interface BPLog {
+  id: string;
+  profileId: string;
+  systolic: number; // mmHg
+  diastolic: number; // mmHg
+  pulse: number; // bpm
+  category: BPCategory;
+  timestamp: string; // ISO String
+  notes?: string;
+}
+
+export interface HealthReport {
+  id: string;
+  profileId: string;
+  startDate: string;
+  endDate: string;
+  adherenceRate: number; // Percentage
+  totalDosesScheduled: number;
+  totalDosesTaken: number;
+  avgFastingGlucose: number;
+  avgPostMealGlucose: number;
+  avgSystolicBP: number;
+  avgDiastolicBP: number;
+  lowStockAlertsCount: number;
+  createdAt: string;
+  notes?: string;
+}
+
+export interface ToastMessage {
+  id: string;
+  type: "success" | "warning" | "error" | "info";
+  title: string;
+  message: string;
+}
