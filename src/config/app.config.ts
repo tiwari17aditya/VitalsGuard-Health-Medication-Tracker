@@ -19,7 +19,7 @@ export const APP_CONFIG = {
     appName: "VitalsGuard Health & Medication Tracker",
     shortName: "VitalsGuard",
     tagline: "Lifesaver Diabetes, Blood Pressure & Medication Manager for Parents",
-    version: "1.5.1",
+    version: "1.5.2",
     developer: "Open Source Free Tech Project",
     license: "MIT Lifetime Free",
     githubRepo: "https://github.com/tiwari17aditya/VitalsGuard-Health-Medication-Tracker",
@@ -73,7 +73,7 @@ export const APP_CONFIG = {
 
   // Email Notification & Caretaker Reports
   emailSettings: {
-    defaultCaretakerEmail: "caretaker@example.com",
+    defaultCaretakerEmail: "addytiwari3@gmail.com", // Registered account email for Resend testing domain
     sendDailyDigest: true,
     dailyDigestTime: "20:00", // 8:00 PM
     sendRefillAlerts: true,

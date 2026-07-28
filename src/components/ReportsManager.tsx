@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  FileText, Mail, Download, Printer, Send, AlertTriangle, User, CheckCircle2, AlertCircle, Eye 
+  FileText, Mail, Download, Printer, Send, AlertTriangle, User, CheckCircle2, AlertCircle, Eye, ExternalLink 
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isValidEmail, sendEmailNotification, generateTabularReportHTML, generateRefillAlertHTML } from "../services/emailService";
@@ -18,7 +18,7 @@ export const ReportsManager: React.FC = () => {
   } = useApp();
 
   const [reportRange, setReportRange] = useState<"Daily" | "Weekly" | "Monthly">("Weekly");
-  const [emailInput, setEmailInput] = useState<string>(caretakerEmail);
+  const [emailInput, setEmailInput] = useState<string>(caretakerEmail || "addytiwari3@gmail.com");
   const [isSending, setIsSending] = useState<boolean>(false);
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
 
@@ -45,11 +45,10 @@ export const ReportsManager: React.FC = () => {
   const avgSYS = profileBP.length > 0 ? Math.round(profileBP.reduce((acc, b) => acc + b.systolic, 0) / profileBP.length) : 0;
   const avgDIA = profileBP.length > 0 ? Math.round(profileBP.reduce((acc, b) => acc + b.diastolic, 0) / profileBP.length) : 0;
 
-  // Save Caretaker Email Handler with strict validation
   const handleSaveEmailConfig = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail(emailInput)) {
-      showToast("error", "Invalid Email Address", `"${emailInput}" is not a valid email address. Format must be caretaker@example.com`);
+      showToast("error", "Invalid Email Address", `"${emailInput}" is not a valid email address format.`);
       return;
     }
     setCaretakerEmail(emailInput.trim());
@@ -58,7 +57,7 @@ export const ReportsManager: React.FC = () => {
   // Dispatch Tabular HTML Email Report
   const handleSendTabularReport = async () => {
     if (!isValidEmail(emailInput)) {
-      showToast("error", "Invalid Recipient Email", `Cannot send email. "${emailInput}" is an invalid email address.`);
+      showToast("error", "Invalid Recipient Email", `Cannot send email. "${emailInput}" is invalid.`);
       return;
     }
 
@@ -80,11 +79,32 @@ export const ReportsManager: React.FC = () => {
     if (res.success) {
       showToast("success", "Email Dispatched!", res.message);
     } else {
-      showToast("error", "Email Dispatch Warning", res.message);
+      showToast("error", "Email Dispatch Notice", res.message);
     }
   };
 
-  // Dispatch Refill Warning Email
+  // Native Mailto Client Fallback
+  const handleOpenNativeMailClient = () => {
+    if (!isValidEmail(emailInput)) {
+      showToast("error", "Invalid Recipient Email", "Please enter a valid email address.");
+      return;
+    }
+
+    const subject = encodeURIComponent(`📋 VitalsGuard Health Summary for ${activeProfile.name}`);
+    const body = encodeURIComponent(
+      `VitalsGuard Health Report for ${activeProfile.name}\n` +
+      `Date: ${new Date().toLocaleDateString()}\n\n` +
+      `Adherence Rate: ${adherencePercent}%\n` +
+      `Average Glucose: ${avgGlucose > 0 ? `${avgGlucose} mg/dL` : 'N/A'}\n` +
+      `Average BP: ${avgSYS > 0 ? `${avgSYS}/${avgDIA} mmHg` : 'N/A'}\n\n` +
+      `Prescriptions (${profileMeds.length}):\n` +
+      profileMeds.map(m => `- ${m.name} (${m.dosage}) | Stock: ${m.stockCount} pills | ${m.frequency}`).join("\n") +
+      `\n\nGenerated via VitalsGuard Open Source Tracker.`
+    );
+
+    window.open(`mailto:${emailInput.trim()}?subject=${subject}&body=${body}`, "_blank");
+  };
+
   const handleSendRefillAlert = async () => {
     if (!isValidEmail(emailInput)) {
       showToast("error", "Invalid Recipient Email", "Please enter a valid email address first.");
@@ -110,11 +130,10 @@ export const ReportsManager: React.FC = () => {
     if (res.success) {
       showToast("warning", "Refill Warning Email Sent", res.message);
     } else {
-      showToast("error", "Email Dispatch Warning", res.message);
+      showToast("error", "Email Dispatch Notice", res.message);
     }
   };
 
-  // Export CSV Function
   const handleExportCSV = () => {
     const csvRows: string[] = [];
     csvRows.push(`VitalsGuard Health Report for ${activeProfile.name}`);
@@ -173,10 +192,11 @@ export const ReportsManager: React.FC = () => {
         </div>
 
         {/* Quick Action Export Buttons */}
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <button onClick={() => setShowPreviewModal(true)} className="btn btn-secondary btn-sm" title="Preview formatted HTML email report">
             <Eye size={16} /> Preview Mail HTML
-          </button>          <button onClick={handleExportCSV} className="btn btn-secondary btn-sm">
+          </button>
+          <button onClick={handleExportCSV} className="btn btn-secondary btn-sm">
             <Download size={16} /> Export CSV
           </button>
           <button onClick={handlePrintPDF} className="btn btn-primary btn-sm">
@@ -190,20 +210,20 @@ export const ReportsManager: React.FC = () => {
         {/* Caretaker Email Setup & Manual Dispatch Form */}
         <div style={{ background: "var(--bg-primary)", padding: "18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
           <h3 style={{ marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-            <Mail size={18} color="var(--primary)" /> Caretaker Email Setup & Verification
+            <Mail size={18} color="var(--primary)" /> Caretaker Email Dispatch
           </h3>
 
           <form onSubmit={handleSaveEmailConfig}>
             <div className="form-group">
-              <label className="form-label" style={{ display: "flex", justifyContent: "space-between" }}>
+              <label className="form-label" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
                 <span>Caretaker Email Address</span>
                 {isEmailValid ? (
                   <span style={{ color: "#10b981", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <CheckCircle2 size={12} /> Valid Email Format
+                    <CheckCircle2 size={12} /> Valid Format
                   </span>
                 ) : emailInput.length > 0 ? (
                   <span style={{ color: "#ef4444", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <AlertCircle size={12} /> Invalid Email Format
+                    <AlertCircle size={12} /> Invalid Format
                   </span>
                 ) : null}
               </label>
@@ -212,7 +232,7 @@ export const ReportsManager: React.FC = () => {
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 className="form-input"
-                placeholder="e.g. caretaker@gmail.com"
+                placeholder="e.g. addytiwari3@gmail.com"
                 style={{ borderColor: !isEmailValid && emailInput.length > 0 ? "#ef4444" : "var(--border-color)" }}
                 required
               />
@@ -224,24 +244,35 @@ export const ReportsManager: React.FC = () => {
               style={{ width: "100%", marginBottom: "16px" }}
               disabled={!isEmailValid}
             >
-              Save Verified Caretaker Email
+              Save Caretaker Email
             </button>
           </form>
 
           <hr style={{ borderColor: "var(--border-color)", margin: "16px 0" }} />
 
-          <h4 style={{ marginBottom: "10px" }}>Manual Email Dispatch Actions:</h4>
+          <h4 style={{ marginBottom: "10px" }}>Email Dispatch Actions:</h4>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             
-            {/* Primary Tabular Email Action */}
+            {/* Primary Live Tabular Resend Dispatch Action */}
             <button
               onClick={handleSendTabularReport}
               className="btn btn-success"
               style={{ width: "100%", justifyContent: "center" }}
               disabled={isSending || !isEmailValid}
             >
-              <Send size={18} /> {isSending ? "Dispatching Email..." : `Send ${reportRange} Tabular Report Email`}
+              <Send size={18} /> {isSending ? "Dispatching..." : `Send Live HTML Email Report`}
+            </button>
+
+            {/* Native Email Client Fallback */}
+            <button
+              onClick={handleOpenNativeMailClient}
+              className="btn btn-secondary"
+              style={{ width: "100%", justifyContent: "center" }}
+              disabled={!isEmailValid}
+              title="Open pre-filled report in your device's native email client"
+            >
+              <ExternalLink size={16} /> Open in Email App (Gmail/Outlook)
             </button>
 
             {/* Refill Alert Action */}
@@ -251,15 +282,19 @@ export const ReportsManager: React.FC = () => {
               style={{ width: "100%", justifyContent: "center" }}
               disabled={isSending || !isEmailValid}
             >
-              <AlertTriangle size={18} color="var(--warning)" /> Send Refill Warning Email
+              <AlertTriangle size={16} color="var(--warning)" /> Send Refill Warning Email
             </button>
 
+          </div>
+
+          <div style={{ marginTop: "14px", padding: "10px", background: "var(--bg-card)", borderRadius: "var(--radius-sm)", fontSize: "0.775rem", color: "var(--text-muted)" }}>
+            💡 <strong>Resend Free Tier Note:</strong> Live API emails deliver directly to your registered Resend account (<code>addytiwari3@gmail.com</code>). For other emails, click <em>"Open in Email App"</em> or verify custom domain at resend.com.
           </div>
         </div>
 
         {/* Live Summary Preview Card */}
         <div style={{ background: "var(--bg-primary)", padding: "18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
             <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <User size={18} color="var(--accent)" /> Summary for {activeProfile.name}
             </h3>
@@ -278,34 +313,30 @@ export const ReportsManager: React.FC = () => {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             
-            {/* Stat Item 1 */}
             <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>Medication Adherence</span>
-              <span className={`badge ${adherencePercent >= 80 ? "badge-success" : "badge-danger"}`} style={{ fontSize: "1rem" }}>
+              <span className={`badge ${adherencePercent >= 80 ? "badge-success" : "badge-danger"}`} style={{ fontSize: "0.95rem" }}>
                 {adherencePercent}% Adherence
               </span>
             </div>
 
-            {/* Stat Item 2 */}
             <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>Average Fasting Glucose</span>
-              <span className="badge badge-primary" style={{ fontSize: "1rem" }}>
+              <span className="badge badge-primary" style={{ fontSize: "0.95rem" }}>
                 {avgGlucose > 0 ? `${avgGlucose} mg/dL` : "No data"}
               </span>
             </div>
 
-            {/* Stat Item 3 */}
             <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>Average Blood Pressure</span>
-              <span className="badge badge-primary" style={{ fontSize: "1rem" }}>
+              <span className="badge badge-primary" style={{ fontSize: "0.95rem" }}>
                 {avgSYS > 0 ? `${avgSYS}/${avgDIA} mmHg` : "No data"}
               </span>
             </div>
 
-            {/* Stat Item 4 */}
             <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>Low Stock Prescriptions</span>
-              <span className="badge badge-warning" style={{ fontSize: "1rem" }}>
+              <span className="badge badge-warning" style={{ fontSize: "0.95rem" }}>
                 {profileMeds.filter(m => m.stockCount <= m.minStockAlert).length} Meds
               </span>
             </div>
@@ -313,7 +344,7 @@ export const ReportsManager: React.FC = () => {
           </div>
 
           <div style={{ marginTop: "16px", padding: "10px", background: "var(--bg-card-hover)", borderRadius: "var(--radius-sm)", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-            💡 Click <strong>"Preview Mail HTML"</strong> above to view the exact tabular HTML email before sending to caretaker.
+            💡 Click <strong>"Preview Mail HTML"</strong> above to view the exact tabular HTML email before sending.
           </div>
 
         </div>

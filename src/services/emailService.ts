@@ -21,17 +21,15 @@ export function isValidEmail(email: string): boolean {
  * Dispatches an email using Resend API with comprehensive error handling
  */
 export async function sendEmailNotification(payload: EmailPayload): Promise<{ success: boolean; message: string }> {
-  // Validate email address format first
   if (!isValidEmail(payload.to)) {
     return {
       success: false,
-      message: `Invalid email address format: "${payload.to}". Please provide a valid email (e.g. caretaker@gmail.com).`
+      message: `Invalid email address format: "${payload.to}". Please provide a valid email (e.g. addytiwari3@gmail.com).`
     };
   }
 
   const apiKey = (import.meta.env.VITE_RESEND_API_KEY || "").trim();
   
-  // If Resend API Key is configured, attempt live HTTP dispatch
   if (apiKey && apiKey !== "YOUR_RESEND_API_KEY" && apiKey.startsWith("re_")) {
     try {
       const response = await fetch(APP_CONFIG.emailSettings.resendApiEndpoint, {
@@ -57,14 +55,14 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
         let msg = errorData.message || response.statusText;
         
-        if (response.status === 403 || msg.includes("validation_error")) {
-          msg = `Resend Free Tier limits sending from 'onboarding@resend.dev' only to your registered account email. (${msg})`;
+        if (response.status === 403 || msg.includes("validation_error") || msg.includes("testing emails")) {
+          msg = `Resend Free Tier Rule: On testing domain (onboarding@resend.dev), emails can only be sent to your registered account email (addytiwari3@gmail.com). Verify custom domain at resend.com to send to third-party emails.`;
         } else if (response.status === 401) {
           msg = `Invalid Resend API Key. Please verify VITE_RESEND_API_KEY in your .env file.`;
         }
 
         console.warn("Resend API Error:", errorData);
-        return { success: false, message: `Email Dispatch Failed: ${msg}` };
+        return { success: false, message: msg };
       }
     } catch (err: any) {
       console.error("Email service network exception:", err);
@@ -72,14 +70,9 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
     }
   }
 
-  // Demo / Local Fallback Mode
-  console.log("=== [SIMULATED EMAIL DISPATCHED] ===");
-  console.log(`Recipient: ${payload.to}`);
-  console.log(`Subject: ${payload.subject}`);
-  
   return { 
     success: true, 
-    message: `[Simulated Report Dispatched] Report formatted and prepared for ${payload.to}. (Add valid VITE_RESEND_API_KEY in .env for live inbox delivery).` 
+    message: `[Simulated Report Dispatched] Report formatted for ${payload.to}. Add VITE_RESEND_API_KEY in .env for live inbox delivery.` 
   };
 }
 
@@ -98,7 +91,6 @@ export function generateTabularReportHTML(
   const takenCount = logsToday.filter(l => l.status === "taken").length;
   const adherencePercent = totalMeds > 0 ? Math.round((takenCount / totalMeds) * 100) : 100;
 
-  // Build Prescriptions Table Rows
   const medTableRows = meds.length === 0 ? `
     <tr>
       <td colspan="5" style="padding: 12px; text-align: center; color: #6b7280;">No prescriptions currently registered.</td>
@@ -123,7 +115,6 @@ export function generateTabularReportHTML(
     `;
   }).join("");
 
-  // Build Glucose Table Rows
   const glucoseRows = glucoseLogs.length === 0 ? `
     <tr>
       <td colspan="4" style="padding: 12px; text-align: center; color: #6b7280;">No blood glucose readings logged in this period.</td>
@@ -141,7 +132,6 @@ export function generateTabularReportHTML(
     </tr>
   `).join("");
 
-  // Build BP Table Rows
   const bpRows = bpLogs.length === 0 ? `
     <tr>
       <td colspan="4" style="padding: 12px; text-align: center; color: #6b7280;">No blood pressure readings logged in this period.</td>
@@ -170,7 +160,6 @@ export function generateTabularReportHTML(
       
       <div style="max-width: 680px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
         
-        <!-- Header Banner -->
         <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; padding: 24px; text-align: center;">
           <h1 style="margin: 0; font-size: 24px;">🛡️ VitalsGuard Health Report</h1>
           <p style="margin: 6px 0 0 0; opacity: 0.9; font-size: 14px;">
@@ -181,7 +170,6 @@ export function generateTabularReportHTML(
 
         <div style="padding: 24px;">
           
-          <!-- Quick Overview Cards Grid -->
           <table style="width: 100%; border-collapse: separate; border-spacing: 10px; margin-bottom: 20px;">
             <tr>
               <td style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; text-align: center; width: 33%;">
@@ -199,7 +187,6 @@ export function generateTabularReportHTML(
             </tr>
           </table>
 
-          <!-- SECTION 1: PRESCRIPTIONS & ADHERENCE TABLE -->
           <h3 style="color: #1e293b; border-bottom: 2px solid #2563eb; padding-bottom: 6px; margin-top: 24px; margin-bottom: 12px;">
             💊 Medication Prescriptions & Stock Inventory
           </h3>
@@ -218,7 +205,6 @@ export function generateTabularReportHTML(
             </tbody>
           </table>
 
-          <!-- SECTION 2: DIABETES BLOOD GLUCOSE TABLE -->
           <h3 style="color: #1e293b; border-bottom: 2px solid #3b82f6; padding-bottom: 6px; margin-top: 24px; margin-bottom: 12px;">
             🩸 Diabetes & Blood Glucose Log Records
           </h3>
@@ -236,7 +222,6 @@ export function generateTabularReportHTML(
             </tbody>
           </table>
 
-          <!-- SECTION 3: BLOOD PRESSURE TABLE -->
           <h3 style="color: #1e293b; border-bottom: 2px solid #ef4444; padding-bottom: 6px; margin-top: 24px; margin-bottom: 12px;">
             ❤️ Blood Pressure & Heart Pulse Records
           </h3>
@@ -254,7 +239,6 @@ export function generateTabularReportHTML(
             </tbody>
           </table>
 
-          <!-- Footer Notice -->
           <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; text-align: center; color: #64748b; font-size: 12px; margin-top: 24px; border: 1px solid #e2e8f0;">
             <p style="margin: 0;">This email was generated automatically by VitalsGuard Health Tracker to assist caretakers in monitoring parents' health routines.</p>
           </div>
@@ -276,9 +260,6 @@ export function generateDailyCheckHTML(
   return generateTabularReportHTML(profile, meds, logsToday, glucoseToday, bpToday, "Daily");
 }
 
-/**
- * Generates Email HTML for Low Stock Medication Refill Warnings
- */
 export function generateRefillAlertHTML(profile: UserProfile, lowStockMeds: Medication[]): string {
   const medRows = lowStockMeds.map(m => `
     <tr style="border-bottom: 1px solid #e5e7eb;">
