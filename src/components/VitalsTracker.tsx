@@ -48,24 +48,24 @@ export const VitalsTracker: React.FC = () => {
   return (
     <div className="glass-card">
       
-      {/* Tab Controls */}
+      {/* Sub-Tab Navigation Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="sub-tabs-container">
           <button
             onClick={() => setActiveSubTab("glucose")}
-            className={`btn ${activeSubTab === "glucose" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn sub-tab-btn ${activeSubTab === "glucose" ? "btn-primary" : "btn-secondary"}`}
           >
             <Activity size={18} /> Diabetes & Blood Sugar
           </button>
           <button
             onClick={() => setActiveSubTab("bp")}
-            className={`btn ${activeSubTab === "bp" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn sub-tab-btn ${activeSubTab === "bp" ? "btn-primary" : "btn-secondary"}`}
           >
             <Heart size={18} /> Blood Pressure (BP)
           </button>
         </div>
 
-        <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+        <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", width: "100%", marginTop: "4px" }}>
           Targets for <strong>{activeProfile.name}</strong>: Glucose <code>{activeProfile.targetGlucoseFasting || "70-110 mg/dL"}</code> • BP <code>{activeProfile.targetBP || "120/80 mmHg"}</code>
         </div>
       </div>
@@ -75,7 +75,7 @@ export const VitalsTracker: React.FC = () => {
         <div className="grid-2">
           
           {/* Form */}
-          <div style={{ background: "var(--bg-primary)", padding: "20px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <div style={{ background: "var(--bg-primary)", padding: "18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
             <h3 style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
               <Plus size={18} color="var(--primary)" /> Log Glucose Reading
             </h3>
@@ -95,8 +95,8 @@ export const VitalsTracker: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div className="form-group">
+              <div className="grid-2" style={{ marginBottom: "14px" }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Meal Routine</label>
                   <select
                     value={mealType}
@@ -110,9 +110,9 @@ export const VitalsTracker: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <Clock size={14} /> Intake / Record Time
+                    <Clock size={14} /> Record Time
                   </label>
                   <input
                     type="time"
@@ -142,33 +142,33 @@ export const VitalsTracker: React.FC = () => {
           </div>
 
           {/* Table History with Timestamps */}
-          <div style={{ background: "var(--bg-primary)", padding: "20px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <div style={{ background: "var(--bg-primary)", padding: "18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
             <h3 style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Calendar size={18} color="var(--primary)" /> Glucose History & Doctor Timestamps
+              <Calendar size={18} color="var(--primary)" /> Glucose History
             </h3>
 
             {profileGlucose.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>No blood glucose logs yet.</p>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>No blood glucose logs recorded yet.</p>
             ) : (
-              <div style={{ maxHeight: "320px", overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+              <div className="table-wrapper" style={{ maxHeight: "320px", overflowY: "auto" }}>
+                <table className="table">
                   <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border-color)", textTransform: "uppercase", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Exact Date & Time</th>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Reading</th>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Routine</th>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Status</th>
+                    <tr>
+                      <th>Date & Time</th>
+                      <th>Reading</th>
+                      <th>Routine</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {profileGlucose.map(g => (
-                      <tr key={g.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                        <td style={{ padding: "8px", fontSize: "0.8rem" }}>
+                      <tr key={g.id}>
+                        <td style={{ fontSize: "0.8rem" }}>
                           {new Date(g.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </td>
-                        <td style={{ padding: "8px", fontWeight: "bold" }}>{g.value} mg/dL</td>
-                        <td style={{ padding: "8px", textTransform: "capitalize" }}>{g.mealType.replace('_', ' ')}</td>
-                        <td style={{ padding: "8px" }}>
+                        <td style={{ fontWeight: "bold" }}>{g.value} mg/dL</td>
+                        <td style={{ textTransform: "capitalize" }}>{g.mealType.replace('_', ' ')}</td>
+                        <td>
                           <span className={`badge ${g.status.includes('High') || g.status.includes('Low') ? 'badge-danger' : 'badge-success'}`}>
                             {g.status}
                           </span>
@@ -189,14 +189,14 @@ export const VitalsTracker: React.FC = () => {
         <div className="grid-2">
           
           {/* Form */}
-          <div style={{ background: "var(--bg-primary)", padding: "20px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <div style={{ background: "var(--bg-primary)", padding: "18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
             <h3 style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
               <Plus size={18} color="var(--primary)" /> Log Blood Pressure (BP)
             </h3>
 
             <form onSubmit={handleBPSubmit}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
-                <div className="form-group">
+              <div className="grid-2" style={{ marginBottom: "14px" }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Systolic (SYS)</label>
                   <input
                     type="number"
@@ -209,7 +209,7 @@ export const VitalsTracker: React.FC = () => {
                     required
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Diastolic (DIA)</label>
                   <input
                     type="number"
@@ -222,7 +222,10 @@ export const VitalsTracker: React.FC = () => {
                     required
                   />
                 </div>
-                <div className="form-group">
+              </div>
+
+              <div className="grid-2" style={{ marginBottom: "14px" }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Pulse (BPM)</label>
                   <input
                     type="number"
@@ -234,19 +237,19 @@ export const VitalsTracker: React.FC = () => {
                     required
                   />
                 </div>
-              </div>
 
-              <div className="form-group">
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Clock size={14} /> Intake / Measurement Time
-                </label>
-                <input
-                  type="time"
-                  value={bpTime}
-                  onChange={(e) => setBpTime(e.target.value)}
-                  className="form-input"
-                  required
-                />
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Clock size={14} /> Record Time
+                  </label>
+                  <input
+                    type="time"
+                    value={bpTime}
+                    onChange={(e) => setBpTime(e.target.value)}
+                    className="form-input"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -267,33 +270,33 @@ export const VitalsTracker: React.FC = () => {
           </div>
 
           {/* Table History with Timestamps */}
-          <div style={{ background: "var(--bg-primary)", padding: "20px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <div style={{ background: "var(--bg-primary)", padding: "18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
             <h3 style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Calendar size={18} color="var(--primary)" /> BP History & Doctor Timestamps
+              <Calendar size={18} color="var(--primary)" /> BP History
             </h3>
 
             {profileBP.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>No blood pressure logs yet.</p>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>No blood pressure logs recorded yet.</p>
             ) : (
-              <div style={{ maxHeight: "320px", overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+              <div className="table-wrapper" style={{ maxHeight: "320px", overflowY: "auto" }}>
+                <table className="table">
                   <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border-color)", textTransform: "uppercase", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Exact Date & Time</th>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Reading</th>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Pulse</th>
-                      <th style={{ padding: "8px", textAlign: "left" }}>AHA Category</th>
+                    <tr>
+                      <th>Date & Time</th>
+                      <th>Reading</th>
+                      <th>Pulse</th>
+                      <th>Category</th>
                     </tr>
                   </thead>
                   <tbody>
                     {profileBP.map(b => (
-                      <tr key={b.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                        <td style={{ padding: "8px", fontSize: "0.8rem" }}>
+                      <tr key={b.id}>
+                        <td style={{ fontSize: "0.8rem" }}>
                           {new Date(b.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </td>
-                        <td style={{ padding: "8px", fontWeight: "bold" }}>{b.systolic}/{b.diastolic} mmHg</td>
-                        <td style={{ padding: "8px" }}>{b.pulse} bpm</td>
-                        <td style={{ padding: "8px" }}>
+                        <td style={{ fontWeight: "bold" }}>{b.systolic}/{b.diastolic} mmHg</td>
+                        <td>{b.pulse} bpm</td>
+                        <td>
                           <span className={`badge ${b.category.includes('Crisis') || b.category.includes('Stage 2') ? 'badge-danger' : 'badge-success'}`}>
                             {b.category}
                           </span>

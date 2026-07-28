@@ -197,6 +197,7 @@ h3 { font-size: 1.1rem; }
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
 }
 
 .form-label {
@@ -214,6 +215,7 @@ h3 { font-size: 1.1rem; }
   color: var(--text-primary);
   font-size: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -256,17 +258,35 @@ h3 { font-size: 1.1rem; }
   to { opacity: 1; transform: scale(1); }
 }
 
-/* Grid Layouts */
+/* Grid Layouts - Multi Column on Desktop, Auto Single Column on Mobile */
 .grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  width: 100%;
 }
 
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  width: 100%;
+}
+
+.sub-tabs-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.sub-tab-btn {
+  flex: 1 1 auto;
+  min-width: 140px;
+  text-align: center;
+  justify-content: center;
+  white-space: normal;
+  padding: 10px 14px;
 }
 
 /* Toast Banners */
@@ -358,8 +378,8 @@ h3 { font-size: 1.1rem; }
     border-radius: var(--radius-md);
   }
 
-  h1 { font-size: 1.35rem; }
-  h2 { font-size: 1.15rem; }
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1.1rem; }
   h3 { font-size: 1.025rem; }
 
   /* Hide Desktop Top Navigation Tabs on Mobile */
@@ -412,10 +432,22 @@ h3 { font-size: 1.1rem; }
     height: 20px;
   }
 
-  /* Stack Grid Layouts into Single Column on Mobile */
+  /* Stack ALL Grid Layouts into Single Column on Mobile */
   .grid-2, .grid-3 {
     grid-template-columns: 1fr !important;
     gap: 12px;
+  }
+
+  /* Mobile Sub-tabs full width equal flex */
+  .sub-tabs-container {
+    width: 100%;
+  }
+
+  .sub-tab-btn {
+    flex: 1 1 45%;
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    min-height: 40px;
   }
 
   /* Toast position on mobile */

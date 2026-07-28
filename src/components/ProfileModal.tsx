@@ -88,10 +88,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "12px 16px",
+                    padding: "12px 14px",
                     borderRadius: "var(--radius-md)",
                     background: p.id === activeProfile?.id ? "var(--primary-light)" : "var(--bg-primary)",
-                    border: p.id === activeProfile?.id ? "2px solid var(--primary)" : "1px solid var(--border-color)"
+                    border: p.id === activeProfile?.id ? "2px solid var(--primary)" : "1px solid var(--border-color)",
+                    flexWrap: "wrap",
+                    gap: "8px"
                   }}
                 >
                   <div>
@@ -152,7 +154,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
               />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Relationship / Role</label>
                 <input
@@ -176,7 +178,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Target Glucose (Fasting)</label>
                 <input
