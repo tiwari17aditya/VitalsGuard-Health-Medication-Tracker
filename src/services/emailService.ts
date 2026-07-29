@@ -18,17 +18,55 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Dispatches an email using Resend API with comprehensive error handling
+ * Converts HTML email content to clean formatted plain text for mailto/Gmail fallback
+ */
+export function convertHTMLToPlainText(html: string): string {
+  if (!html) return "";
+  let text = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*[\/]?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<\/td>/gi, " | ")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "");
+  
+  // Clean up duplicate line breaks
+  return text.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
+}
+
+/**
+ * Directly opens user's default email client (or Gmail web) with prefilled subject and body
+ */
+export function openDirectMailClient(to: string, subject: string, htmlContent: string) {
+  const plainBody = convertHTMLToPlainText(htmlContent);
+  const encodedSubject = encodeURIComponent(subject);
+  const encodedBody = encodeURIComponent(plainBody.substring(0, 1800));
+  const encodedTo = encodeURIComponent(to.trim());
+
+  // Try opening mailto link
+  const mailtoUrl = `mailto:${encodedTo}?subject=${encodedSubject}&body=${encodedBody}`;
+  window.open(mailtoUrl, "_blank");
+}
+
+/**
+ * Dispatches an email using Resend API if key present, or automatically launches direct mail client
  */
 export async function sendEmailNotification(payload: EmailPayload): Promise<{ success: boolean; message: string }> {
   if (!isValidEmail(payload.to)) {
     return {
       success: false,
-      message: `Invalid email address format: "${payload.to}". Please provide a valid email (e.g. addytiwari3@gmail.com).`
+      message: `Invalid email address format: "${payload.to}". Please enter a valid email address.`
     };
   }
 
-  const apiKey = (import.meta.env.VITE_RESEND_API_KEY || "").trim();
+  // Read key from env OR localStorage
+  const apiKey = (
+    import.meta.env.VITE_RESEND_API_KEY || 
+    localStorage.getItem("vitalsguard_resend_key") || 
+    ""
+  ).trim();
   
   if (apiKey && apiKey !== "YOUR_RESEND_API_KEY" && apiKey.startsWith("re_")) {
     try {
@@ -49,30 +87,22 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
       if (response.ok) {
         return { 
           success: true, 
-          message: `Tabular email report delivered successfully to ${payload.to} via Resend!` 
+          message: `Email report sent directly to ${payload.to} via Resend!` 
         };
       } else {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        let msg = errorData.message || response.statusText;
-        
-        if (response.status === 403 || msg.includes("validation_error") || msg.includes("testing emails")) {
-          msg = `Resend Free Tier Rule: On testing domain (onboarding@resend.dev), emails can only be sent to your registered account email (addytiwari3@gmail.com). Verify custom domain at resend.com to send to third-party emails.`;
-        } else if (response.status === 401) {
-          msg = `Invalid Resend API Key. Please verify VITE_RESEND_API_KEY in your .env file.`;
-        }
-
-        console.warn("Resend API Error:", errorData);
-        return { success: false, message: msg };
+        console.warn("Resend API Warning, launching direct mail client fallback:", errorData);
       }
     } catch (err: any) {
-      console.error("Email service network exception:", err);
-      return { success: false, message: `Network error connecting to Email API: ${err.message}` };
+      console.warn("Resend API Network error, launching direct mail client fallback:", err);
     }
   }
 
+  // Automatic direct mail client launcher fallback (Gmail / Outlook / Default Mail app)
+  openDirectMailClient(payload.to, payload.subject, payload.htmlContent);
   return { 
     success: true, 
-    message: `[Simulated Report Dispatched] Report formatted for ${payload.to}. Add VITE_RESEND_API_KEY in .env for live inbox delivery.` 
+    message: `Opened your email application to send report directly to ${payload.to}!` 
   };
 }
 

@@ -15,7 +15,8 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<"techstack" | "database" | "config" | "changelog" | "passcode">("techstack");
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-  const resendKey = import.meta.env.VITE_RESEND_API_KEY || "";
+  const resendKey = import.meta.env.VITE_RESEND_API_KEY || localStorage.getItem("vitalsguard_resend_key") || "";
+  const [customResendKey, setCustomResendKey] = useState(resendKey);
 
   // Passcode Management
   const currentPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
@@ -235,8 +236,30 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">VITE_RESEND_API_KEY</label>
-              <input type="password" readOnly value={resendKey} className="form-input" style={{ fontSize: "0.825rem" }} />
+              <label className="form-label">VITE_RESEND_API_KEY (Optional for direct API dispatch)</label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input 
+                  type="password" 
+                  placeholder="re_123456..." 
+                  value={customResendKey} 
+                  onChange={(e) => setCustomResendKey(e.target.value)} 
+                  className="form-input" 
+                  style={{ fontSize: "0.825rem" }} 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    localStorage.setItem("vitalsguard_resend_key", customResendKey.trim());
+                    showToast("success", "API Key Saved", "Resend API key saved to local storage.");
+                  }} 
+                  className="btn btn-primary btn-sm"
+                >
+                  Save
+                </button>
+              </div>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                💡 If no API key is set, emails will automatically open your email app / Gmail to send directly!
+              </p>
             </div>
           </div>
         )}
