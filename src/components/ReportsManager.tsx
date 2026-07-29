@@ -3,7 +3,7 @@ import {
   FileText, Mail, Download, Printer, Send, AlertTriangle, User, CheckCircle2, AlertCircle, Eye, ExternalLink 
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { isValidEmail, sendEmailNotification, generateTabularReportHTML, generateRefillAlertHTML } from "../services/emailService";
+import { isValidEmail, sendEmailNotification, openGmailWebCompose, generateTabularReportHTML, generateRefillAlertHTML } from "../services/emailService";
 
 export const ReportsManager: React.FC = () => {
   const { 
@@ -54,7 +54,7 @@ export const ReportsManager: React.FC = () => {
     setCaretakerEmail(emailInput.trim());
   };
 
-  // Dispatch Tabular HTML Email Report
+  // Dispatch Tabular HTML Email Report via Resend API
   const handleSendTabularReport = async () => {
     if (!isValidEmail(emailInput)) {
       showToast("error", "Invalid Recipient Email", `Cannot send email. "${emailInput}" is invalid.`);
@@ -81,6 +81,24 @@ export const ReportsManager: React.FC = () => {
     } else {
       showToast("error", "Email Dispatch Notice", res.message);
     }
+  };
+
+  // Gmail Web Compose Launcher
+  const handleSendGmailWebCompose = () => {
+    if (!isValidEmail(emailInput)) {
+      showToast("error", "Invalid Recipient Email", "Please enter a valid email address.");
+      return;
+    }
+    const todayStr = new Date().toISOString().split("T")[0];
+    const logsToday = medicationLogs.filter(l => l.profileId === activeProfile.id && l.timestamp.startsWith(todayStr));
+    const htmlContent = generateTabularReportHTML(activeProfile, profileMeds, logsToday, profileGlucose, profileBP, reportRange);
+
+    openGmailWebCompose(
+      emailInput.trim(),
+      `📋 VitalsGuard ${reportRange} Tabular Health Report: ${activeProfile.name} (${new Date().toLocaleDateString()})`,
+      htmlContent
+    );
+    showToast("success", "Gmail Compose Opened", `Opened Gmail Web Compose for ${emailInput}`);
   };
 
   // Native Mailto Client Fallback
@@ -264,15 +282,26 @@ export const ReportsManager: React.FC = () => {
               <Send size={18} /> {isSending ? "Dispatching..." : `Send Live HTML Email Report`}
             </button>
 
+            {/* Gmail Web Compose Action */}
+            <button
+              onClick={handleSendGmailWebCompose}
+              className="btn btn-primary"
+              style={{ width: "100%", justifyContent: "center" }}
+              disabled={!isEmailValid}
+              title="Open pre-filled report directly in Gmail Web Compose"
+            >
+              <Mail size={16} /> Send via Gmail Web Compose
+            </button>
+
             {/* Native Email Client Fallback */}
             <button
               onClick={handleOpenNativeMailClient}
               className="btn btn-secondary"
               style={{ width: "100%", justifyContent: "center" }}
               disabled={!isEmailValid}
-              title="Open pre-filled report in your device's native email client"
+              title="Open pre-filled report in your device's default mail client"
             >
-              <ExternalLink size={16} /> Open in Email App (Gmail/Outlook)
+              <ExternalLink size={16} /> Open in Default Mail App (Mailto)
             </button>
 
             {/* Refill Alert Action */}
