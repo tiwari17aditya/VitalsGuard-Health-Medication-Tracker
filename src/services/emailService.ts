@@ -51,7 +51,7 @@ export function openDirectMailClient(to: string, subject: string, htmlContent: s
 }
 
 /**
- * Dispatches an email using Resend API if key present, or automatically launches direct mail client
+ * Dispatches an email using Resend API with inline HTML and attached report document
  */
 export async function sendEmailNotification(payload: EmailPayload): Promise<{ success: boolean; message: string }> {
   if (!isValidEmail(payload.to)) {
@@ -67,9 +67,12 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
     localStorage.getItem("vitalsguard_resend_key") || 
     ""
   ).trim();
-  
+
   if (apiKey && apiKey !== "YOUR_RESEND_API_KEY" && apiKey.startsWith("re_")) {
     try {
+      // Generate Base64 encoded HTML document attachment for caretaker
+      const documentBase64 = btoa(unescape(encodeURIComponent(payload.htmlContent)));
+
       const response = await fetch(APP_CONFIG.emailSettings.resendApiEndpoint, {
         method: "POST",
         headers: {
@@ -81,20 +84,28 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
           to: [payload.to.trim()],
           subject: payload.subject,
           html: payload.htmlContent,
+          attachments: [
+            {
+              filename: `VitalsGuard_Health_Report_${new Date().toISOString().split('T')[0]}.html`,
+              content: documentBase64
+            }
+          ]
         }),
       });
 
       if (response.ok) {
+        const data = await response.json().catch(() => ({}));
+        console.log("Resend API Email Dispatched Successfully:", data);
         return { 
           success: true, 
-          message: `Email report sent directly to ${payload.to} via Resend!` 
+          message: `Email report & attached health document sent directly to ${payload.to} via Resend!` 
         };
       } else {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        console.warn("Resend API Warning, launching direct mail client fallback:", errorData);
+        console.warn("Resend API response error, triggering mail client fallback:", errorData);
       }
     } catch (err: any) {
-      console.warn("Resend API Network error, launching direct mail client fallback:", err);
+      console.warn("Resend API exception, triggering mail client fallback:", err);
     }
   }
 
