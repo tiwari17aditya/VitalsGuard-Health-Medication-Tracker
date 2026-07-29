@@ -87,8 +87,7 @@ export function openGmailWebCompose(to: string, subject: string, htmlContent: st
 }
 
 /**
- * Dispatches an email directly using Resend API with inline HTML & attached report document,
- * or gracefully opens Gmail Web Compose if browser CORS blocks direct fetch.
+ * Drafts email with base64 report document attachment and forwards directly to Resend API
  */
 export async function sendEmailNotification(payload: EmailPayload): Promise<{ success: boolean; message: string }> {
   if (!isValidEmail(payload.to)) {
@@ -99,62 +98,61 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
   }
 
   const apiKey = getResendApiKey();
-
-  if (apiKey) {
-    try {
-      // Generate Base64 encoded HTML document attachment for caretaker
-      const documentBase64 = btoa(unescape(encodeURIComponent(payload.htmlContent)));
-
-      const response = await fetch(APP_CONFIG.emailSettings.resendApiEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          from: "VitalsGuard Tracker <onboarding@resend.dev>",
-          to: [payload.to.trim()],
-          subject: payload.subject,
-          html: payload.htmlContent,
-          attachments: [
-            {
-              filename: `VitalsGuard_Health_Report_${new Date().toISOString().split('T')[0]}.html`,
-              content: documentBase64
-            }
-          ]
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json().catch(() => ({}));
-        console.log("Resend API Email Dispatched Successfully:", data);
-        return { 
-          success: true, 
-          message: `Email report & attached health document sent directly to ${payload.to} via Resend!` 
-        };
-      } else {
-        const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        let msg = errorData.message || response.statusText;
-        if (response.status === 403 || msg.includes("validation_error") || msg.includes("testing emails")) {
-          msg = `Resend Free Tier Rule: Emails on testing domain (onboarding@resend.dev) must be sent to registered account email (addytiwari3@gmail.com).`;
-        }
-        console.warn("Resend API Error:", errorData);
-        
-        // Open Gmail Web Compose fallback
-        openGmailWebCompose(payload.to, payload.subject, payload.htmlContent);
-        return { success: true, message: `Opened Gmail Web Compose to send report directly to ${payload.to}!` };
-      }
-    } catch (err: any) {
-      console.warn("Resend API Browser CORS / Network Exception, launching Gmail Compose:", err);
-    }
+  if (!apiKey) {
+    return {
+      success: false,
+      message: "Resend API Key is missing. Please configure key in Developer Settings."
+    };
   }
 
-  // Fallback to Gmail Web Compose when browser CORS prevents direct API fetch
-  openGmailWebCompose(payload.to, payload.subject, payload.htmlContent);
-  return { 
-    success: true, 
-    message: `Opened Gmail Web Compose to dispatch report directly to ${payload.to}!` 
-  };
+  try {
+    // 1. Draft Base64 encoded HTML report document attachment
+    const documentBase64 = btoa(unescape(encodeURIComponent(payload.htmlContent)));
+
+    // 2. Forward drafted payload and attachment directly to Resend API
+    const response = await fetch(APP_CONFIG.emailSettings.resendApiEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: "VitalsGuard Tracker <onboarding@resend.dev>",
+        to: [payload.to.trim()],
+        subject: payload.subject,
+        html: payload.htmlContent,
+        attachments: [
+          {
+            filename: `VitalsGuard_Health_Report_${new Date().toISOString().split('T')[0]}.html`,
+            content: documentBase64
+          }
+        ]
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json().catch(() => ({}));
+      console.log("Resend API Email Dispatched Successfully:", data);
+      return { 
+        success: true, 
+        message: `Email report & attached health document forwarded directly to ${payload.to} via Resend API! (ID: ${data.id || 'Delivered'})` 
+      };
+    } else {
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      let msg = errorData.message || response.statusText;
+      if (response.status === 403 || msg.includes("validation_error") || msg.includes("testing emails")) {
+        msg = `Resend Free Tier Rule: Emails on testing domain (onboarding@resend.dev) can only be sent to your registered account email (addytiwari3@gmail.com).`;
+      }
+      console.warn("Resend API Error:", errorData);
+      return { success: false, message: msg };
+    }
+  } catch (err: any) {
+    console.error("Resend API Forwarding Exception:", err);
+    return { 
+      success: false, 
+      message: `Network error forwarding email to Resend API: ${err.message}` 
+    };
+  }
 }
 
 /**
