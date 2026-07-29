@@ -28,6 +28,8 @@ interface AppContextType {
   addOrUpdateMedication: (med: Medication) => Promise<void>;
   deleteMedication: (id: string) => Promise<void>;
   takeMedication: (medId: string, customTimeStr?: string) => Promise<void>;
+  skipMedication: (medId: string, reason?: string) => Promise<void>;
+  deleteMedicationLog: (logId: string) => Promise<void>;
   refillStock: (medId: string, addedCount: number) => Promise<void>;
 
   // Vitals
@@ -283,6 +285,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const skipMedication = async (medId: string, reason?: string) => {
+    const targetMed = medications.find(m => m.id === medId);
+    if (!targetMed) return;
+
+    try {
+      const { log } = await logAdherenceDB(medId, targetMed.profileId, "skipped", 0);
+      if (reason) log.notes = reason;
+      setMedicationLogs(prev => [log, ...prev]);
+      showToast("info", "Dose Marked Skipped", `Marked ${targetMed.name} dose as skipped${reason ? `: ${reason}` : ""}.`);
+    } catch (err: any) {
+      showToast("error", "Skip Error", err.message || "Failed to log skipped dose.");
+    }
+  };
+
+  const deleteMedicationLog = async (logId: string) => {
+    try {
+      setMedicationLogs(prev => prev.filter(l => l.id !== logId));
+      // Save updated logs to localStorage
+      const filtered = medicationLogs.filter(l => l.id !== logId);
+      localStorage.setItem("carepulse_med_logs_v1", JSON.stringify(filtered));
+      showToast("info", "Log Deleted", "Intake log removed.");
+    } catch (err: any) {
+      showToast("error", "Delete Error", err.message || "Could not delete log.");
+    }
+  };
+
   const refillStock = async (medId: string, addedCount: number) => {
     const targetMed = medications.find(m => m.id === medId);
     if (!targetMed) return;
@@ -449,6 +477,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addOrUpdateMedication,
         deleteMedication,
         takeMedication,
+        skipMedication,
+        deleteMedicationLog,
         refillStock,
 
         glucoseLogs,

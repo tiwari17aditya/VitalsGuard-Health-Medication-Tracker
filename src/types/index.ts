@@ -25,12 +25,16 @@ export interface Medication {
   name: string;
   dosage: string;
   frequency: string;
+  scheduleType?: "daily" | "weekly" | "monthly" | "specific_days" | "as_needed";
+  daysOfWeek?: string[]; // e.g. ["Mon", "Wed", "Fri", "Sun"]
+  durationBasis?: "forever" | "7_days" | "14_days" | "30_days" | "custom";
   times: string[]; // e.g. ["08:00", "20:00"]
   stockCount: number;
   minStockAlert: number;
   instructions: string;
   foodRelation: FoodRelation;
   active: boolean;
+  trackingEnabled?: boolean;
   created_at?: string;
 }
 

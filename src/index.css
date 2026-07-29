@@ -469,4 +469,63 @@ h3 { font-size: 1.1rem; }
     font-size: 0.8rem;
     min-height: 36px;
   }
+
+  /* Modal Mobile Tweaks */
+  .modal-content {
+    padding: 14px;
+    max-height: 92vh;
+    border-radius: var(--radius-md);
+  }
 }
+
+/* Horizontal Scrollable Tabs container for Modals */
+.modal-tabs-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.modal-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.modal-tabs-scroll .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Day Picker Pills for Medication Frequency */
+.day-picker-container {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.day-pill {
+  padding: 8px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.day-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+}
+
+.day-pill:hover {
+  border-color: var(--primary);
+}
+

@@ -151,12 +151,16 @@ export async function fetchMedications(profileId?: string): Promise<Medication[]
             name: item.name,
             dosage: item.dosage,
             frequency: item.frequency,
+            scheduleType: item.schedule_type || item.scheduleType || "daily",
+            daysOfWeek: item.days_of_week || item.daysOfWeek || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            durationBasis: item.duration_basis || item.durationBasis || "forever",
             times: item.times || [],
             stockCount: item.stock_count ?? item.stockCount ?? 0,
             minStockAlert: item.min_stock_alert ?? item.minStockAlert ?? 5,
             instructions: item.instructions || "",
             foodRelation: item.food_relation || item.foodRelation || "After Food",
             active: item.active ?? true,
+            trackingEnabled: item.tracking_enabled ?? item.trackingEnabled ?? true,
             created_at: item.created_at
           })) as Medication[];
         } else if (!profileId) {
@@ -185,12 +189,16 @@ export async function saveMedicationDB(med: Medication): Promise<Medication> {
         name: med.name,
         dosage: med.dosage,
         frequency: med.frequency,
+        schedule_type: med.scheduleType || "daily",
+        days_of_week: med.daysOfWeek || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        duration_basis: med.durationBasis || "forever",
         times: med.times,
         stock_count: med.stockCount,
         min_stock_alert: med.minStockAlert,
         instructions: med.instructions,
         food_relation: med.foodRelation,
-        active: med.active
+        active: med.active,
+        tracking_enabled: med.trackingEnabled ?? true
       };
       await supabase.from(APP_CONFIG.supabaseTables.medications).upsert(payload);
     } catch (err) {

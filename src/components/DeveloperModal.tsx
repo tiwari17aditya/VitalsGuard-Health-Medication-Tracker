@@ -118,65 +118,65 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: "760px" }} onClick={e => e.stopPropagation()}>
+      <div className="modal-content" style={{ maxWidth: "760px", width: "95%" }} onClick={e => e.stopPropagation()}>
         
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Terminal color="var(--primary)" /> Developer & Admin Hub (v1.5.0)
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
+          <h2 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "1.1rem" }}>
+            <Terminal color="var(--primary)" size={20} /> Developer Hub (v1.5.2)
           </h2>
-          <button onClick={onClose} className="btn btn-secondary btn-sm">✕</button>
+          <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ minHeight: "32px", padding: "4px 10px" }}>✕</button>
         </div>
 
-        {/* Tab Navigation */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+        {/* Responsive Scrollable Tab Navigation */}
+        <div className="modal-tabs-scroll">
           <button
             onClick={() => setActiveTab("techstack")}
-            className={`btn ${activeTab === "techstack" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn btn-sm ${activeTab === "techstack" ? "btn-primary" : "btn-secondary"}`}
           >
-            <Code size={16} /> Tech Stack
+            <Code size={15} /> Tech Stack
           </button>
           <button
             onClick={() => setActiveTab("changelog")}
-            className={`btn ${activeTab === "changelog" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn btn-sm ${activeTab === "changelog" ? "btn-primary" : "btn-secondary"}`}
           >
-            <History size={16} /> Version History
+            <History size={15} /> Version History
           </button>
           <button
             onClick={() => setActiveTab("database")}
-            className={`btn ${activeTab === "database" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn btn-sm ${activeTab === "database" ? "btn-primary" : "btn-secondary"}`}
           >
-            <Database size={16} /> Cloud Database & Keys
+            <Database size={15} /> Database & Keys
           </button>
           <button
             onClick={() => setActiveTab("config")}
-            className={`btn ${activeTab === "config" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn btn-sm ${activeTab === "config" ? "btn-primary" : "btn-secondary"}`}
           >
-            <FileCode size={16} /> Central Config
+            <FileCode size={15} /> Config
           </button>
           <button
             onClick={() => setActiveTab("passcode")}
-            className={`btn ${activeTab === "passcode" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn btn-sm ${activeTab === "passcode" ? "btn-primary" : "btn-secondary"}`}
           >
-            <Lock size={16} /> Passcode & Security
+            <Lock size={15} /> Security
           </button>
         </div>
 
         {/* TAB 1: TECH STACK */}
         {activeTab === "techstack" && (
           <div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "14px" }}>
-              Comprehensive breakdown of open-source tools and free services powering VitalsGuard:
+            <p style={{ color: "var(--text-secondary)", marginBottom: "12px", fontSize: "0.85rem" }}>
+              Comprehensive breakdown of open-source tools powering VitalsGuard:
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "360px", overflowY: "auto" }}>
               {techItems.map(item => (
-                <div key={item.tech} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "12px 14px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div key={item.tech} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
                     <span style={{ fontSize: "0.75rem", fontWeight: "bold", color: "var(--primary)", textTransform: "uppercase" }}>{item.category}</span>
-                    <span className="badge badge-success" style={{ fontSize: "0.7rem" }}>{item.cost}</span>
+                    <span className="badge badge-success" style={{ fontSize: "0.7rem", padding: "2px 8px" }}>{item.cost}</span>
                   </div>
-                  <h4 style={{ fontSize: "1rem", margin: "2px 0" }}>{item.tech}</h4>
-                  <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>{item.description}</p>
+                  <h4 style={{ fontSize: "0.95rem", margin: "4px 0" }}>{item.tech}</h4>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{item.description}</p>
                 </div>
               ))}
             </div>
@@ -186,18 +186,18 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
         {/* TAB 2: VERSION HISTORY & CHANGELOG */}
         {activeTab === "changelog" && (
           <div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "12px" }}>
-              Full release version history and changelog (See <code>CHANGELOG.md</code> in project root):
+            <p style={{ color: "var(--text-secondary)", marginBottom: "12px", fontSize: "0.85rem" }}>
+              Full release version history and changelog (See <code>CHANGELOG.md</code>):
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "350px", overflowY: "auto" }}>
               {versionHistory.map(v => (
-                <div key={v.version} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "12px 14px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span className="badge badge-primary" style={{ fontSize: "0.8rem", fontWeight: "bold" }}>{v.version}</span>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Released: {v.date}</span>
+                <div key={v.version} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
+                    <span className="badge badge-primary" style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{v.version}</span>
+                    <span style={{ fontSize: "0.725rem", color: "var(--text-muted)" }}>Released: {v.date}</span>
                   </div>
-                  <h4 style={{ fontSize: "0.95rem", margin: "4px 0", color: "var(--text-primary)" }}>{v.title}</h4>
-                  <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>{v.highlights}</p>
+                  <h4 style={{ fontSize: "0.9rem", margin: "4px 0", color: "var(--text-primary)" }}>{v.title}</h4>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{v.highlights}</p>
                 </div>
               ))}
             </div>
@@ -207,36 +207,36 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
         {/* TAB 3: DATABASE & KEYS */}
         {activeTab === "database" && (
           <div>
-            <div style={{ background: "var(--bg-primary)", padding: "14px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+            <div style={{ background: "var(--bg-primary)", padding: "12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                 {isSupabaseActive ? (
-                  <span className="badge badge-success" style={{ fontSize: "0.85rem" }}>
-                    <CheckCircle size={14} /> Live Supabase Connected
+                  <span className="badge badge-success" style={{ fontSize: "0.8rem" }}>
+                    <CheckCircle size={13} /> Supabase Live
                   </span>
                 ) : (
-                  <span className="badge badge-warning" style={{ fontSize: "0.85rem" }}>
+                  <span className="badge badge-warning" style={{ fontSize: "0.8rem" }}>
                     ℹ️ Local Storage Mode
                   </span>
                 )}
               </div>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                Database schema available in <code>supabase/schema.sql</code>. Environment variables loaded from <code>.env</code> file.
+              <p style={{ fontSize: "0.775rem", color: "var(--text-secondary)" }}>
+                Database schema in <code>supabase/schema.sql</code>. Environment keys loaded from <code>.env</code> file.
               </p>
             </div>
 
             <div className="form-group">
               <label className="form-label">VITE_SUPABASE_URL</label>
-              <input type="text" readOnly value={supabaseUrl} className="form-input" />
+              <input type="text" readOnly value={supabaseUrl} className="form-input" style={{ fontSize: "0.825rem" }} />
             </div>
 
             <div className="form-group">
               <label className="form-label">VITE_SUPABASE_ANON_KEY</label>
-              <input type="password" readOnly value={supabaseKey} className="form-input" />
+              <input type="password" readOnly value={supabaseKey} className="form-input" style={{ fontSize: "0.825rem" }} />
             </div>
 
             <div className="form-group">
               <label className="form-label">VITE_RESEND_API_KEY</label>
-              <input type="password" readOnly value={resendKey} className="form-input" />
+              <input type="password" readOnly value={resendKey} className="form-input" style={{ fontSize: "0.825rem" }} />
             </div>
           </div>
         )}
@@ -244,11 +244,11 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
         {/* TAB 4: CENTRAL CONFIG */}
         {activeTab === "config" && (
           <div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "10px" }}>
-              Live contents of single central config <code>src/config/app.config.ts</code>:
+            <p style={{ color: "var(--text-secondary)", marginBottom: "10px", fontSize: "0.85rem" }}>
+              Live contents of central config <code>src/config/app.config.ts</code>:
             </p>
-            <div style={{ background: "var(--bg-primary)", padding: "14px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", maxHeight: "320px", overflowY: "auto" }}>
-              <pre style={{ fontSize: "0.775rem", color: "#38bdf8" }}>
+            <div style={{ background: "var(--bg-primary)", padding: "12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", maxHeight: "320px", overflowY: "auto" }}>
+              <pre style={{ fontSize: "0.75rem", color: "#38bdf8", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
                 {JSON.stringify(APP_CONFIG, null, 2)}
               </pre>
             </div>
@@ -258,11 +258,11 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
         {/* TAB 5: PASSCODE & SECURITY */}
         {activeTab === "passcode" && (
           <div>
-            <form onSubmit={handleUpdatePin} style={{ background: "var(--bg-primary)", padding: "16px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
-              <h3 style={{ marginBottom: "10px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <Key size={18} color="var(--primary)" /> Change Developer Passcode
+            <form onSubmit={handleUpdatePin} style={{ background: "var(--bg-primary)", padding: "14px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "14px" }}>
+              <h3 style={{ marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px", fontSize: "0.95rem" }}>
+                <Key size={16} color="var(--primary)" /> Change Developer Passcode
               </h3>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "12px" }}>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "10px" }}>
                 Current Passcode: <code>{currentPin}</code>
               </p>
               <div className="form-group">
@@ -276,17 +276,17 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
                   required
                 />
               </div>
-              <button type="submit" className="btn btn-primary btn-sm">Save New Passcode</button>
+              <button type="submit" className="btn btn-primary btn-sm" style={{ width: "100%" }}>Save New Passcode</button>
             </form>
 
             <button onClick={handleLockSession} className="btn btn-danger btn-sm" style={{ width: "100%" }}>
-              <Lock size={16} /> Lock Developer Session Now
+              <Lock size={15} /> Lock Developer Session Now
             </button>
           </div>
         )}
 
-        <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={onClose} className="btn btn-secondary">Close Hub</button>
+        <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={onClose} className="btn btn-secondary btn-sm">Close Hub</button>
         </div>
 
       </div>

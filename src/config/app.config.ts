@@ -139,25 +139,33 @@ export const APP_CONFIG = {
       name: "Metformin ER",
       dosage: "500 mg",
       frequency: "Twice Daily",
+      scheduleType: "daily",
+      daysOfWeek: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      durationBasis: "forever",
       times: ["08:00", "20:00"],
       stockCount: 14,
       minStockAlert: 5,
       instructions: "Take with meals to minimize stomach upset",
       foodRelation: "After Food",
-      active: true
+      active: true,
+      trackingEnabled: true
     },
     {
       id: "med-2",
       profileId: "profile-mom",
       name: "Amlodipine",
       dosage: "5 mg",
-      frequency: "Once Daily",
+      frequency: "Mon, Wed, Fri, Sun",
+      scheduleType: "specific_days",
+      daysOfWeek: ["Mon", "Wed", "Fri", "Sun"],
+      durationBasis: "forever",
       times: ["09:00"],
       stockCount: 4, // Trigger low stock alert!
       minStockAlert: 5,
-      instructions: "Take in the morning for BP management",
+      instructions: "Take on scheduled days (Mon, Wed, Fri, Sun) in morning for BP",
       foodRelation: "Before Food",
-      active: true
+      active: true,
+      trackingEnabled: true
     },
     {
       id: "med-3",
@@ -165,12 +173,16 @@ export const APP_CONFIG = {
       name: "Atorvastatin",
       dosage: "20 mg",
       frequency: "Once Daily (Night)",
+      scheduleType: "daily",
+      daysOfWeek: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      durationBasis: "forever",
       times: ["21:00"],
       stockCount: 22,
       minStockAlert: 5,
-      instructions: "Take at bedtime",
+      instructions: "Take at bedtime with water",
       foodRelation: "After Food",
-      active: true
+      active: true,
+      trackingEnabled: true
     },
     {
       id: "med-4",

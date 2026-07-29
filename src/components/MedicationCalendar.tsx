@@ -27,8 +27,26 @@ export const MedicationCalendar: React.FC = () => {
     });
   }
 
-  // Selected date logs
+  // Helper to check if medication is scheduled on a given date
+  const isMedScheduledOnDate = (m: any, dateStr: string) => {
+    if (m.trackingEnabled === false) return false;
+    const type = m.scheduleType || "daily";
+    if (type === "daily" || type === "as_needed") return true;
+
+    const targetDate = new Date(dateStr + "T12:00:00");
+    const mapDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const targetDayName = mapDayNames[targetDate.getDay()];
+
+    if (type === "specific_days" || type === "weekly") {
+      const scheduledDays = m.daysOfWeek || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      return scheduledDays.includes(targetDayName);
+    }
+    return true;
+  };
+
+  // Selected date logs and scheduled meds
   const selectedDateLogs = profileLogs.filter(l => l.timestamp.startsWith(selectedDateStr));
+  const scheduledMedsForSelectedDate = profileMeds.filter(m => isMedScheduledOnDate(m, selectedDateStr));
 
   return (
     <div className="glass-card">
@@ -48,9 +66,10 @@ export const MedicationCalendar: React.FC = () => {
       <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "12px", marginBottom: "20px" }}>
         {datesList.map(item => {
           const isSelected = item.dateStr === selectedDateStr;
+          const dayMeds = profileMeds.filter(m => isMedScheduledOnDate(m, item.dateStr));
           const dayLogs = profileLogs.filter(l => l.timestamp.startsWith(item.dateStr));
           const takenCount = dayLogs.filter(l => l.status === "taken").length;
-          const isComplete = profileMeds.length > 0 && takenCount >= profileMeds.length;
+          const isComplete = dayMeds.length > 0 && takenCount >= dayMeds.length;
 
           return (
             <button
@@ -84,14 +103,14 @@ export const MedicationCalendar: React.FC = () => {
       {/* Detailed Log Timeline for Selected Date */}
       <div style={{ background: "var(--bg-primary)", padding: "20px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
         <h3 style={{ marginBottom: "16px", fontSize: "1.05rem" }}>
-          Prescription Schedule for Date: <strong>{new Date(selectedDateStr).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+          Prescription Schedule for Date: <strong>{new Date(selectedDateStr + "T12:00:00").toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</strong>
         </h3>
 
-        {profileMeds.length === 0 ? (
-          <p style={{ color: "var(--text-muted)" }}>No medications registered for this profile.</p>
+        {scheduledMedsForSelectedDate.length === 0 ? (
+          <p style={{ color: "var(--text-muted)" }}>No medications scheduled for this profile on this date.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {profileMeds.map(m => {
+            {scheduledMedsForSelectedDate.map(m => {
               const medLog = selectedDateLogs.find(l => l.medicationId === m.id && l.status === "taken");
               const isTaken = Boolean(medLog);
               const exactTimeFormatted = medLog ? new Date(medLog.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
