@@ -71,8 +71,7 @@ export function openGmailWebCompose(to: string, subject: string, htmlContent: st
 }
 
 /**
- * Drafts email with base64 report document attachment and forwards to Resend API,
- * with failover to Gmail Compose if browser CORS blocks direct HTTP fetch.
+ * Drafts email with base64 report document attachment and forwards to Resend API via serverless handler
  */
 export async function sendEmailNotification(payload: EmailPayload): Promise<{ success: boolean; message: string }> {
   if (!isValidEmail(payload.to)) {
@@ -85,9 +84,8 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
   const apiKey = getResendApiKey();
   const documentBase64 = btoa(unescape(encodeURIComponent(payload.htmlContent)));
 
-  const requestBody = JSON.stringify({
-    from: "VitalsGuard Tracker <onboarding@resend.dev>",
-    to: [payload.to.trim()],
+  const requestPayload = {
+    to: payload.to.trim(),
     subject: payload.subject,
     html: payload.htmlContent,
     attachments: [
@@ -96,9 +94,29 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
         content: documentBase64
       }
     ]
-  });
+  };
 
-  // Attempt 1: Direct Resend API endpoint
+  // Attempt 1: Call Serverless /api/send_mail Handler
+  try {
+    const apiRes = await fetch("/api/send_mail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestPayload)
+    });
+
+    if (apiRes.ok) {
+      const data = await apiRes.json().catch(() => ({}));
+      console.log("Serverless API Email Dispatched Successfully:", data);
+      return { 
+        success: true, 
+        message: `Email report & attached document sent directly to ${payload.to} via Resend! (ID: ${data.id || 'Delivered'})` 
+      };
+    }
+  } catch (err) {
+    console.warn("Serverless /api/send_mail handler not reached, trying direct API...", err);
+  }
+
+  // Attempt 2: Direct Resend HTTP API endpoint
   if (apiKey) {
     try {
       const response = await fetch(APP_CONFIG.emailSettings.resendApiEndpoint, {
@@ -107,7 +125,13 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
-        body: requestBody,
+        body: JSON.stringify({
+          from: "VitalsGuard Tracker <onboarding@resend.dev>",
+          to: [payload.to.trim()],
+          subject: payload.subject,
+          html: payload.htmlContent,
+          attachments: requestPayload.attachments
+        }),
       });
 
       if (response.ok) {
@@ -126,11 +150,11 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
         }
       }
     } catch (err: any) {
-      console.warn("Direct Resend API fetch encountered browser CORS restriction, launching Gmail Compose...", err);
+      console.warn("Direct Resend API fetch encountered browser restriction, launching Gmail Compose...", err);
     }
   }
 
-  // Attempt 2: Gmail Compose Failover for client-side browsers
+  // Attempt 3: Gmail Web Compose Failover
   openGmailWebCompose(payload.to, payload.subject, payload.htmlContent);
   return { 
     success: true, 
