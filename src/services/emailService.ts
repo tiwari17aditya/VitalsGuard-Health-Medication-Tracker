@@ -17,39 +17,6 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(email.trim());
 }
 
-/**
- * Converts HTML email content to clean formatted plain text for mailto/Gmail fallback
- */
-export function convertHTMLToPlainText(html: string): string {
-  if (!html) return "";
-  let text = html
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<br\s*[\/]?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<\/tr>/gi, "\n")
-    .replace(/<\/td>/gi, " | ")
-    .replace(/<\/h[1-6]>/gi, "\n\n")
-    .replace(/<[^>]+>/g, "");
-  
-  // Clean up duplicate line breaks
-  return text.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
-}
-
-/**
- * Directly opens user's default email client (or Gmail web) with prefilled subject and body
- */
-export function openDirectMailClient(to: string, subject: string, htmlContent: string) {
-  const plainBody = convertHTMLToPlainText(htmlContent);
-  const encodedSubject = encodeURIComponent(subject);
-  const encodedBody = encodeURIComponent(plainBody.substring(0, 1800));
-  const encodedTo = encodeURIComponent(to.trim());
-
-  // Try opening mailto link
-  const mailtoUrl = `mailto:${encodedTo}?subject=${encodedSubject}&body=${encodedBody}`;
-  window.open(mailtoUrl, "_blank");
-}
-
 const FALLBACK_RESEND_KEY_B64 = "cmVfTDYyc3VLVkxfM1Z4MjRMb21iREJYTHZWRUxFa0JWejhR";
 
 /**
@@ -71,19 +38,6 @@ export function getResendApiKey(): string {
   } catch {
     return "";
   }
-}
-
-/**
- * Opens Gmail Web Compose directly in browser with recipient, subject, and report body prefilled
- */
-export function openGmailWebCompose(to: string, subject: string, htmlContent: string) {
-  const plainBody = convertHTMLToPlainText(htmlContent);
-  const encodedTo = encodeURIComponent(to.trim());
-  const encodedSubject = encodeURIComponent(subject);
-  const encodedBody = encodeURIComponent(plainBody.substring(0, 1800));
-  
-  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodedTo}&su=${encodedSubject}&body=${encodedBody}`;
-  window.open(gmailUrl, "_blank");
 }
 
 /**

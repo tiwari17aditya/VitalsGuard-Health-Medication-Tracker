@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { 
-  FileText, Mail, Download, Printer, Send, AlertTriangle, User, CheckCircle2, AlertCircle, Eye, ExternalLink 
+  FileText, Mail, Download, Printer, AlertTriangle, User, CheckCircle2, AlertCircle, Eye
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { isValidEmail, sendEmailNotification, openGmailWebCompose, generateTabularReportHTML, generateRefillAlertHTML } from "../services/emailService";
+import { isValidEmail, sendEmailNotification, generateTabularReportHTML, generateRefillAlertHTML } from "../services/emailService";
 
 export const ReportsManager: React.FC = () => {
   const { 
@@ -79,48 +79,8 @@ export const ReportsManager: React.FC = () => {
     if (res.success) {
       showToast("success", "Email Dispatched!", res.message);
     } else {
-      showToast("error", "Email Dispatch Notice", res.message);
+      showToast("error", "Email Failed", res.message);
     }
-  };
-
-  // Gmail Web Compose Launcher
-  const handleSendGmailWebCompose = () => {
-    if (!isValidEmail(emailInput)) {
-      showToast("error", "Invalid Recipient Email", "Please enter a valid email address.");
-      return;
-    }
-    const todayStr = new Date().toISOString().split("T")[0];
-    const logsToday = medicationLogs.filter(l => l.profileId === activeProfile.id && l.timestamp.startsWith(todayStr));
-    const htmlContent = generateTabularReportHTML(activeProfile, profileMeds, logsToday, profileGlucose, profileBP, reportRange);
-
-    openGmailWebCompose(
-      emailInput.trim(),
-      `📋 VitalsGuard ${reportRange} Tabular Health Report: ${activeProfile.name} (${new Date().toLocaleDateString()})`,
-      htmlContent
-    );
-    showToast("success", "Gmail Compose Opened", `Opened Gmail Web Compose for ${emailInput}`);
-  };
-
-  // Native Mailto Client Fallback
-  const handleOpenNativeMailClient = () => {
-    if (!isValidEmail(emailInput)) {
-      showToast("error", "Invalid Recipient Email", "Please enter a valid email address.");
-      return;
-    }
-
-    const subject = encodeURIComponent(`📋 VitalsGuard Health Summary for ${activeProfile.name}`);
-    const body = encodeURIComponent(
-      `VitalsGuard Health Report for ${activeProfile.name}\n` +
-      `Date: ${new Date().toLocaleDateString()}\n\n` +
-      `Adherence Rate: ${adherencePercent}%\n` +
-      `Average Glucose: ${avgGlucose > 0 ? `${avgGlucose} mg/dL` : 'N/A'}\n` +
-      `Average BP: ${avgSYS > 0 ? `${avgSYS}/${avgDIA} mmHg` : 'N/A'}\n\n` +
-      `Prescriptions (${profileMeds.length}):\n` +
-      profileMeds.map(m => `- ${m.name} (${m.dosage}) | Stock: ${m.stockCount} pills | ${m.frequency}`).join("\n") +
-      `\n\nGenerated via VitalsGuard Open Source Tracker.`
-    );
-
-    window.open(`mailto:${emailInput.trim()}?subject=${subject}&body=${body}`, "_blank");
   };
 
   const handleSendRefillAlert = async () => {
@@ -143,12 +103,13 @@ export const ReportsManager: React.FC = () => {
       htmlContent,
       type: "refill_alert"
     });
+
     setIsSending(false);
 
     if (res.success) {
       showToast("warning", "Refill Warning Email Sent", res.message);
     } else {
-      showToast("error", "Email Dispatch Notice", res.message);
+      showToast("error", "Email Failed", res.message);
     }
   };
 
@@ -272,36 +233,15 @@ export const ReportsManager: React.FC = () => {
           
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             
-            {/* Primary Live Tabular Resend Dispatch Action */}
+            {/* Primary Direct Send Email Action */}
             <button
               onClick={handleSendTabularReport}
-              className="btn btn-success"
-              style={{ width: "100%", justifyContent: "center" }}
-              disabled={isSending || !isEmailValid}
-            >
-              <Send size={18} /> {isSending ? "Dispatching..." : `Send Live HTML Email Report`}
-            </button>
-
-            {/* Gmail Web Compose Action */}
-            <button
-              onClick={handleSendGmailWebCompose}
               className="btn btn-primary"
               style={{ width: "100%", justifyContent: "center" }}
-              disabled={!isEmailValid}
-              title="Open pre-filled report directly in Gmail Web Compose"
+              disabled={isSending || !isEmailValid}
+              title="Directly send health report and document attachment via email"
             >
-              <Mail size={16} /> Send via Gmail Web Compose
-            </button>
-
-            {/* Native Email Client Fallback */}
-            <button
-              onClick={handleOpenNativeMailClient}
-              className="btn btn-secondary"
-              style={{ width: "100%", justifyContent: "center" }}
-              disabled={!isEmailValid}
-              title="Open pre-filled report in your device's default mail client"
-            >
-              <ExternalLink size={16} /> Open in Default Mail App (Mailto)
+              <Mail size={18} /> {isSending ? "Sending Email..." : "Send Email"}
             </button>
 
             {/* Refill Alert Action */}
@@ -317,7 +257,7 @@ export const ReportsManager: React.FC = () => {
           </div>
 
           <div style={{ marginTop: "14px", padding: "10px", background: "var(--bg-card)", borderRadius: "var(--radius-sm)", fontSize: "0.775rem", color: "var(--text-muted)" }}>
-            💡 <strong>Resend Free Tier Note:</strong> Live API emails deliver directly to your registered Resend account (<code>addytiwari3@gmail.com</code>). For other emails, click <em>"Open in Email App"</em> or verify custom domain at resend.com.
+            💡 <strong>Resend Email Note:</strong> Clicking "Send Email" forwards the report & attached document directly via Resend API to target recipient <code>{emailInput}</code>.
           </div>
         </div>
 
