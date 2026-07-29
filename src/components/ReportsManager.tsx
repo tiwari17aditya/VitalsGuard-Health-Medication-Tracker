@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { 
-  FileText, Mail, Download, Printer, AlertTriangle, User, CheckCircle2, AlertCircle, Eye
+  FileText, Mail, Download, Printer, AlertTriangle, User, CheckCircle2, AlertCircle, Eye,
+  Folder, FileJson, FileSpreadsheet, Calendar
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isValidEmail, sendEmailNotification, generateTabularReportHTML, generateRefillAlertHTML } from "../services/emailService";
+import { getDailyLogsGrouped, downloadDailyLogJSON, downloadDailyLogCSV } from "../services/logService";
 
 export const ReportsManager: React.FC = () => {
   const { 
@@ -30,6 +32,9 @@ export const ReportsManager: React.FC = () => {
   const profileGlucose = glucoseLogs.filter(g => g.profileId === activeProfile.id);
   const profileBP = bpLogs.filter(b => b.profileId === activeProfile.id);
   const profileLogs = medicationLogs.filter(l => l.profileId === activeProfile.id);
+
+  // Group all activity logs into date-based daily log files
+  const dailyLogsMap = getDailyLogsGrouped(activeProfile, medications, medicationLogs, glucoseLogs, bpLogs);
 
   // Compute adherence stats
   const totalMedsCount = profileMeds.length;
@@ -312,12 +317,78 @@ export const ReportsManager: React.FC = () => {
 
           </div>
 
-          <div style={{ marginTop: "16px", padding: "10px", background: "var(--bg-card-hover)", borderRadius: "var(--radius-sm)", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+            <div style={{ marginTop: "16px", padding: "10px", background: "var(--bg-card-hover)", borderRadius: "var(--radius-sm)", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
             💡 Click <strong>"Preview Mail HTML"</strong> above to view the exact tabular HTML email before sending.
           </div>
 
         </div>
 
+      </div>
+
+      {/* Daily Log Files Storage Repository */}
+      <div className="glass-card" style={{ marginTop: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
+          <div>
+            <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Folder size={20} color="var(--primary)" /> Daily Log Files Repository
+            </h3>
+            <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>
+              Medication & vitals records organized into date-based daily log files for {activeProfile.name}
+            </p>
+          </div>
+          <span className="badge badge-primary" style={{ fontSize: "0.8rem" }}>
+            {Object.keys(dailyLogsMap).length} Daily Log File(s)
+          </span>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {Object.values(dailyLogsMap).map(daily => (
+            <div 
+              key={daily.dateStr} 
+              style={{
+                background: "var(--bg-primary)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "var(--radius-md)",
+                padding: "12px 14px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "10px"
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <Calendar size={16} color="var(--primary)" />
+                  <strong style={{ fontSize: "0.95rem" }}>{daily.formattedDate}</strong>
+                  <span className="badge badge-primary" style={{ fontSize: "0.75rem" }}>
+                    vitalsguard_log_{daily.dateStr}
+                  </span>
+                </div>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "4px" }}>
+                  💊 {daily.medicationLogs.length} Med Logs • 🩸 {daily.glucoseLogs.length} Glucose Logs • ❤️ {daily.bpLogs.length} BP Logs
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  onClick={() => downloadDailyLogJSON(daily)}
+                  className="btn btn-secondary btn-sm"
+                  title={`Download ${daily.dateStr} daily log file as JSON`}
+                >
+                  <FileJson size={14} color="#38bdf8" /> JSON File
+                </button>
+                <button
+                  onClick={() => downloadDailyLogCSV(daily)}
+                  className="btn btn-secondary btn-sm"
+                  title={`Download ${daily.dateStr} daily log file as CSV`}
+                >
+                  <FileSpreadsheet size={14} color="#10b981" /> CSV File
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* HTML EMAIL PREVIEW MODAL */}
