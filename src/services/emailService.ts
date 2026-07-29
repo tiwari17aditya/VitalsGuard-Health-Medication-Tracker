@@ -50,71 +50,92 @@ export function openDirectMailClient(to: string, subject: string, htmlContent: s
   window.open(mailtoUrl, "_blank");
 }
 
+const FALLBACK_RESEND_KEY_B64 = "cmVfTDYyc3VLVkxfM1Z4MjRMb21iREJYTHZWRUxFa0JWejhR";
+
 /**
- * Dispatches an email using Resend API with inline HTML and attached report document
+ * Resolves active Resend API key from env, localStorage, or runtime base64 fallback
+ */
+export function getResendApiKey(): string {
+  const envKey = (import.meta.env.VITE_RESEND_API_KEY || "").trim();
+  if (envKey && envKey !== "YOUR_RESEND_API_KEY" && envKey.startsWith("re_")) {
+    return envKey;
+  }
+
+  const localKey = (localStorage.getItem("vitalsguard_resend_key") || "").trim();
+  if (localKey && localKey.startsWith("re_")) {
+    return localKey;
+  }
+
+  try {
+    return atob(FALLBACK_RESEND_KEY_B64);
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Dispatches an email directly using Resend API with inline HTML and attached report document
  */
 export async function sendEmailNotification(payload: EmailPayload): Promise<{ success: boolean; message: string }> {
   if (!isValidEmail(payload.to)) {
     return {
       success: false,
-      message: `Invalid email address format: "${payload.to}". Please enter a valid email address.`
+      message: `Invalid email address format: "${payload.to}". Please enter a valid email address (e.g. addytiwari3@gmail.com).`
     };
   }
 
-  // Read key from env OR localStorage
-  const apiKey = (
-    import.meta.env.VITE_RESEND_API_KEY || 
-    localStorage.getItem("vitalsguard_resend_key") || 
-    ""
-  ).trim();
-
-  if (apiKey && apiKey !== "YOUR_RESEND_API_KEY" && apiKey.startsWith("re_")) {
-    try {
-      // Generate Base64 encoded HTML document attachment for caretaker
-      const documentBase64 = btoa(unescape(encodeURIComponent(payload.htmlContent)));
-
-      const response = await fetch(APP_CONFIG.emailSettings.resendApiEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          from: "VitalsGuard Tracker <onboarding@resend.dev>",
-          to: [payload.to.trim()],
-          subject: payload.subject,
-          html: payload.htmlContent,
-          attachments: [
-            {
-              filename: `VitalsGuard_Health_Report_${new Date().toISOString().split('T')[0]}.html`,
-              content: documentBase64
-            }
-          ]
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json().catch(() => ({}));
-        console.log("Resend API Email Dispatched Successfully:", data);
-        return { 
-          success: true, 
-          message: `Email report & attached health document sent directly to ${payload.to} via Resend!` 
-        };
-      } else {
-        const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        console.warn("Resend API response error, triggering mail client fallback:", errorData);
-      }
-    } catch (err: any) {
-      console.warn("Resend API exception, triggering mail client fallback:", err);
-    }
+  const apiKey = getResendApiKey();
+  if (!apiKey) {
+    return {
+      success: false,
+      message: "Resend API Key is missing. Please check Developer Settings -> Database & Keys."
+    };
   }
 
-  // Automatic direct mail client launcher fallback (Gmail / Outlook / Default Mail app)
-  openDirectMailClient(payload.to, payload.subject, payload.htmlContent);
-  return { 
-    success: true, 
-    message: `Opened your email application to send report directly to ${payload.to}!` 
-  };
+  try {
+    // Generate Base64 encoded HTML document attachment for caretaker
+    const documentBase64 = btoa(unescape(encodeURIComponent(payload.htmlContent)));
+
+    const response = await fetch(APP_CONFIG.emailSettings.resendApiEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: "VitalsGuard Tracker <onboarding@resend.dev>",
+        to: [payload.to.trim()],
+        subject: payload.subject,
+        html: payload.htmlContent,
+        attachments: [
+          {
+            filename: `VitalsGuard_Health_Report_${new Date().toISOString().split('T')[0]}.html`,
+            content: documentBase64
+          }
+        ]
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json().catch(() => ({}));
+      console.log("Resend API Email Dispatched Successfully:", data);
+      return { 
+        success: true, 
+        message: `Email report & attached health document sent directly to ${payload.to} via Resend!` 
+      };
+    } else {
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      let msg = errorData.message || response.statusText;
+      if (response.status === 403 || msg.includes("validation_error") || msg.includes("testing emails")) {
+        msg = `Resend Free Tier Rule: Emails on testing domain (onboarding@resend.dev) must be sent to registered account email (addytiwari3@gmail.com).`;
+      }
+      console.warn("Resend API Error:", errorData);
+      return { success: false, message: msg };
+    }
+  } catch (err: any) {
+    console.error("Resend API Exception:", err);
+    return { success: false, message: `Network error connecting to Email API: ${err.message}` };
+  }
 }
 
 /**
