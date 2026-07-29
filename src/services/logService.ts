@@ -1,4 +1,4 @@
-import type { MedicationLog, GlucoseLog, BPLog, UserProfile, Medication } from "../types";
+import type { MedicationLog, GlucoseLog, BPLog, UserProfile, Medication, ActionAuditLog } from "../types";
 
 export interface DailyLogFile {
   dateStr: string; // YYYY-MM-DD
@@ -7,6 +7,7 @@ export interface DailyLogFile {
   medicationLogs: (MedicationLog & { medicationName?: string; dosage?: string })[];
   glucoseLogs: GlucoseLog[];
   bpLogs: BPLog[];
+  auditLogs: ActionAuditLog[];
   totalLogsCount: number;
 }
 
@@ -18,7 +19,8 @@ export function getDailyLogsGrouped(
   medications: Medication[],
   medicationLogs: MedicationLog[],
   glucoseLogs: GlucoseLog[],
-  bpLogs: BPLog[]
+  bpLogs: BPLog[],
+  auditLogs: ActionAuditLog[] = []
 ): Record<string, DailyLogFile> {
   const profileMeds = medications.filter(m => m.profileId === profile.id);
   const medMap = new Map(profileMeds.map(m => [m.id, m]));
@@ -26,6 +28,7 @@ export function getDailyLogsGrouped(
   const profileMedLogs = medicationLogs.filter(l => l.profileId === profile.id);
   const profileGlucose = glucoseLogs.filter(g => g.profileId === profile.id);
   const profileBP = bpLogs.filter(b => b.profileId === profile.id);
+  const profileAudit = auditLogs.filter(a => a.profileId === profile.id);
 
   const grouped: Record<string, DailyLogFile> = {};
 
@@ -35,6 +38,7 @@ export function getDailyLogsGrouped(
   profileMedLogs.forEach(l => datesSet.add(l.timestamp.split("T")[0]));
   profileGlucose.forEach(g => datesSet.add(g.timestamp.split("T")[0]));
   profileBP.forEach(b => datesSet.add(b.timestamp.split("T")[0]));
+  profileAudit.forEach(a => datesSet.add(a.timestamp.split("T")[0]));
 
   // Ensure today's date is always present in list
   const todayStr = new Date().toISOString().split("T")[0];
@@ -56,8 +60,9 @@ export function getDailyLogsGrouped(
 
     const glucoseForDay = profileGlucose.filter(g => g.timestamp.startsWith(dateStr));
     const bpForDay = profileBP.filter(b => b.timestamp.startsWith(dateStr));
+    const auditForDay = profileAudit.filter(a => a.timestamp.startsWith(dateStr));
 
-    const totalLogsCount = medLogsForDay.length + glucoseForDay.length + bpForDay.length;
+    const totalLogsCount = medLogsForDay.length + glucoseForDay.length + bpForDay.length + auditForDay.length;
     
     // Format date string for display
     const d = new Date(dateStr + "T12:00:00");
@@ -72,6 +77,7 @@ export function getDailyLogsGrouped(
       medicationLogs: medLogsForDay,
       glucoseLogs: glucoseForDay,
       bpLogs: bpForDay,
+      auditLogs: auditForDay,
       totalLogsCount
     };
   });
@@ -122,6 +128,14 @@ export function downloadDailyLogCSV(dailyLog: DailyLogFile) {
   dailyLog.bpLogs.forEach(b => {
     const timeStr = new Date(b.timestamp).toLocaleTimeString();
     csvRows.push(`"${timeStr}",${b.systolic},${b.diastolic},${b.pulse},"${b.category}","${b.notes || ''}"`);
+  });
+  csvRows.push("");
+
+  csvRows.push("--- UI ACTIONS & AUDIT LOGS ---");
+  csvRows.push("Time,Action Type,Description");
+  dailyLog.auditLogs.forEach(a => {
+    const timeStr = new Date(a.timestamp).toLocaleTimeString();
+    csvRows.push(`"${timeStr}","${a.actionType}","${a.description.replace(/"/g, '""')}"`);
   });
 
   const csvString = csvRows.join("\n");

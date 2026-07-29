@@ -86,6 +86,15 @@ export interface HealthReport {
   notes?: string;
 }
 
+export interface ActionAuditLog {
+  id: string;
+  profileId: string;
+  timestamp: string; // ISO String
+  actionType: "MEDICATION_TAKEN" | "MEDICATION_SKIPPED" | "MEDICATION_ADDED" | "MEDICATION_EDITED" | "MEDICATION_PAUSED" | "EMAIL_SENT" | "PROFILE_UPDATED" | "LOG_EXPORTED" | "UI_INTERACTION";
+  description: string;
+  details?: Record<string, any>;
+}
+
 export interface ToastMessage {
   id: string;
   type: "success" | "warning" | "error" | "info";

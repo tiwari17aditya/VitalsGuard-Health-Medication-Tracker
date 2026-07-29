@@ -14,6 +14,7 @@ export const ReportsManager: React.FC = () => {
     medicationLogs, 
     glucoseLogs, 
     bpLogs, 
+    auditLogs,
     caretakerEmail, 
     setCaretakerEmail, 
     showToast
@@ -33,8 +34,8 @@ export const ReportsManager: React.FC = () => {
   const profileBP = bpLogs.filter(b => b.profileId === activeProfile.id);
   const profileLogs = medicationLogs.filter(l => l.profileId === activeProfile.id);
 
-  // Group all activity logs into date-based daily log files
-  const dailyLogsMap = getDailyLogsGrouped(activeProfile, medications, medicationLogs, glucoseLogs, bpLogs);
+  // Group all activity logs & UI interaction audit logs into date-based daily log files
+  const dailyLogsMap = getDailyLogsGrouped(activeProfile, medications, medicationLogs, glucoseLogs, bpLogs, auditLogs);
 
   // Compute adherence stats
   const totalMedsCount = profileMeds.length;

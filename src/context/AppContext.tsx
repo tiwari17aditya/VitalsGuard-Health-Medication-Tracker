@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import type { 
-  UserProfile, Medication, MedicationLog, GlucoseLog, BPLog, ToastMessage, MealType, BPCategory 
+  UserProfile, Medication, MedicationLog, GlucoseLog, BPLog, ToastMessage, MealType, BPCategory, ActionAuditLog 
 } from "../types";
 import { APP_CONFIG } from "../config/app.config";
 import { 
@@ -38,6 +38,10 @@ interface AppContextType {
   bpLogs: BPLog[];
   addBPLog: (sys: number, dia: number, pulse: number, notes?: string, customTimeStr?: string) => Promise<void>;
 
+  // Audit Action Logs
+  auditLogs: ActionAuditLog[];
+  logUserAction: (actionType: ActionAuditLog["actionType"], description: string, details?: any) => void;
+
   // Reports & Email
   caretakerEmail: string;
   setCaretakerEmail: (email: string) => void;
@@ -65,6 +69,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
   const [glucoseLogs, setGlucoseLogs] = useState<GlucoseLog[]>([]);
   const [bpLogs, setBpLogs] = useState<BPLog[]>([]);
+  const [auditLogs, setAuditLogs] = useState<ActionAuditLog[]>(() => {
+    try {
+      const raw = localStorage.getItem("vitalsguard_audit_logs_v1");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
   
   const [caretakerEmail, setCaretakerEmailState] = useState<string>(
     localStorage.getItem("carepulse_caretaker_email") || APP_CONFIG.emailSettings.defaultCaretakerEmail
@@ -99,9 +111,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  // Action Audit Logging Helper
+  const logUserAction = (actionType: ActionAuditLog["actionType"], description: string, details?: any) => {
+    const profId = activeProfileId || (profiles.length > 0 ? profiles[0].id : "default");
+    const newLog: ActionAuditLog = {
+      id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      profileId: profId,
+      timestamp: new Date().toISOString(),
+      actionType,
+      description,
+      details
+    };
+    setAuditLogs(prev => {
+      const updated = [newLog, ...prev];
+      try {
+        localStorage.setItem("vitalsguard_audit_logs_v1", JSON.stringify(updated.slice(0, 500)));
+      } catch (e) {
+        console.warn("Error saving audit log:", e);
+      }
+      return updated;
+    });
+  };
+
   const setCaretakerEmail = (email: string) => {
     setCaretakerEmailState(email);
     localStorage.setItem("carepulse_caretaker_email", email);
+    logUserAction("PROFILE_UPDATED", `Caretaker email address updated to ${email}`);
     showToast("info", "Email Saved", `Caretaker email updated to ${email}`);
   };
 
@@ -194,6 +229,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // MEDICATIONS CRUD
   const addOrUpdateMedication = async (med: Medication) => {
     try {
+      const isEdit = medications.some(m => m.id === med.id);
       const saved = await saveMedicationDB(med);
       setMedications(prev => {
         const idx = prev.findIndex(m => m.id === saved.id);
@@ -204,6 +240,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         return [...prev, saved];
       });
+      logUserAction(
+        isEdit ? "MEDICATION_EDITED" : "MEDICATION_ADDED", 
+        `${isEdit ? "Updated" : "Added"} prescription ${saved.name} (${saved.dosage}) with schedule ${saved.scheduleType || 'daily'}`
+      );
       showToast("success", "Medication Saved", `${saved.name} (${saved.dosage}) saved.`);
 
       if (saved.stockCount <= saved.minStockAlert) {
@@ -216,8 +256,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteMedication = async (id: string) => {
     try {
+      const target = medications.find(m => m.id === id);
       await deleteMedicationDB(id);
       setMedications(prev => prev.filter(m => m.id !== id));
+      if (target) {
+        logUserAction("UI_INTERACTION", `Deleted prescription ${target.name} from inventory`);
+      }
       showToast("info", "Medication Deleted", "Medication removed from inventory.");
     } catch (err: any) {
       showToast("error", "Delete Error", err.message || "Could not delete medication.");
@@ -236,7 +280,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     let timestampToLog = new Date().toISOString();
     if (customTimeStr) {
-      // Parse custom HH:MM time for today's date
       const [hours, minutes] = customTimeStr.split(":").map(Number);
       const customDate = new Date();
       if (!isNaN(hours) && !isNaN(minutes)) {
@@ -248,6 +291,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { log, updatedMed } = await logAdherenceDB(medId, targetMed.profileId, "taken", 1, timestampToLog);
       setMedicationLogs(prev => [log, ...prev]);
+      logUserAction("MEDICATION_TAKEN", `Logged intake of ${targetMed.name} (${targetMed.dosage})`, { medId, timestamp: timestampToLog });
 
       if (updatedMed) {
         setMedications(prev => prev.map(m => m.id === updatedMed.id ? updatedMed : m));
@@ -293,6 +337,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { log } = await logAdherenceDB(medId, targetMed.profileId, "skipped", 0);
       if (reason) log.notes = reason;
       setMedicationLogs(prev => [log, ...prev]);
+      logUserAction("MEDICATION_SKIPPED", `Marked ${targetMed.name} dose as skipped${reason ? `: ${reason}` : ""}`);
       showToast("info", "Dose Marked Skipped", `Marked ${targetMed.name} dose as skipped${reason ? `: ${reason}` : ""}.`);
     } catch (err: any) {
       showToast("error", "Skip Error", err.message || "Failed to log skipped dose.");
@@ -485,6 +530,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addGlucoseLog,
         bpLogs,
         addBPLog,
+
+        auditLogs,
+        logUserAction,
 
         caretakerEmail,
         setCaretakerEmail,
