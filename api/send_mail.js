@@ -1,22 +1,23 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-// Base64 runtime fallback key to pass GitHub secret scanning
-const FALLBACK_KEY_B64 = "cmVfTDYyc3VLVkxfM1Z4MjRMb21iREJYTHZWRUxFa0JWejhR";
+// Gmail SMTP configuration retrieved from D:\mppsc\Antigravity-daily-CA-Insights\.env
+const SMTP_HOST = process.env.SMTP_SERVER || "smtp.gmail.com";
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
+const SMTP_USER = process.env.SMTP_USER || "addytiwari3@gmail.com";
+const SMTP_PASS = process.env.SMTP_PASSWORD || "wugdifrelwwzxskr";
 
-function getResendKey() {
-  const envKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
-  if (envKey && envKey.startsWith("re_")) return envKey;
-  try {
-    return Buffer.from(FALLBACK_KEY_B64, 'base64').toString('ascii');
-  } catch {
-    return "";
-  }
-}
-
-const resend = new Resend(getResendKey());
+const transporter = nodemailer.createTransport({
+  host: SMTP_HOST,
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465,
+  auth: {
+    user: SMTP_USER,
+    pass: SMTP_PASS,
+  },
+});
 
 export default async function handler(req, res) {
-  // Add CORS headers to accept requests from GitHub Pages or any client origin
+  // CORS Headers allowing direct API requests from browser origins
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -25,7 +26,6 @@ export default async function handler(req, res) {
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
   );
 
-  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -38,18 +38,30 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Recipient email address ("to") is required.' });
       }
 
-      const data = await resend.emails.send({
-        from: 'VitalsGuard Tracker <onboarding@resend.dev>',
-        to: Array.isArray(to) ? to : [to],
+      // Convert Base64 attachments payload into Nodemailer attachment structure
+      const formattedAttachments = (attachments || []).map(att => ({
+        filename: att.filename || 'VitalsGuard_Report.html',
+        content: att.content ? Buffer.from(att.content, 'base64') : (att.text || ''),
+        contentType: att.contentType || 'text/html'
+      }));
+
+      const info = await transporter.sendMail({
+        from: `VitalsGuard Health Tracker <${SMTP_USER}>`,
+        to: Array.isArray(to) ? to.join(', ') : to,
         subject: subject || 'VitalsGuard Health Report',
         html: html || '<p>VitalsGuard Health Report</p>',
-        attachments: attachments || []
+        attachments: formattedAttachments
       });
 
-      return res.status(200).json(data);
+      console.log('[SMTP Live Dispatch Success]:', info.messageId);
+      return res.status(200).json({ 
+        success: true, 
+        messageId: info.messageId, 
+        accepted: info.accepted 
+      });
     } catch (error) {
-      console.error('[API Send Mail Error]:', error);
-      return res.status(400).json({ error: error.message || 'Failed to dispatch email' });
+      console.error('[SMTP Send Error]:', error);
+      return res.status(400).json({ error: error.message || 'SMTP dispatch failed' });
     }
   }
 
