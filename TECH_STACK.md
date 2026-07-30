@@ -1,6 +1,6 @@
 # Technical Architecture & Open Source Tech Stack
 
-This document details every technology, framework, database tier, email provider, and CI/CD workflow used in the **CarePulse Diabetes, BP & Medication Tracker Dashboard**.
+This document details every technology, framework, database tier, email provider, and CI/CD workflow used in the **VitalsGuard Diabetes, BP & Medication Tracker Dashboard**.
 
 ---
 

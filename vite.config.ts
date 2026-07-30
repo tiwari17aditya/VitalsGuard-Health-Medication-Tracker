@@ -14,8 +14,8 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
-          name: 'CarePulse Diabetes, BP & Medication Tracker',
-          short_name: 'CarePulse',
+          name: 'VitalsGuard Diabetes, BP & Medication Tracker',
+          short_name: 'VitalsGuard',
           description: 'Multi-user health and medication dashboard for parents and caretakers',
           theme_color: '#0f172a',
           background_color: '#0f172a',

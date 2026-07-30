@@ -20,12 +20,12 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
 
 // LOCAL STORAGE FALLBACK ENGINE
 const STORAGE_KEYS = {
-  PROFILES: "carepulse_profiles_v1",
-  MEDICATIONS: "carepulse_medications_v1",
-  MED_LOGS: "carepulse_med_logs_v1",
-  GLUCOSE_LOGS: "carepulse_glucose_logs_v1",
-  BP_LOGS: "carepulse_bp_logs_v1",
-  REPORTS: "carepulse_reports_v1",
+  PROFILES: "vitalsguard_profiles_v1",
+  MEDICATIONS: "vitalsguard_medications_v1",
+  MED_LOGS: "vitalsguard_med_logs_v1",
+  GLUCOSE_LOGS: "vitalsguard_glucose_logs_v1",
+  BP_LOGS: "vitalsguard_bp_logs_v1",
+  REPORTS: "vitalsguard_reports_v1",
 };
 
 // Helper to safely load from local storage or defaults

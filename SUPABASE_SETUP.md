@@ -1,6 +1,6 @@
 # Supabase Free Database Setup Guide
 
-CarePulse Health & Medication Tracker utilizes **Supabase PostgreSQL Free Tier** (500MB DB, free RESTful API).
+VitalsGuard Health & Medication Tracker utilizes **Supabase PostgreSQL Free Tier** (500MB DB, free RESTful API).
 
 ---
 

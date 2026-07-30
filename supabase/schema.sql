@@ -1,5 +1,5 @@
 -- ====================================================================
--- CAREPULSE MEDICATION & HEALTH TRACKER - SUPABASE POSTGRESQL SCHEMA
+-- VITALSGUARD MEDICATION & HEALTH TRACKER - SUPABASE POSTGRESQL SCHEMA
 -- Open Source & 100% Lifetime Free Tier Compatible
 -- ====================================================================
 

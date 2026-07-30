@@ -45,7 +45,7 @@ export const TechStackModal: React.FC<TechStackModalProps> = ({ onClose }) => {
         
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Code color="var(--primary)" /> CarePulse Open Source Tech Stack
+            <Code color="var(--primary)" /> VitalsGuard Open Source Tech Stack
           </h2>
           <button onClick={onClose} className="btn btn-secondary btn-sm">✕</button>
         </div>

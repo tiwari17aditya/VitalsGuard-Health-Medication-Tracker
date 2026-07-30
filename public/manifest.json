@@ -1,6 +1,6 @@
 {
-  "name": "CarePulse Diabetes, BP & Medication Tracker",
-  "short_name": "CarePulse",
+  "name": "VitalsGuard Diabetes, BP & Medication Tracker",
+  "short_name": "VitalsGuard",
   "description": "Multi-user health and medication dashboard for parents and caretakers",
   "start_url": "./",
   "display": "standalone",

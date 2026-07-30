@@ -79,7 +79,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   
   const [caretakerEmail, setCaretakerEmailState] = useState<string>(
-    localStorage.getItem("carepulse_caretaker_email") || APP_CONFIG.emailSettings.defaultCaretakerEmail
+    localStorage.getItem("vitalsguard_caretaker_email") || APP_CONFIG.emailSettings.defaultCaretakerEmail
   );
   
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -135,7 +135,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setCaretakerEmail = (email: string) => {
     setCaretakerEmailState(email);
-    localStorage.setItem("carepulse_caretaker_email", email);
+    localStorage.setItem("vitalsguard_caretaker_email", email);
     logUserAction("PROFILE_UPDATED", `Caretaker email address updated to ${email}`);
     showToast("info", "Email Saved", `Caretaker email updated to ${email}`);
   };
@@ -150,7 +150,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       setProfiles(loadedProfiles);
       
-      const savedId = localStorage.getItem("carepulse_active_profile");
+      const savedId = localStorage.getItem("vitalsguard_active_profile");
       const match = loadedProfiles.find(p => p.id === savedId);
       setActiveProfileIdState(match ? match.id : loadedProfiles[0].id);
 
@@ -182,7 +182,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setActiveProfileId = (id: string) => {
     setActiveProfileIdState(id);
-    localStorage.setItem("carepulse_active_profile", id);
+    localStorage.setItem("vitalsguard_active_profile", id);
   };
 
   const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || APP_CONFIG.defaultProfiles[0];
@@ -349,7 +349,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMedicationLogs(prev => prev.filter(l => l.id !== logId));
       // Save updated logs to localStorage
       const filtered = medicationLogs.filter(l => l.id !== logId);
-      localStorage.setItem("carepulse_med_logs_v1", JSON.stringify(filtered));
+      localStorage.setItem("vitalsguard_med_logs_v1", JSON.stringify(filtered));
       showToast("info", "Log Deleted", "Intake log removed.");
     } catch (err: any) {
       showToast("error", "Delete Error", err.message || "Could not delete log.");
