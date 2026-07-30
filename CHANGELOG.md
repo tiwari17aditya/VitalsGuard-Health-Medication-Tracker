@@ -6,6 +6,22 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## 🚀 [v1.7.0] — 2026-07-30 (Email CSV Sharing & Backdated Medication Logging)
+
+### 🌟 Added
+- **CSV Report Emailing with Date Limits**:
+  - Implemented UI controls under **Reports Manager** to select a date filter limit: *Today*, *Custom Date*, or *All Time*.
+  - Added a backend-supported email dispatch for CSV files: encodes the generated CSV string into Base64 format and sends it as an email attachment (`vitalsguard_report_[name]_up_to_[date].csv`).
+  - Automatically falls back to plain-text body insertion in the mail client if SMTP dispatch fails.
+- **Enhanced CSV Composition**:
+  - Upgraded the exported CSV fields to include **Medication Adherence/Intake Logs** alongside existing blood pressure, glucose logs, and prescriptions.
+- **Backdated Pill Intake Logging**:
+  - Added a **Jump to Date** custom date picker in the **Adherence Calendar** ribbon.
+  - Implemented backdated pill logging: if a past date has pending scheduled medications, an inline time selector and **Take Pill** button allow logging it for that day.
+  - Extended `takeMedication` state action to accept and process backdated `customDateStr` values, automatically re-sorting logs by timestamp descending.
+
+---
+
 ## 🚀 [v1.6.0] — 2026-07-30 (Vercel Cloud Deployment & Reliable Email Delivery)
 
 ### 🌟 Added

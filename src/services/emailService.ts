@@ -1,10 +1,17 @@
 import type { UserProfile, Medication, GlucoseLog, BPLog, MedicationLog } from "../types";
 
+export interface EmailAttachment {
+  filename: string;
+  content: string; // Base64 encoded string
+  contentType?: string;
+}
+
 export interface EmailPayload {
   to: string;
   subject: string;
   htmlContent: string;
-  type: "refill_alert" | "daily_check" | "weekly_report" | "monthly_report" | "tabular_report";
+  type: "refill_alert" | "daily_check" | "weekly_report" | "monthly_report" | "tabular_report" | "csv_report";
+  attachments?: EmailAttachment[];
 }
 
 /**
@@ -73,7 +80,7 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
       to: payload.to.trim(),
       subject: payload.subject,
       html: payload.htmlContent,
-      attachments: [
+      attachments: payload.attachments || [
         {
           filename: `VitalsGuard_Health_Report_${new Date().toISOString().split('T')[0]}.html`,
           content: documentBase64

@@ -27,7 +27,7 @@ interface AppContextType {
   medicationLogs: MedicationLog[];
   addOrUpdateMedication: (med: Medication) => Promise<void>;
   deleteMedication: (id: string) => Promise<void>;
-  takeMedication: (medId: string, customTimeStr?: string) => Promise<void>;
+  takeMedication: (medId: string, customTimeStr?: string, customDateStr?: string) => Promise<void>;
   skipMedication: (medId: string, reason?: string) => Promise<void>;
   deleteMedicationLog: (logId: string) => Promise<void>;
   refillStock: (medId: string, addedCount: number) => Promise<void>;
@@ -268,8 +268,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // TAKE MEDICATION WITH CUSTOM TIME SUPPORT
-  const takeMedication = async (medId: string, customTimeStr?: string) => {
+  // TAKE MEDICATION WITH CUSTOM TIME & DATE SUPPORT
+  const takeMedication = async (medId: string, customTimeStr?: string, customDateStr?: string) => {
     const targetMed = medications.find(m => m.id === medId);
     if (!targetMed) return;
 
@@ -279,7 +279,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     let timestampToLog = new Date().toISOString();
-    if (customTimeStr) {
+    if (customDateStr) {
+      const dateParts = customDateStr.split("-").map(Number);
+      const customDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+      if (customTimeStr) {
+        const [hours, minutes] = customTimeStr.split(":").map(Number);
+        if (!isNaN(hours) && !isNaN(minutes)) {
+          customDate.setHours(hours, minutes, 0, 0);
+        }
+      } else {
+        const now = new Date();
+        customDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+      }
+      timestampToLog = customDate.toISOString();
+    } else if (customTimeStr) {
       const [hours, minutes] = customTimeStr.split(":").map(Number);
       const customDate = new Date();
       if (!isNaN(hours) && !isNaN(minutes)) {
@@ -290,7 +303,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       const { log, updatedMed } = await logAdherenceDB(medId, targetMed.profileId, "taken", 1, timestampToLog);
-      setMedicationLogs(prev => [log, ...prev]);
+      setMedicationLogs(prev => 
+        [log, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      );
       logUserAction("MEDICATION_TAKEN", `Logged intake of ${targetMed.name} (${targetMed.dosage})`, { medId, timestamp: timestampToLog });
 
       if (updatedMed) {
@@ -306,21 +321,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const formattedTime = new Date(timestampToLog).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      showToast("success", "Medication Logged", `Taken ${targetMed.name} at ${formattedTime}. ${updatedMed ? updatedMed.stockCount : targetMed.stockCount - 1} pills remaining.`);
+      const formattedDate = new Date(timestampToLog).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      showToast("success", "Medication Logged", `Taken ${targetMed.name} on ${formattedDate} at ${formattedTime}. ${updatedMed ? updatedMed.stockCount : targetMed.stockCount - 1} pills remaining.`);
 
       if (APP_CONFIG.featureFlags.enableConfettiOnAdherence) {
         const profileMeds = medications.filter(m => m.profileId === targetMed.profileId && m.active);
-        const todayStr = new Date().toISOString().split("T")[0];
-        const takenTodayIds = new Set(
+        const logDateStr = timestampToLog.split("T")[0];
+        const takenOnDateIds = new Set(
           medicationLogs
-            .filter(l => l.profileId === targetMed.profileId && l.timestamp.startsWith(todayStr) && l.status === "taken")
+            .filter(l => l.profileId === targetMed.profileId && l.timestamp.startsWith(logDateStr) && l.status === "taken")
             .map(l => l.medicationId)
         );
-        takenTodayIds.add(medId);
+        takenOnDateIds.add(medId);
 
-        if (profileMeds.length > 0 && takenTodayIds.size >= profileMeds.length) {
+        if (profileMeds.length > 0 && takenOnDateIds.size >= profileMeds.length) {
           confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-          showToast("success", "🎉 All Meds Complete!", "Great job! All scheduled medications for today are taken!");
+          showToast("success", "🎉 All Meds Complete!", `Great job! All scheduled medications for ${formattedDate} are taken!`);
         }
       }
 

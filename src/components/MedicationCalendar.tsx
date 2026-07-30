@@ -3,7 +3,7 @@ import { Calendar, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { useApp } from "../context/AppContext";
 
 export const MedicationCalendar: React.FC = () => {
-  const { activeProfile, medications, medicationLogs } = useApp();
+  const { activeProfile, medications, medicationLogs, takeMedication } = useApp();
 
   const [selectedDateStr, setSelectedDateStr] = useState<string>(
     new Date().toISOString().split("T")[0]
@@ -60,6 +60,18 @@ export const MedicationCalendar: React.FC = () => {
             Daily history & exact intake timestamps for doctor compliance review ({activeProfile.name})
           </p>
         </div>
+
+        {/* Date Selector to Jump to Custom Date */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: "600" }}>Jump to Date:</span>
+          <input
+            type="date"
+            value={selectedDateStr}
+            onChange={(e) => setSelectedDateStr(e.target.value)}
+            className="form-input"
+            style={{ width: "auto", padding: "4px 8px", fontSize: "0.9rem" }}
+          />
+        </div>
       </div>
 
       {/* Date Picker Ribbon */}
@@ -115,6 +127,9 @@ export const MedicationCalendar: React.FC = () => {
               const isTaken = Boolean(medLog);
               const exactTimeFormatted = medLog ? new Date(medLog.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
 
+              // Default backdate time to medication's times array or 08:00
+              const defaultTime = m.times && m.times[0] ? m.times[0] : "08:00";
+
               return (
                 <div
                   key={m.id}
@@ -125,10 +140,12 @@ export const MedicationCalendar: React.FC = () => {
                     padding: "14px 16px",
                     borderRadius: "var(--radius-md)",
                     background: "var(--bg-card)",
-                    border: "1px solid var(--border-color)"
+                    border: "1px solid var(--border-color)",
+                    flexWrap: "wrap",
+                    gap: "12px"
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "200px" }}>
                     {isTaken ? (
                       <CheckCircle2 size={24} color="#10b981" />
                     ) : (
@@ -142,16 +159,39 @@ export const MedicationCalendar: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Exact Doctor Timestamp */}
+                  {/* Exact Doctor Timestamp or Backdate Pill Logger Controls */}
                   <div>
                     {isTaken ? (
                       <span className="badge badge-success" style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.85rem" }}>
                         <Clock size={14} /> Taken at {exactTimeFormatted}
                       </span>
                     ) : (
-                      <span className="badge badge-warning" style={{ fontSize: "0.85rem" }}>
-                        ⏳ Pending Intake
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "var(--bg-primary)", padding: "4px 8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)" }}>
+                          <Clock size={13} color="var(--text-muted)" />
+                          <input
+                            type="time"
+                            defaultValue={defaultTime}
+                            id={`time-picker-${m.id}-${selectedDateStr}`}
+                            className="form-input"
+                            style={{ width: "auto", padding: "0px 4px", fontSize: "0.8rem", border: "none", background: "transparent", height: "20px" }}
+                            title="Set intake time for the pill took"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            const timeInput = document.getElementById(`time-picker-${m.id}-${selectedDateStr}`) as HTMLInputElement;
+                            const timeVal = timeInput ? timeInput.value : defaultTime;
+                            takeMedication(m.id, timeVal, selectedDateStr);
+                          }}
+                          className="btn btn-success btn-sm"
+                          style={{ padding: "4px 8px", minHeight: "28px", fontSize: "0.8rem", background: "#10b981", color: "white" }}
+                          disabled={m.stockCount <= 0}
+                          title="Log this missed pill as taken for this date"
+                        >
+                          Take Pill
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
