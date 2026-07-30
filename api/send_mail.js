@@ -7,7 +7,7 @@ const RESEND_API_KEY = process.env.VITE_RESEND_API_KEY || process.env.RESEND_API
 const SMTP_HOST = process.env.SMTP_SERVER || "smtp.gmail.com";
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
 const SMTP_USER = process.env.SMTP_USER || "addytiwari5@gmail.com";
-const SMTP_PASS = process.env.SMTP_PASSWORD || "wugdifrelwwzxskr";
+const SMTP_PASS = process.env.SMTP_PASSWORD || "zreycsrvfehhfwyk";
 
 const transporter = nodemailer.createTransport({
   host: SMTP_HOST,
