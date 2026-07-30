@@ -64,15 +64,15 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
     },
     {
       category: "Email Engine",
-      tech: "Resend API / EmailJS",
+      tech: "Resend API / Nodemailer (Fail-safe Fallback)",
       cost: "100% Free Tier (3,000 emails/mo)",
-      description: "Refill warning emails, end-of-day compliance check digests, and HTML tabular reports."
+      description: "Supports serverless dispatch via Resend API and Nodemailer fallback SMTP. Client-side mailto-client acts as a fail-safe offline fallback."
     },
     {
-      category: "CI/CD & Free Hosting",
-      tech: "GitHub Actions + GitHub Pages",
+      category: "CI/CD & Cloud Hosting",
+      tech: "Vercel + GitHub Actions",
       cost: "100% Lifetime Free",
-      description: "Automated build & deploy pipeline triggered on push + scheduled nightly report cron job."
+      description: "Automated SPA build and deployment triggered on git push, hosted on Vercel with SPA routing rewrite rules."
     }
   ];
 
