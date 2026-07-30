@@ -20,41 +20,86 @@ export const ReportsManager: React.FC = () => {
     showToast
   } = useApp();
 
-  const [reportRange, setReportRange] = useState<"Daily" | "Weekly" | "Monthly">("Weekly");
   const [emailInput, setEmailInput] = useState<string>(caretakerEmail || "addytiwari5@gmail.com");
   const [isSending, setIsSending] = useState<boolean>(false);
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
 
   // CSV Custom Export & Email states
   const [csvLimitType, setCsvLimitType] = useState<"today" | "custom" | "all">("today");
-  const [csvCustomDate, setCsvCustomDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [isCsvSending, setIsCsvSending] = useState<boolean>(false);
+  const [csvStartDate, setCsvStartDate] = useState<string>(
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+  );
+  const [csvEndDate, setCsvEndDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
 
   if (!activeProfile) return null;
 
   const isEmailValid = isValidEmail(emailInput);
+
+  const getSelectedLimitDateRange = (): { start: Date; end: Date } => {
+    if (csvLimitType === "today") {
+      const startToday = new Date();
+      startToday.setHours(0, 0, 0, 0);
+      const endToday = new Date();
+      endToday.setHours(23, 59, 59, 999);
+      return { start: startToday, end: endToday };
+    } else if (csvLimitType === "custom") {
+      const startParts = csvStartDate.split("-").map(Number);
+      const endParts = csvEndDate.split("-").map(Number);
+      const startRange = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+      startRange.setHours(0, 0, 0, 0);
+      const endRange = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+      endRange.setHours(23, 59, 59, 999);
+      return { start: startRange, end: endRange };
+    } else {
+      const startAll = new Date(0);
+      const endAll = new Date();
+      endAll.setFullYear(endAll.getFullYear() + 100);
+      return { start: startAll, end: endAll };
+    }
+  };
 
   const profileMeds = medications.filter(m => m.profileId === activeProfile.id);
   const profileGlucose = glucoseLogs.filter(g => g.profileId === activeProfile.id);
   const profileBP = bpLogs.filter(b => b.profileId === activeProfile.id);
   const profileLogs = medicationLogs.filter(l => l.profileId === activeProfile.id);
 
+  // Filter range data strictly for summary stats
+  const { start: previewStart, end: previewEnd } = getSelectedLimitDateRange();
+
+  const rangeGlucose = profileGlucose.filter(g => {
+    const d = new Date(g.timestamp);
+    return d >= previewStart && d <= previewEnd;
+  });
+  const rangeBP = profileBP.filter(b => {
+    const d = new Date(b.timestamp);
+    return d >= previewStart && d <= previewEnd;
+  });
+  const rangeLogs = profileLogs.filter(l => {
+    const d = new Date(l.timestamp);
+    return d >= previewStart && d <= previewEnd;
+  });
+
   // Group all activity logs & UI interaction audit logs into date-based daily log files
   const dailyLogsMap = getDailyLogsGrouped(activeProfile, medications, medicationLogs, glucoseLogs, bpLogs, auditLogs);
 
-  // Compute adherence stats
+  // Compute adherence stats dynamically
   const totalMedsCount = profileMeds.length;
-  const takenLogsCount = profileLogs.filter(l => l.status === "taken").length;
-  const adherencePercent = totalMedsCount > 0 ? Math.min(100, Math.round((takenLogsCount / (totalMedsCount * 7)) * 100)) : 100;
+  const takenLogsCount = rangeLogs.filter(l => l.status === "taken").length;
+  
+  const uniqueDaysInRange = new Set(rangeLogs.map(l => l.timestamp.split('T')[0]));
+  const numDaysInRange = Math.max(1, uniqueDaysInRange.size);
+  const adherencePercent = totalMedsCount > 0 ? Math.min(100, Math.round((takenLogsCount / (totalMedsCount * numDaysInRange)) * 100)) : 100;
 
   // Average glucose
-  const avgGlucose = profileGlucose.length > 0 
-    ? Math.round(profileGlucose.reduce((acc, g) => acc + g.value, 0) / profileGlucose.length) 
+  const avgGlucose = rangeGlucose.length > 0 
+    ? Math.round(rangeGlucose.reduce((acc, g) => acc + g.value, 0) / rangeGlucose.length) 
     : 0;
 
   // Average BP
-  const avgSYS = profileBP.length > 0 ? Math.round(profileBP.reduce((acc, b) => acc + b.systolic, 0) / profileBP.length) : 0;
-  const avgDIA = profileBP.length > 0 ? Math.round(profileBP.reduce((acc, b) => acc + b.diastolic, 0) / profileBP.length) : 0;
+  const avgSYS = rangeBP.length > 0 ? Math.round(rangeBP.reduce((acc, b) => acc + b.systolic, 0) / rangeBP.length) : 0;
+  const avgDIA = rangeBP.length > 0 ? Math.round(rangeBP.reduce((acc, b) => acc + b.diastolic, 0) / rangeBP.length) : 0;
 
   const handleSaveEmailConfig = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +110,92 @@ export const ReportsManager: React.FC = () => {
     setCaretakerEmail(emailInput.trim());
   };
 
-  // Dispatch Tabular HTML Email Report via Resend API
+
+
+  const generateCSVData = (
+    profile: any,
+    meds: any[],
+    glucose: any[],
+    bp: any[],
+    logs: any[],
+    startDate: Date,
+    endDate: Date,
+    caretakerEmailAddress: string
+  ): string => {
+    const avgGlucose = glucose.length > 0 
+      ? Math.round(glucose.reduce((acc, g) => acc + g.value, 0) / glucose.length) 
+      : "N/A";
+    const avgSYS = bp.length > 0 ? Math.round(bp.reduce((acc, b) => acc + b.systolic, 0) / bp.length) : 0;
+    const avgDIA = bp.length > 0 ? Math.round(bp.reduce((acc, b) => acc + b.diastolic, 0) / bp.length) : 0;
+    const avgBPStr = avgSYS > 0 ? `${avgSYS}/${avgDIA} mmHg` : "N/A";
+    
+    const totalScheduled = meds.length;
+    const totalTaken = logs.filter(l => l.status === "taken").length;
+    
+    const uniqueDays = new Set(logs.map(l => l.timestamp.split('T')[0]));
+    const numDays = Math.max(1, uniqueDays.size);
+    const adherencePercent = totalScheduled > 0 ? Math.min(100, Math.round((totalTaken / (totalScheduled * numDays)) * 100)) : 100;
+
+    const csvRows: string[] = [];
+    csvRows.push(`========================================================`);
+    csvRows.push(`🛡️ VITALSGUARD HEALTH RECORDS SUMMARY`);
+    csvRows.push(`========================================================`);
+    csvRows.push(`Patient Name,${profile.name}`);
+    csvRows.push(`Relationship / Role,${profile.role}`);
+    csvRows.push(`Caretaker Email Address,${caretakerEmailAddress}`);
+    csvRows.push(`Report Range,${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
+    csvRows.push(`Exported Timestamp,${new Date().toLocaleString()}`);
+    csvRows.push(``);
+    csvRows.push(`📈 RANGE METRICS SUMMARY`);
+    csvRows.push(`--------------------------------------------------------`);
+    csvRows.push(`Total Prescriptions,${meds.length}`);
+    csvRows.push(`Range Adherence Rate,${adherencePercent}%`);
+    csvRows.push(`Average Blood Glucose,${avgGlucose === "N/A" ? "N/A" : avgGlucose + " mg/dL"}`);
+    csvRows.push(`Average Blood Pressure,${avgBPStr}`);
+    csvRows.push(``);
+    
+    csvRows.push(`========================================================`);
+    csvRows.push(`💊 PRESCRIPTIONS & INVENTORY`);
+    csvRows.push(`========================================================`);
+    csvRows.push("Medication Name,Dosage,Frequency,Food Relation,Stock Left,Instructions");
+    meds.forEach(m => {
+      csvRows.push(`"${m.name.replace(/"/g, '""')}","${m.dosage.replace(/"/g, '""')}","${m.frequency.replace(/"/g, '""')}","${m.foodRelation.replace(/"/g, '""')}",${m.stockCount},"${(m.instructions || '').replace(/"/g, '""')}"`);
+    });
+
+    csvRows.push(``);
+    csvRows.push(`========================================================`);
+    csvRows.push(`🩸 BLOOD GLUCOSE LOGS (ADA target: fasting 70-130; post-meal <180)`);
+    csvRows.push(`========================================================`);
+    csvRows.push("Timestamp,Value (mg/dL),Meal Routine,Status,Notes");
+    glucose.forEach(g => {
+      csvRows.push(`"${new Date(g.timestamp).toLocaleString()}",${g.value},"${g.mealType}","${g.status}","${(g.notes || '').replace(/"/g, '""')}"`);
+    });
+
+    csvRows.push(``);
+    csvRows.push(`========================================================`);
+    csvRows.push(`❤️ BLOOD PRESSURE LOGS (AHA target: normal <120/80)`);
+    csvRows.push(`========================================================`);
+    csvRows.push("Timestamp,Systolic (mmHg),Diastolic (mmHg),Pulse (bpm),Category,Notes");
+    bp.forEach(b => {
+      csvRows.push(`"${new Date(b.timestamp).toLocaleString()}",${b.systolic},${b.diastolic},${b.pulse},"${b.category}","${(b.notes || '').replace(/"/g, '""')}"`);
+    });
+
+    csvRows.push(``);
+    csvRows.push(`========================================================`);
+    csvRows.push(`📋 MEDICATION ADHERENCE INTAKE LOGS`);
+    csvRows.push(`========================================================`);
+    csvRows.push("Timestamp,Medication Name,Dosage,Status,Quantity Taken,Notes");
+    logs.forEach(l => {
+      const med = meds.find(m => m.id === l.medicationId);
+      const medName = med ? med.name : "Unknown Medication";
+      const medDosage = med ? med.dosage : "";
+      csvRows.push(`"${new Date(l.timestamp).toLocaleString()}","${medName.replace(/"/g, '""')}","${medDosage.replace(/"/g, '""')}","${l.status}",${l.quantityTaken},"${(l.notes || '').replace(/"/g, '""')}"`);
+    });
+
+    return csvRows.join("\n");
+  };
+
+  // Dispatch Tabular HTML Email Report with fancy CSV attachment via SMTP/Resend API
   const handleSendTabularReport = async () => {
     if (!isValidEmail(emailInput)) {
       showToast("error", "Invalid Recipient Email", `Cannot send email. "${emailInput}" is invalid.`);
@@ -73,16 +203,56 @@ export const ReportsManager: React.FC = () => {
     }
 
     setIsSending(true);
-    const todayStr = new Date().toISOString().split("T")[0];
-    const logsToday = medicationLogs.filter(l => l.profileId === activeProfile.id && l.timestamp.startsWith(todayStr));
+    const { start: limitStart, end: limitEnd } = getSelectedLimitDateRange();
 
-    const htmlContent = generateTabularReportHTML(activeProfile, profileMeds, logsToday, profileGlucose, profileBP, reportRange);
+    // Filter range data strictly
+    const rangeGlucose = profileGlucose.filter(g => {
+      const d = new Date(g.timestamp);
+      return d >= limitStart && d <= limitEnd;
+    });
+    const rangeBP = profileBP.filter(b => {
+      const d = new Date(b.timestamp);
+      return d >= limitStart && d <= limitEnd;
+    });
+    const rangeLogs = profileLogs.filter(l => {
+      const d = new Date(l.timestamp);
+      return d >= limitStart && d <= limitEnd;
+    });
+
+    // Generate fancy CSV data
+    const csvContent = generateCSVData(
+      activeProfile,
+      profileMeds,
+      rangeGlucose,
+      rangeBP,
+      rangeLogs,
+      limitStart,
+      limitEnd,
+      caretakerEmail
+    );
+    const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)));
+
+    // Generate HTML report summary
+    const rangeLabel = csvLimitType === "custom" 
+      ? `${limitStart.toLocaleDateString()} to ${limitEnd.toLocaleDateString()}` 
+      : (csvLimitType === "today" ? "Today" : "All Time");
+    
+    const htmlContent = generateTabularReportHTML(activeProfile, profileMeds, rangeLogs, rangeGlucose, rangeBP, rangeLabel);
+
+    const filename = `vitalsguard_report_${activeProfile.name.replace(/\s+/g, "_")}_${csvLimitType === "custom" ? "custom_range" : csvLimitType}.csv`;
 
     const res = await sendEmailNotification({
       to: emailInput.trim(),
-      subject: `📋 VitalsGuard ${reportRange} Tabular Health Report: ${activeProfile.name} (${new Date().toLocaleDateString()})`,
+      subject: `📋 VitalsGuard Health Report: ${activeProfile.name} (${rangeLabel})`,
       htmlContent,
-      type: "tabular_report"
+      type: "tabular_report",
+      attachments: [
+        {
+          filename,
+          content: csvBase64,
+          contentType: "text/csv"
+        }
+      ]
     });
 
     setIsSending(false);
@@ -124,175 +294,43 @@ export const ReportsManager: React.FC = () => {
     }
   };
 
-  const generateCSVData = (
-    profile: any,
-    meds: any[],
-    glucose: any[],
-    bp: any[],
-    logs: any[],
-    limitDate: Date,
-    caretakerEmailAddress: string
-  ): string => {
-    const csvRows: string[] = [];
-    csvRows.push(`VitalsGuard Health Report for ${profile.name}`);
-    csvRows.push(`Generated Date,${new Date().toLocaleString()}`);
-    csvRows.push(`Data Up To,${limitDate.toLocaleDateString()}`);
-    csvRows.push(`Caretaker Email,${caretakerEmailAddress}`);
-    csvRows.push("");
-    
-    csvRows.push("--- PRESCRIPTIONS & INVENTORY ---");
-    csvRows.push("Medication Name,Dosage,Frequency,Food Relation,Stock Left,Instructions");
-    meds.forEach(m => {
-      csvRows.push(`"${m.name.replace(/"/g, '""')}","${m.dosage.replace(/"/g, '""')}","${m.frequency.replace(/"/g, '""')}","${m.foodRelation.replace(/"/g, '""')}",${m.stockCount},"${(m.instructions || '').replace(/"/g, '""')}"`);
-    });
-
-    csvRows.push("");
-    csvRows.push("--- BLOOD GLUCOSE LOGS ---");
-    csvRows.push("Timestamp,Value (mg/dL),Meal Routine,Status,Notes");
-    const filteredGlucose = glucose.filter(g => new Date(g.timestamp) <= limitDate);
-    filteredGlucose.forEach(g => {
-      csvRows.push(`"${new Date(g.timestamp).toLocaleString()}",${g.value},"${g.mealType}","${g.status}","${(g.notes || '').replace(/"/g, '""')}"`);
-    });
-
-    csvRows.push("");
-    csvRows.push("--- BLOOD PRESSURE LOGS ---");
-    csvRows.push("Timestamp,Systolic (mmHg),Diastolic (mmHg),Pulse (bpm),Category,Notes");
-    const filteredBP = bp.filter(b => new Date(b.timestamp) <= limitDate);
-    filteredBP.forEach(b => {
-      csvRows.push(`"${new Date(b.timestamp).toLocaleString()}",${b.systolic},${b.diastolic},${b.pulse},"${b.category}","${(b.notes || '').replace(/"/g, '""')}"`);
-    });
-
-    csvRows.push("");
-    csvRows.push("--- MEDICATION ADHERENCE LOGS ---");
-    csvRows.push("Timestamp,Medication Name,Dosage,Status,Quantity Taken,Notes");
-    const filteredLogs = logs.filter(l => new Date(l.timestamp) <= limitDate);
-    filteredLogs.forEach(l => {
-      const med = meds.find(m => m.id === l.medicationId);
-      const medName = med ? med.name : "Unknown Medication";
-      const medDosage = med ? med.dosage : "";
-      csvRows.push(`"${new Date(l.timestamp).toLocaleString()}","${medName.replace(/"/g, '""')}","${medDosage.replace(/"/g, '""')}","${l.status}",${l.quantityTaken},"${(l.notes || '').replace(/"/g, '""')}"`);
-    });
-
-    return csvRows.join("\n");
-  };
-
-  const getSelectedLimitDate = (): Date => {
-    if (csvLimitType === "today") {
-      return new Date();
-    } else if (csvLimitType === "custom") {
-      const dateParts = csvCustomDate.split("-").map(Number);
-      const dateLimit = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-      dateLimit.setHours(23, 59, 59, 999);
-      return dateLimit;
-    } else {
-      const farFuture = new Date();
-      farFuture.setFullYear(farFuture.getFullYear() + 100);
-      return farFuture;
-    }
-  };
-
   const handleExportCSV = () => {
-    const limitDate = getSelectedLimitDate();
+    const { start: limitStart, end: limitEnd } = getSelectedLimitDateRange();
+    
+    const rangeGlucose = profileGlucose.filter(g => {
+      const d = new Date(g.timestamp);
+      return d >= limitStart && d <= limitEnd;
+    });
+    const rangeBP = profileBP.filter(b => {
+      const d = new Date(b.timestamp);
+      return d >= limitStart && d <= limitEnd;
+    });
+    const rangeLogs = profileLogs.filter(l => {
+      const d = new Date(l.timestamp);
+      return d >= limitStart && d <= limitEnd;
+    });
+
     const csvContent = generateCSVData(
       activeProfile,
       profileMeds,
-      profileGlucose,
-      profileBP,
-      profileLogs,
-      limitDate,
+      rangeGlucose,
+      rangeBP,
+      rangeLogs,
+      limitStart,
+      limitEnd,
       caretakerEmail
     );
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `vitalsguard_report_${activeProfile.name.replace(/\s+/g, "_")}_up_to_${limitDate.toISOString().split("T")[0]}.csv`);
+    const dateStr = limitEnd.toISOString().split("T")[0];
+    link.setAttribute("download", `vitalsguard_report_${activeProfile.name.replace(/\s+/g, "_")}_up_to_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    showToast("success", "CSV Downloaded", `Tabular records up to ${limitDate.toLocaleDateString()} exported to CSV file.`);
-  };
-
-  const handleSendCSVReport = async () => {
-    if (!isValidEmail(emailInput)) {
-      showToast("error", "Invalid Recipient Email", `Cannot send email. "${emailInput}" is invalid.`);
-      return;
-    }
-
-    setIsCsvSending(true);
-    const limitDate = getSelectedLimitDate();
-    const csvContent = generateCSVData(
-      activeProfile,
-      profileMeds,
-      profileGlucose,
-      profileBP,
-      profileLogs,
-      limitDate,
-      caretakerEmail
-    );
-
-    const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)));
-    const limitDateStr = limitDate.toISOString().split("T")[0];
-    const filename = `vitalsguard_report_${activeProfile.name.replace(/\s+/g, "_")}_up_to_${limitDateStr}.csv`;
-
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-        <div style="background-color: #10b981; color: white; padding: 16px; text-align: center;">
-          <h2 style="margin:0;">📊 VitalsGuard CSV Health Report</h2>
-          <p style="margin:4px 0 0 0;">Medication Adherence & Vitals Records for <strong>${activeProfile.name}</strong></p>
-        </div>
-        <div style="padding: 20px;">
-          <p>Hello Caretaker,</p>
-          <p>The requested CSV spreadsheet report containing health metrics and medication adherence history for <strong>${activeProfile.name}</strong> has been compiled and is attached to this email.</p>
-          
-          <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px; font-weight: bold; width: 40%;">Filter Range Limit:</td>
-              <td style="padding: 8px;">Up to ${limitDate.toLocaleDateString()}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px; font-weight: bold;">Export File Name:</td>
-              <td style="padding: 8px;"><code>${filename}</code></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px; font-weight: bold;">Records Included:</td>
-              <td style="padding: 8px;">Prescriptions, Medication logs, Glucose logs, Blood pressure logs</td>
-            </tr>
-          </table>
-
-          <p style="margin-top: 25px; font-size: 13px; color: #4b5563; line-height: 1.5;">
-            Please open the attachment in spreadsheet software (like Microsoft Excel, Google Sheets, or Apple Numbers) to review the detailed history.
-          </p>
-          
-          <p style="margin-top: 25px; color: #6b7280; font-size: 11px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 10px;">
-            Sent automatically by VitalsGuard Health Tracker.
-          </p>
-        </div>
-      </div>
-    `;
-
-    const res = await sendEmailNotification({
-      to: emailInput.trim(),
-      subject: `📊 VitalsGuard CSV Health Records: ${activeProfile.name} (Up to ${limitDate.toLocaleDateString()})`,
-      htmlContent,
-      type: "csv_report",
-      attachments: [
-        {
-          filename,
-          content: csvBase64,
-          contentType: "text/csv"
-        }
-      ]
-    });
-
-    setIsCsvSending(false);
-
-    if (res.success) {
-      showToast("success", "CSV Report Dispatched!", res.message);
-    } else {
-      showToast("error", "Email Failed", res.message);
-    }
+    showToast("success", "CSV Downloaded", `Tabular records exported successfully to CSV file.`);
   };
 
   const handlePrintPDF = () => {
@@ -372,6 +410,72 @@ export const ReportsManager: React.FC = () => {
 
           <hr style={{ borderColor: "var(--border-color)", margin: "16px 0" }} />
 
+          <h4 style={{ marginBottom: "10px" }}>Configure Report Range:</h4>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
+            
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" style={{ fontSize: "0.8rem", marginBottom: "4px" }}>Report Date Limit:</label>
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "8px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", cursor: "pointer", color: "var(--text-primary)" }}>
+                  <input
+                    type="radio"
+                    name="csvLimitType"
+                    value="today"
+                    checked={csvLimitType === "today"}
+                    onChange={() => setCsvLimitType("today")}
+                  />
+                  Today
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", cursor: "pointer", color: "var(--text-primary)" }}>
+                  <input
+                    type="radio"
+                    name="csvLimitType"
+                    value="custom"
+                    checked={csvLimitType === "custom"}
+                    onChange={() => setCsvLimitType("custom")}
+                  />
+                  Custom Date Range
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", cursor: "pointer", color: "var(--text-primary)" }}>
+                  <input
+                    type="radio"
+                    name="csvLimitType"
+                    value="all"
+                    checked={csvLimitType === "all"}
+                    onChange={() => setCsvLimitType("all")}
+                  />
+                  All Time
+                </label>
+              </div>
+            </div>
+
+            {csvLimitType === "custom" && (
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <div className="form-group" style={{ margin: 0, flex: "1 1 120px" }}>
+                  <label className="form-label" style={{ fontSize: "0.75rem", marginBottom: "2px" }}>Start Date</label>
+                  <input
+                    type="date"
+                    value={csvStartDate}
+                    onChange={(e) => setCsvStartDate(e.target.value)}
+                    className="form-input"
+                    style={{ padding: "4px 8px", fontSize: "0.85rem" }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0, flex: "1 1 120px" }}>
+                  <label className="form-label" style={{ fontSize: "0.75rem", marginBottom: "2px" }}>End Date</label>
+                  <input
+                    type="date"
+                    value={csvEndDate}
+                    onChange={(e) => setCsvEndDate(e.target.value)}
+                    className="form-input"
+                    style={{ padding: "4px 8px", fontSize: "0.85rem" }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <h4 style={{ marginBottom: "10px" }}>Email Dispatch Actions:</h4>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -399,75 +503,8 @@ export const ReportsManager: React.FC = () => {
 
           </div>
 
-          <hr style={{ borderColor: "var(--border-color)", margin: "16px 0" }} />
-
-          <h4 style={{ marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
-            <FileSpreadsheet size={16} color="var(--success)" /> Email CSV Spreadsheet Report:
-          </h4>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)", marginBottom: "12px" }}>
-            
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ fontSize: "0.8rem", marginBottom: "4px" }}>Filter Data Up To:</label>
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "8px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", cursor: "pointer", color: "var(--text-primary)" }}>
-                  <input
-                    type="radio"
-                    name="csvLimitType"
-                    value="today"
-                    checked={csvLimitType === "today"}
-                    onChange={() => setCsvLimitType("today")}
-                  />
-                  Today
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", cursor: "pointer", color: "var(--text-primary)" }}>
-                  <input
-                    type="radio"
-                    name="csvLimitType"
-                    value="custom"
-                    checked={csvLimitType === "custom"}
-                    onChange={() => setCsvLimitType("custom")}
-                  />
-                  Custom Date
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", cursor: "pointer", color: "var(--text-primary)" }}>
-                  <input
-                    type="radio"
-                    name="csvLimitType"
-                    value="all"
-                    checked={csvLimitType === "all"}
-                    onChange={() => setCsvLimitType("all")}
-                  />
-                  All Time
-                </label>
-              </div>
-            </div>
-
-            {csvLimitType === "custom" && (
-              <div className="form-group" style={{ margin: 0 }}>
-                <input
-                  type="date"
-                  value={csvCustomDate}
-                  onChange={(e) => setCsvCustomDate(e.target.value)}
-                  className="form-input"
-                  style={{ padding: "4px 8px", fontSize: "0.85rem" }}
-                />
-              </div>
-            )}
-
-            <button
-              onClick={handleSendCSVReport}
-              className="btn btn-success"
-              style={{ width: "100%", justifyContent: "center", background: "#10b981", color: "white", minHeight: "36px" }}
-              disabled={isCsvSending || !isEmailValid}
-              title="Share filtered CSV health records via email"
-            >
-              <Mail size={16} /> {isCsvSending ? "Sending CSV..." : "Send CSV via Email"}
-            </button>
-          </div>
-
           <div style={{ marginTop: "14px", padding: "10px", background: "var(--bg-card)", borderRadius: "var(--radius-sm)", fontSize: "0.775rem", color: "var(--text-muted)" }}>
-            💡 <strong>Resend Email Note:</strong> Clicking "Send Email" or "Send CSV via Email" forwards reports directly to caretaker email: <code>{emailInput}</code>.
+            💡 <strong>Resend Email Note:</strong> Clicking "Send Email" forwards the HTML tabular report and the attached fancy CSV directly to target recipient <code>{emailInput}</code>.
           </div>
         </div>
 
@@ -478,16 +515,11 @@ export const ReportsManager: React.FC = () => {
               <User size={18} color="var(--accent)" /> Summary for {activeProfile.name}
             </h3>
             
-            <select
-              value={reportRange}
-              onChange={(e) => setReportRange(e.target.value as any)}
-              className="form-select"
-              style={{ width: "auto", padding: "4px 8px", fontSize: "0.85rem" }}
-            >
-              <option value="Daily">Daily Summary</option>
-              <option value="Weekly">Weekly Summary</option>
-              <option value="Monthly">Monthly Summary</option>
-            </select>
+            <span className="badge badge-primary" style={{ fontSize: "0.8rem", padding: "4px 8px" }}>
+              {csvLimitType === "custom" 
+                ? "Custom Range" 
+                : (csvLimitType === "today" ? "Today" : "All Time")}
+            </span>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -609,10 +641,24 @@ export const ReportsManager: React.FC = () => {
               srcDoc={generateTabularReportHTML(
                 activeProfile, 
                 profileMeds, 
-                medicationLogs.filter(l => l.profileId === activeProfile.id), 
-                profileGlucose, 
-                profileBP, 
-                reportRange
+                profileLogs.filter(l => {
+                  const { start, end } = getSelectedLimitDateRange();
+                  const d = new Date(l.timestamp);
+                  return d >= start && d <= end;
+                }), 
+                profileGlucose.filter(g => {
+                  const { start, end } = getSelectedLimitDateRange();
+                  const d = new Date(g.timestamp);
+                  return d >= start && d <= end;
+                }), 
+                profileBP.filter(b => {
+                  const { start, end } = getSelectedLimitDateRange();
+                  const d = new Date(b.timestamp);
+                  return d >= start && d <= end;
+                }), 
+                csvLimitType === "custom" 
+                  ? "Custom Range" 
+                  : (csvLimitType === "today" ? "Today" : "All Time")
               )}
               style={{ width: "100%", height: "500px", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)" }}
               title="HTML Email Tabular Preview"

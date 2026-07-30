@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Code, Database, FileCode, CheckCircle, Lock, Key, Terminal, History 
+  Code, FileCode, Lock, Key, Terminal, History 
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
@@ -10,25 +10,20 @@ interface DeveloperModalProps {
 }
 
 export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
-  const { isSupabaseActive, showToast } = useApp();
+  const { showToast, updateAdminPasscode } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"techstack" | "database" | "config" | "changelog" | "passcode">("techstack");
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-  const resendKey = import.meta.env.VITE_RESEND_API_KEY || localStorage.getItem("vitalsguard_resend_key") || "";
-  const [customResendKey, setCustomResendKey] = useState(resendKey);
+  const [activeTab, setActiveTab] = useState<"techstack" | "config" | "changelog" | "passcode">("techstack");
 
   // Passcode Management
-  const currentPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
   const [newPin, setNewPin] = useState("");
 
-  const handleUpdatePin = (e: React.FormEvent) => {
+  const handleUpdatePin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPin.trim() || newPin.length < 4) {
       showToast("error", "Invalid Passcode", "Developer passcode must be at least 4 characters.");
       return;
     }
-    localStorage.setItem("vitalsguard_admin_pin", newPin.trim());
+    await updateAdminPasscode(newPin.trim());
     showToast("success", "Passcode Updated", "Developer passcode updated successfully.");
     setNewPin("");
   };
@@ -37,6 +32,15 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
     sessionStorage.removeItem("vitalsguard_admin_authed");
     showToast("info", "Developer Mode Locked", "Developer settings locked.");
     onClose();
+  };
+
+  // Mask passcode config display
+  const safeConfig = {
+    ...APP_CONFIG,
+    security: {
+      ...APP_CONFIG.security,
+      adminPasscode: "••••"
+    }
   };
 
   const techItems = [
@@ -73,6 +77,24 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
   ];
 
   const versionHistory = [
+    {
+      version: "v1.8.0",
+      date: "2026-07-30",
+      title: "UI Security Shield, Persistent Passcodes & Unified Email Reports",
+      highlights: "Redacts Supabase keys, masks PIN settings, syncs developer passcode to Supabase settings profile, implements custom start/end CSV date ranges, renders dynamic fancy CSV report spreadsheets, and unifies tabular reporting email with CSV attachments."
+    },
+    {
+      version: "v1.7.0",
+      date: "2026-07-30",
+      title: "Email CSV Sharing & Backdated Medication Logging",
+      highlights: "Integrates CSV attachment with standard emails, adds custom date range filters, formats fancy CSV layout, adds calendar backdating logs with custom time picker, and secures UI credentials."
+    },
+    {
+      version: "v1.6.0",
+      date: "2026-07-30",
+      title: "Vercel Cloud Deployment & Reliable Email Delivery",
+      highlights: "Adds fail-safe client-side email fallback on API failure, configures SPA rewrites for Vercel, updates high-res PWA manifest icons, and hooks Nodemailer fallback SMTP server."
+    },
     {
       version: "v1.5.0",
       date: "2026-07-28",
@@ -124,7 +146,7 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
           <h2 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "1.1rem" }}>
-            <Terminal color="var(--primary)" size={20} /> Developer Hub (v1.5.2)
+            <Terminal color="var(--primary)" size={20} /> Developer Hub (v{APP_CONFIG.meta.version})
           </h2>
           <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ minHeight: "32px", padding: "4px 10px" }}>✕</button>
         </div>
@@ -143,12 +165,7 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
           >
             <History size={15} /> Version History
           </button>
-          <button
-            onClick={() => setActiveTab("database")}
-            className={`btn btn-sm ${activeTab === "database" ? "btn-primary" : "btn-secondary"}`}
-          >
-            <Database size={15} /> Database & Keys
-          </button>
+          {/* Database keys tab button removed for UI security */}
           <button
             onClick={() => setActiveTab("config")}
             className={`btn btn-sm ${activeTab === "config" ? "btn-primary" : "btn-secondary"}`}
@@ -205,65 +222,6 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* TAB 3: DATABASE & KEYS */}
-        {activeTab === "database" && (
-          <div>
-            <div style={{ background: "var(--bg-primary)", padding: "12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                {isSupabaseActive ? (
-                  <span className="badge badge-success" style={{ fontSize: "0.8rem" }}>
-                    <CheckCircle size={13} /> Supabase Live
-                  </span>
-                ) : (
-                  <span className="badge badge-warning" style={{ fontSize: "0.8rem" }}>
-                    ℹ️ Local Storage Mode
-                  </span>
-                )}
-              </div>
-              <p style={{ fontSize: "0.775rem", color: "var(--text-secondary)" }}>
-                Database schema in <code>supabase/schema.sql</code>. Environment keys loaded from <code>.env</code> file.
-              </p>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">VITE_SUPABASE_URL</label>
-              <input type="text" readOnly value={supabaseUrl} className="form-input" style={{ fontSize: "0.825rem" }} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">VITE_SUPABASE_ANON_KEY</label>
-              <input type="password" readOnly value={supabaseKey} className="form-input" style={{ fontSize: "0.825rem" }} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">VITE_RESEND_API_KEY (Optional for direct API dispatch)</label>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input 
-                  type="password" 
-                  placeholder="re_123456..." 
-                  value={customResendKey} 
-                  onChange={(e) => setCustomResendKey(e.target.value)} 
-                  className="form-input" 
-                  style={{ fontSize: "0.825rem" }} 
-                />
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    localStorage.setItem("vitalsguard_resend_key", customResendKey.trim());
-                    showToast("success", "API Key Saved", "Resend API key saved to local storage.");
-                  }} 
-                  className="btn btn-primary btn-sm"
-                >
-                  Save
-                </button>
-              </div>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "4px" }}>
-                💡 If no API key is set, emails will automatically open your email app / Gmail to send directly!
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* TAB 4: CENTRAL CONFIG */}
         {activeTab === "config" && (
           <div>
@@ -272,7 +230,7 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
             </p>
             <div style={{ background: "var(--bg-primary)", padding: "12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", maxHeight: "320px", overflowY: "auto" }}>
               <pre style={{ fontSize: "0.75rem", color: "#38bdf8", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                {JSON.stringify(APP_CONFIG, null, 2)}
+                {JSON.stringify(safeConfig, null, 2)}
               </pre>
             </div>
           </div>
@@ -285,9 +243,6 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
               <h3 style={{ marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px", fontSize: "0.95rem" }}>
                 <Key size={16} color="var(--primary)" /> Change Developer Passcode
               </h3>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "10px" }}>
-                Current Passcode: <code>{currentPin}</code>
-              </p>
               <div className="form-group">
                 <label className="form-label">New Passcode</label>
                 <input

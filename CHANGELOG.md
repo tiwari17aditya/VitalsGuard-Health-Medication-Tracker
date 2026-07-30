@@ -6,6 +6,28 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## 🚀 [v1.8.0] — 2026-07-30 (UI Security Shield, Persistent Passcodes & Unified Email Reports)
+
+### 🔒 Security & Privacy
+- **UI Key Redaction**: Completely removed the "Database & Keys" tab from the **Developer Hub** and **Settings Panel** to prevent any exposure of Supabase URLs, Anon keys, or Resend API keys.
+- **Passcode Censor**: Hidden raw passcodes from the App Config code-viewer (printed as `••••`) and removed clear-text passcode labels in all developer/admin passcode change forms.
+- **Passcode Shield**: Prevented default admin passcodes from being exposed in `AdminAuthModal` placeholder and validation error texts.
+
+### 🌟 Added & Enhanced
+- **Persistent Cloud Passcode Sync**:
+  - Implemented automatic passcode syncing: when a developer/admin passcode is changed, it is stored locally and also upserted to the Supabase database under a hidden, system-reserved profile record (`system-settings`).
+  - Automatically loads and recovers changed passcodes from the database on app startup if cookies or client-side storage are cleared.
+- **Exclusively Filtered CSV Date Ranges**:
+  - Upgraded the **Custom Date** range picker to support separate **Start Date** and **End Date** inputs.
+  - Excluded any records outside of the strictly chosen date bounds from the exported CSV.
+- **Medical-Grade Fancy CSV Formatting**:
+  - Standardized the exported CSV text with clear decorative section dividers, meta patient profiles, targets references, and live summary statistics (adherence percents, average glucose levels, blood pressure rates).
+- **Unified Email button with CSV Attachments**:
+  - Unified the reporting buttons: the primary **Send Email** button now sends the tabular HTML email body and automatically attaches the corresponding fancy CSV file matching the selected range filter.
+  - Dynamically calculates range compliance rates for multi-day logs within the preview document and email layout.
+
+---
+
 ## 🚀 [v1.7.0] — 2026-07-30 (Email CSV Sharing & Backdated Medication Logging)
 
 ### 🌟 Added

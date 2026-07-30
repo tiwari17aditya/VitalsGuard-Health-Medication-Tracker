@@ -20,7 +20,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
       sessionStorage.setItem("vitalsguard_admin_authed", "true");
       onSuccess();
     } else {
-      setErrorMsg(`Incorrect Passcode! (Default passcode is ${APP_CONFIG.security.adminPasscode})`);
+      setErrorMsg("Incorrect Passcode! Please try again.");
     }
   };
 
@@ -55,7 +55,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
             </label>
             <input
               type="password"
-              placeholder={`Enter passcode (Default: ${APP_CONFIG.security.adminPasscode})`}
+              placeholder="Enter admin passcode"
               value={pinInput}
               onChange={(e) => { setPinInput(e.target.value); setErrorMsg(""); }}
               className="form-input"

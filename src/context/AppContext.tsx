@@ -58,6 +58,7 @@ interface AppContextType {
   isSupabaseActive: boolean;
   isLoading: boolean;
   lowStockMeds: Medication[];
+  updateAdminPasscode: (newPin: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -145,6 +146,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsLoading(true);
     try {
       let loadedProfiles = await fetchProfiles();
+      const systemSettings = loadedProfiles.find(p => p.id === "system-settings");
+      if (systemSettings && systemSettings.notes) {
+        localStorage.setItem("vitalsguard_admin_pin", systemSettings.notes);
+      }
+      loadedProfiles = loadedProfiles.filter(p => p.id !== "system-settings");
+
       if (!loadedProfiles || loadedProfiles.length === 0) {
         loadedProfiles = APP_CONFIG.defaultProfiles as UserProfile[];
       }
@@ -524,6 +531,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const updateAdminPasscode = async (newPin: string) => {
+    localStorage.setItem("vitalsguard_admin_pin", newPin);
+    try {
+      await saveProfileDB({
+        id: "system-settings",
+        name: "System Settings",
+        role: "System",
+        notes: newPin
+      } as UserProfile);
+    } catch (err) {
+      console.warn("Error saving passcode profile:", err);
+    }
+    logUserAction("PROFILE_UPDATED", "Admin passcode updated in database");
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -562,7 +584,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isOffline,
         isSupabaseActive: isSupabaseConfigured,
         isLoading,
-        lowStockMeds
+        lowStockMeds,
+        updateAdminPasscode
       }}
     >
       {children}

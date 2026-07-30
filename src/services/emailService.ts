@@ -132,11 +132,15 @@ export function generateTabularReportHTML(
   logsToday: MedicationLog[], 
   glucoseLogs: GlucoseLog[], 
   bpLogs: BPLog[],
-  reportType: "Daily" | "Weekly" | "Monthly" = "Daily"
+  reportType: string = "Daily"
 ): string {
   const totalMeds = meds.length;
   const takenCount = logsToday.filter(l => l.status === "taken").length;
-  const adherencePercent = totalMeds > 0 ? Math.round((takenCount / totalMeds) * 100) : 100;
+  
+  // Calculate distinct days in logsToday to handle multi-day or custom ranges
+  const uniqueDays = new Set(logsToday.map(l => l.timestamp.split('T')[0]));
+  const numDays = Math.max(1, uniqueDays.size);
+  const adherencePercent = totalMeds > 0 ? Math.min(100, Math.round((takenCount / (totalMeds * numDays)) * 100)) : 100;
 
   const medTableRows = meds.length === 0 ? `
     <tr>

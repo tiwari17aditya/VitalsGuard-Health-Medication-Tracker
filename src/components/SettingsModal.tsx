@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Settings, Database, FileCode, CheckCircle, Lock, Key } from "lucide-react";
+import { Settings, FileCode, Lock, Key } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
 
@@ -8,24 +8,20 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
-  const { isSupabaseActive, showToast } = useApp();
+  const { showToast, updateAdminPasscode } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"database" | "config" | "admin">("database");
-  const [supabaseUrl, setSupabaseUrl] = useState(import.meta.env.VITE_SUPABASE_URL || "");
-  const [supabaseKey, setSupabaseKey] = useState(import.meta.env.VITE_SUPABASE_ANON_KEY || "");
-  const [resendKey, setResendKey] = useState(import.meta.env.VITE_RESEND_API_KEY || "");
+  const [activeTab, setActiveTab] = useState<"config" | "admin">("config");
 
   // Admin PIN Passcode Management
-  const currentPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
   const [newPin, setNewPin] = useState("");
 
-  const handleUpdatePin = (e: React.FormEvent) => {
+  const handleUpdatePin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPin.trim() || newPin.length < 4) {
       showToast("error", "Invalid Passcode", "Admin passcode must be at least 4 characters.");
       return;
     }
-    localStorage.setItem("vitalsguard_admin_pin", newPin.trim());
+    await updateAdminPasscode(newPin.trim());
     showToast("success", "Admin Passcode Updated", "Your new admin password has been saved.");
     setNewPin("");
   };
@@ -34,6 +30,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     sessionStorage.removeItem("vitalsguard_admin_authed");
     showToast("info", "Admin Session Locked", "Admin settings are now locked behind passcode.");
     onClose();
+  };
+
+  const safeConfig = {
+    ...APP_CONFIG,
+    security: {
+      ...APP_CONFIG.security,
+      adminPasscode: "••••"
+    }
   };
 
   return (
@@ -49,12 +53,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
         {/* Tab Buttons */}
         <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-          <button
-            onClick={() => setActiveTab("database")}
-            className={`btn ${activeTab === "database" ? "btn-primary" : "btn-secondary"}`}
-          >
-            <Database size={16} /> Free Database & API Setup
-          </button>
+          {/* Database keys button removed for UI security */}
           <button
             onClick={() => setActiveTab("config")}
             className={`btn ${activeTab === "config" ? "btn-primary" : "btn-secondary"}`}
@@ -69,65 +68,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           </button>
         </div>
 
-        {activeTab === "database" && (
-          <div>
-            <div style={{ background: "var(--bg-primary)", padding: "16px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-                {isSupabaseActive ? (
-                  <span className="badge badge-success" style={{ fontSize: "0.9rem" }}>
-                    <CheckCircle size={16} /> Live Supabase PostgreSQL Connected
-                  </span>
-                ) : (
-                  <span className="badge badge-warning" style={{ fontSize: "0.9rem" }}>
-                    ℹ️ Running in Local Storage Mode (Offline Capable)
-                  </span>
-                )}
-              </div>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                VitalsGuard includes a 100% free Supabase PostgreSQL schema (`supabase/schema.sql`). 
-                You can add your free Supabase credentials to <code>.env</code> or configure below.
-              </p>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">VITE_SUPABASE_URL</label>
-              <input
-                type="text"
-                placeholder="https://your-project.supabase.co"
-                value={supabaseUrl}
-                onChange={(e) => setSupabaseUrl(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">VITE_SUPABASE_ANON_KEY</label>
-              <input
-                type="password"
-                placeholder="eyJhbGciOiJIUzI1NiIsIn..."
-                value={supabaseKey}
-                onChange={(e) => setSupabaseKey(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">VITE_RESEND_API_KEY (Free 3,000 Emails/Month)</label>
-              <input
-                type="password"
-                placeholder="re_123456789..."
-                value={resendKey}
-                onChange={(e) => setResendKey(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "12px" }}>
-              * For full automated email dispatching via GitHub Actions, add these environment secrets in your GitHub repository settings under <code>Settings &gt; Secrets and variables &gt; Actions</code>.
-            </p>
-          </div>
-        )}
-
         {activeTab === "config" && (
           <div>
             <p style={{ color: "var(--text-secondary)", marginBottom: "12px" }}>
@@ -136,7 +76,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
             <div style={{ background: "var(--bg-primary)", padding: "16px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", maxHeight: "300px", overflowY: "auto" }}>
               <pre style={{ fontSize: "0.8rem", color: "#38bdf8" }}>
-                {JSON.stringify(APP_CONFIG, null, 2)}
+                {JSON.stringify(safeConfig, null, 2)}
               </pre>
             </div>
           </div>
@@ -153,9 +93,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 <Key size={18} color="var(--primary)" /> Change Admin Passcode
               </h3>
               
-              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "12px" }}>
-                Current Passcode: <code>{currentPin}</code>
-              </p>
+              {/* Current passcode hidden for UI security */}
 
               <div className="form-group">
                 <label className="form-label">New Admin Passcode</label>
