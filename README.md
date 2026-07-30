@@ -23,6 +23,8 @@ Detailed release notes and developer changelogs are maintained in [**`CHANGELOG.
 
 | Version | Release Date | Key Highlights |
 | :--- | :--- | :--- |
+| **`v1.6.0`** | 2026-07-30 | Vercel cloud deployment setup, fail-safe client mailto fallback, updated SMTP configurations, PWA manifest icons fix, removed deprecated workflows, CarePulse to VitalsGuard refactoring |
+| **`v1.5.0`** | 2026-07-28 | Mobile viewport optimization & mobile bottom glassmorphism navigation bar |
 | **`v1.4.0`** | 2026-07-28 | Exact Doctor Timestamps, `<input type="time">` custom intake time pickers, timeline logs |
 | **`v1.3.0`** | 2026-07-28 | Passcode protection for Adding/Deleting Users, central `APP_CONFIG.security.adminPasscode` |
 | **`v1.2.0`** | 2026-07-28 | UI badge overflow fix, profile-scoped low stock warnings, unified Developer Settings Hub |

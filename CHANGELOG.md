@@ -6,6 +6,28 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## 🚀 [v1.6.0] — 2026-07-30 (Vercel Cloud Deployment & Reliable Email Delivery)
+
+### 🌟 Added
+- **Fail-safe Email Client Fallback**:
+  - Implemented automatic client-side fallback in `emailService.ts` to convert HTML reports to plain-text table summaries and open the default mail client (`mailto:`) on any direct dispatch API errors.
+- **Vercel Cloud Deployment Configuration**:
+  - Configured `vercel.json` for SPA rewrites to `index.html`, preventing 404 errors on route reloads.
+- **High-Resolution PWA Icons**:
+  - Generated and installed valid high-resolution PNG icons for the PWA manifest (`pwa-192x192.png` and `pwa-512x512.png`), resolving browser manifest loading warnings.
+
+### 🛠️ Fixed
+- **Serverless Email Dispatch & Resend API Integration**:
+  - Upgraded `/api/send_mail.js` to support both Resend API key and Gmail SMTP (Nodemailer), providing redundant and reliable dispatch pipelines.
+- **Removed Deprecated Workflows**:
+  - Removed outdated GitHub Actions workflows as deployment migrated to Vercel.
+
+### ♻️ Refactored
+- **Code Refactoring & Brand Alignment**:
+  - Renamed all occurrences of "CarePulse" to "VitalsGuard" across manifest, license, source code, local storage keys, and documentation.
+
+---
+
 ## 📱 [v1.5.0] — 2026-07-28 (Mobile Viewport Optimization & Responsiveness)
 
 ### 🛠️ Fixed
