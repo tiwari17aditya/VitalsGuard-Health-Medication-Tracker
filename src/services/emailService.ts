@@ -17,6 +17,44 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
+ * Helper to parse HTML email content into clean, readable plain text for mailto fallback
+ */
+function stripHtmlToPlainText(html: string): string {
+  let text = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, "")
+    .replace(/<tr[^>]*>/gi, "\n")
+    .replace(/<\/td>/gi, "  |  ")
+    .replace(/<\/th>/gi, "  |  ")
+    .replace(/<h[1-6][^>]*>/gi, "\n\n=== ")
+    .replace(/<\/h[1-6]>/gi, " ===\n")
+    .replace(/<p[^>]*>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "\n- ")
+    .replace(/<[^>]+>/g, ""); // Strip all remaining HTML tags
+  
+  // Resolve HTML entities
+  text = text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\n\s*\n+/g, "\n\n")
+    .trim();
+  
+  return text;
+}
+
+/**
+ * Formulates and opens a mailto link using native window.open/href redirection
+ */
+function openMailtoClient(to: string, subject: string, htmlContent: string) {
+  const plainText = stripHtmlToPlainText(htmlContent);
+  const mailtoUrl = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainText)}`;
+  window.location.href = mailtoUrl;
+}
+
+/**
  * Dispatches an email directly using Gmail SMTP Serverless Service with inline HTML & attached report document
  */
 export async function sendEmailNotification(payload: EmailPayload): Promise<{ success: boolean; message: string }> {
@@ -58,6 +96,13 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
         success: true, 
         message: `Email report & attached health document delivered directly to ${payload.to} via Gmail SMTP!` 
       };
+    } else if (response.status === 405 || response.status === 404) {
+      console.warn(`VitalsGuard API returned status ${response.status} (static/unsupported host). Falling back to mailto client.`);
+      openMailtoClient(payload.to.trim(), payload.subject, payload.htmlContent);
+      return {
+        success: true,
+        message: `Static hosting detected. Opened your default email app with the pre-filled report summary!`
+      };
     } else {
       const errorMsg = data.error || data.message || "Failed to deliver email via SMTP";
       console.error("Gmail SMTP Error:", data);
@@ -65,9 +110,11 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
     }
   } catch (err: any) {
     console.error("Gmail SMTP Dispatch Exception:", err);
+    console.warn("Falling back to mailto client due to connection failure.");
+    openMailtoClient(payload.to.trim(), payload.subject, payload.htmlContent);
     return { 
-      success: false, 
-      message: `Network error connecting to Email Service: ${err.message}` 
+      success: true, 
+      message: `Email service unavailable. Opened your default email app with the pre-filled report summary!` 
     };
   }
 }
