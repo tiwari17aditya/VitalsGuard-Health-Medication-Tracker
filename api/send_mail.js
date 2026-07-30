@@ -1,9 +1,6 @@
 import nodemailer from 'nodemailer';
 
-// Resend Email configuration (VITE_ prefixed or standard env key)
-const RESEND_API_KEY = process.env.VITE_RESEND_API_KEY || process.env.RESEND_API_KEY;
-
-// Gmail SMTP configuration retrieved from D:\mppsc\Antigravity-daily-CA-Insights\.env
+// Gmail SMTP configuration
 const SMTP_HOST = process.env.SMTP_SERVER || "smtp.gmail.com";
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
 const SMTP_USER = process.env.SMTP_USER || "addytiwari3@gmail.com";
@@ -41,45 +38,6 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Recipient email address ("to") is required.' });
       }
 
-      // 1. Attempt dispatch via Resend API if API Key is configured
-      if (RESEND_API_KEY) {
-        try {
-          console.log('[Resend API Live Dispatch Attempt]');
-          const resendResponse = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${RESEND_API_KEY}`
-            },
-            body: JSON.stringify({
-              from: 'VitalsGuard Health Tracker <onboarding@resend.dev>',
-              to: Array.isArray(to) ? to : [to],
-              subject: subject || 'VitalsGuard Health Report',
-              html: html || '<p>VitalsGuard Health Report</p>',
-              attachments: (attachments || []).map(att => ({
-                filename: att.filename || 'VitalsGuard_Report.html',
-                content: att.content // Base64 string directly supported by Resend
-              }))
-            })
-          });
-
-          const resendData = await resendResponse.json();
-          if (resendResponse.ok) {
-            console.log('[Resend API Success]:', resendData.id);
-            return res.status(200).json({ 
-              success: true, 
-              messageId: resendData.id,
-              provider: 'resend'
-            });
-          } else {
-            console.warn('[Resend API Failed, trying SMTP fallback]:', resendData.message);
-          }
-        } catch (resendError) {
-          console.error('[Resend Dispatch Error, trying SMTP fallback]:', resendError);
-        }
-      }
-
-      // 2. Fallback to Gmail SMTP via Nodemailer
       // Convert Base64 attachments payload into Nodemailer attachment structure
       const formattedAttachments = (attachments || []).map(att => ({
         filename: att.filename || 'VitalsGuard_Report.html',

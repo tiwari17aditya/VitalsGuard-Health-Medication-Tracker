@@ -34,7 +34,6 @@ Create a `.env` file in the project root folder (see `.env.example`):
 ```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
-VITE_RESEND_API_KEY=re_123456789
 ```
 
-When deployed to GitHub Pages or Vercel, add these same keys to your repository Environment Secrets.
+When deploying to Vercel, configure these keys under project environment settings.

@@ -15,7 +15,7 @@ This document details every technology, framework, database tier, email provider
 | **Offline Storage** | HTML5 LocalStorage API | Built-in Browser Standard | Zero-config offline fallback when network is disconnected |
 | **Styling & UI** | Vanilla CSS + Design Tokens | Custom Modern CSS | Glassmorphism, accessible tap targets for elderly parents |
 | **Icons & Visuals** | `lucide-react` | ISC / MIT (Open Source) | Accessible vector icons for health & medical metrics |
-| **Email Engine** | Resend API | Free Tier (3,000 emails/mo) | Refill alert emails & end-of-day compliance check digests |
+| **Email Engine** | Nodemailer / SMTP | Free (No direct API limit) | Refill alert emails & end-of-day compliance check digests via secure SMTP |
 | **Hosting** | Vercel | 100% Lifetime Free | Global CDN & serverless hosting |
 | **CI/CD Pipeline** | Vercel Git Integration | 100% Lifetime Free | Auto build & deploy on git push |
 

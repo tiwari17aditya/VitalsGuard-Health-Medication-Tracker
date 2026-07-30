@@ -73,13 +73,12 @@ export const APP_CONFIG = {
 
   // Email Notification & Caretaker Reports
   emailSettings: {
-    defaultCaretakerEmail: "addytiwari5@gmail.com", // Registered account email for Resend testing domain
+    defaultCaretakerEmail: "addytiwari5@gmail.com",
     sendDailyDigest: true,
     dailyDigestTime: "20:00", // 8:00 PM
     sendRefillAlerts: true,
     weeklyReportDay: "Sunday",
     monthlyReportDate: 1,
-    resendApiEndpoint: "https://api.resend.com/emails",
   },
 
   // Database Schema Table Names (Supabase)

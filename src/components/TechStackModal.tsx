@@ -27,15 +27,15 @@ export const TechStackModal: React.FC<TechStackModalProps> = ({ onClose }) => {
     },
     {
       category: "Email Reporting & Alerts",
-      tech: "Resend API / EmailJS",
-      cost: "100% Free Tier (3,000 emails/mo)",
-      description: "Automated end-of-day check emails to caretakers, low stock pill refill warnings, and PDF/CSV health report dispatchers."
+      tech: "Nodemailer / SMTP (Custom Mailer)",
+      cost: "100% Free & Open Source",
+      description: "Automated end-of-day check emails to caretakers, low stock pill refill warnings, and HTML/CSV health report dispatchers via secure SMTP."
     },
     {
-      category: "Automated CI/CD & Hosting",
-      tech: "GitHub Actions + GitHub Pages / Vercel",
+      category: "Automated Hosting",
+      tech: "Vercel (Serverless)",
       cost: "100% Lifetime Free",
-      description: "Automated build & deployment pipeline triggered on every git push, plus scheduled nightly cron job for automated caretaker report generation."
+      description: "Hosted entirely on Vercel Cloud Platform with serverless API functions and auto-generated routing redirects."
     }
   ];
 

@@ -195,7 +195,7 @@ export const ReportsManager: React.FC = () => {
     return csvRows.join("\n");
   };
 
-  // Dispatch Tabular HTML Email Report with fancy CSV attachment via SMTP/Resend API
+  // Dispatch Tabular HTML Email Report with fancy CSV attachment via SMTP
   const handleSendTabularReport = async () => {
     if (!isValidEmail(emailInput)) {
       showToast("error", "Invalid Recipient Email", `Cannot send email. "${emailInput}" is invalid.`);
@@ -504,7 +504,7 @@ export const ReportsManager: React.FC = () => {
           </div>
 
           <div style={{ marginTop: "14px", padding: "10px", background: "var(--bg-card)", borderRadius: "var(--radius-sm)", fontSize: "0.775rem", color: "var(--text-muted)" }}>
-            💡 <strong>Resend Email Note:</strong> Clicking "Send Email" forwards the HTML tabular report and the attached fancy CSV directly to target recipient <code>{emailInput}</code>.
+            💡 <strong>Email Note:</strong> Clicking "Send Email" forwards the HTML tabular report and the attached fancy CSV directly to target recipient <code>{emailInput}</code>.
           </div>
         </div>
 
