@@ -96,17 +96,14 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<{ su
         success: true, 
         message: `Email report & attached health document delivered directly to ${payload.to} via Gmail SMTP!` 
       };
-    } else if (response.status === 405 || response.status === 404) {
-      console.warn(`VitalsGuard API returned status ${response.status} (static/unsupported host). Falling back to mailto client.`);
+    } else {
+      const errorMsg = data.error || data.message || "Failed to deliver email via SMTP";
+      console.warn(`Direct email dispatch failed (${errorMsg}). Falling back to mailto client.`);
       openMailtoClient(payload.to.trim(), payload.subject, payload.htmlContent);
       return {
         success: true,
-        message: `Static hosting detected. Opened your default email app with the pre-filled report summary!`
+        message: `Direct dispatch failed (${errorMsg}). Opened your default email app with the pre-filled report summary!`
       };
-    } else {
-      const errorMsg = data.error || data.message || "Failed to deliver email via SMTP";
-      console.error("Gmail SMTP Error:", data);
-      return { success: false, message: `SMTP Error: ${errorMsg}` };
     }
   } catch (err: any) {
     console.error("Gmail SMTP Dispatch Exception:", err);

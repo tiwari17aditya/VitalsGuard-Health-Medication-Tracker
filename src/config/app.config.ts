@@ -73,7 +73,7 @@ export const APP_CONFIG = {
 
   // Email Notification & Caretaker Reports
   emailSettings: {
-    defaultCaretakerEmail: "addytiwari3@gmail.com", // Registered account email for Resend testing domain
+    defaultCaretakerEmail: "addytiwari5@gmail.com", // Registered account email for Resend testing domain
     sendDailyDigest: true,
     dailyDigestTime: "20:00", // 8:00 PM
     sendRefillAlerts: true,

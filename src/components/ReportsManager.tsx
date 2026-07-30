@@ -21,7 +21,7 @@ export const ReportsManager: React.FC = () => {
   } = useApp();
 
   const [reportRange, setReportRange] = useState<"Daily" | "Weekly" | "Monthly">("Weekly");
-  const [emailInput, setEmailInput] = useState<string>(caretakerEmail || "addytiwari3@gmail.com");
+  const [emailInput, setEmailInput] = useState<string>(caretakerEmail || "addytiwari5@gmail.com");
   const [isSending, setIsSending] = useState<boolean>(false);
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
 
@@ -217,7 +217,7 @@ export const ReportsManager: React.FC = () => {
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 className="form-input"
-                placeholder="e.g. addytiwari3@gmail.com"
+                placeholder="e.g. addytiwari5@gmail.com"
                 style={{ borderColor: !isEmailValid && emailInput.length > 0 ? "#ef4444" : "var(--border-color)" }}
                 required
               />
