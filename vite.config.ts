@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
         configureServer(server) {
           server.middlewares.use(async (req, res, next) => {
             if (req.url && (req.url.startsWith('/api/send_mail') || req.url === '/api/send_mail')) {
+              const originalEnd = res.end.bind(res);
               try {
                 // 1. Read request body chunks
                 const chunks: any[] = [];
@@ -59,7 +60,6 @@ export default defineConfig(({ mode }) => {
                 }
 
                 // 2. Mock Vercel response helper methods
-                const originalEnd = res.end.bind(res);
                 const resMock = res as any;
                 resMock.status = (statusCode: number) => {
                   res.statusCode = statusCode;
@@ -80,6 +80,7 @@ export default defineConfig(({ mode }) => {
                 reqMock.body = body;
 
                 // 4. Dynamically import and execute the handler
+                // @ts-ignore
                 const { default: handler } = await import('./api/send_mail.js');
                 await handler(reqMock, resMock);
               } catch (err: any) {
