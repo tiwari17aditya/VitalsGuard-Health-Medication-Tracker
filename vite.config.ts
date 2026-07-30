@@ -97,5 +97,8 @@ export default defineConfig(({ mode }) => {
       }
     ],
     base: './', // Allows seamless hosting on GitHub Pages, Vercel, or custom domains
+    build: {
+      chunkSizeWarningLimit: 1000
+    }
   };
 });
