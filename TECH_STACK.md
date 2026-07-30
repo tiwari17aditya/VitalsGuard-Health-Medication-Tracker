@@ -16,8 +16,8 @@ This document details every technology, framework, database tier, email provider
 | **Styling & UI** | Vanilla CSS + Design Tokens | Custom Modern CSS | Glassmorphism, accessible tap targets for elderly parents |
 | **Icons & Visuals** | `lucide-react` | ISC / MIT (Open Source) | Accessible vector icons for health & medical metrics |
 | **Email Engine** | Resend API | Free Tier (3,000 emails/mo) | Refill alert emails & end-of-day compliance check digests |
-| **Hosting** | GitHub Pages / Vercel | 100% Lifetime Free | Global CDN static hosting |
-| **CI/CD Pipeline** | GitHub Actions | 2,000 Free Minutes/mo | Auto build & deploy on push + Nightly report cron job |
+| **Hosting** | Vercel | 100% Lifetime Free | Global CDN & serverless hosting |
+| **CI/CD Pipeline** | Vercel Git Integration | 100% Lifetime Free | Auto build & deploy on git push |
 
 ---
 

@@ -1,6 +1,8 @@
 # 🛡️ VitalsGuard — Diabetes, Blood Pressure & Medication Tracker
 
-> A production-ready, open-source, 100% lifetime-free health tracking web application designed for elderly parents and caretakers. Built with React 18, Vite 5, TypeScript, Supabase PostgreSQL, PWA mobile capabilities, and GitHub Actions CI/CD.
+> A production-ready, open-source, 100% lifetime-free health tracking web application designed for elderly parents and caretakers. Built with React 18, Vite 5, TypeScript, Supabase PostgreSQL, PWA mobile capabilities, and Vercel cloud deployment.
+
+**🌐 Live Demo:** [https://vitalsguard-health-medication-tracker-bllsmm273-my-my4.vercel.app](https://vitalsguard-health-medication-tracker-bllsmm273-my-my4.vercel.app)
 
 ---
 
