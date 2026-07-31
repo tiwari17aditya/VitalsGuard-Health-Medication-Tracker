@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Droplet, Plus, Trash2, Award, Settings, Users, Calendar, TrendingUp, Clock, Info } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { AdminAuthModal } from "./AdminAuthModal";
 
 
 export const WaterTracker: React.FC = () => {
@@ -30,6 +31,9 @@ export const WaterTracker: React.FC = () => {
   const [showTargetEditor, setShowTargetEditor] = useState<boolean>(false);
   const [targetInput, setTargetInput] = useState<number>(currentTarget);
 
+  // Admin auth state for delete
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
   if (!activeProfile) {
     return (
       <div className="glass-card" style={{ padding: "40px", textAlign: "center" }}>
@@ -55,9 +59,15 @@ export const WaterTracker: React.FC = () => {
   // y ranges from 98 (empty) down to 5 (completely full)
   const waterY = Math.max(5, 98 - (Math.min(percentCompleted, 100) * 0.93));
 
-  // Quick Preset Actions
+  // Helper to get current HH:MM string at the moment of clicking
+  const getCurrentHHMM = () => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  };
+
+  // Quick Preset Actions — capture the exact clock time when the button is pressed
   const handleQuickLog = async (amount: number) => {
-    await addWaterLog(amount, "Quick Log preset");
+    await addWaterLog(amount, "Quick Log preset", getCurrentHHMM());
   };
 
   const handleCustomSubmit = async (e: React.FormEvent) => {
@@ -606,7 +616,7 @@ export const WaterTracker: React.FC = () => {
                           </div>
 
                           <button 
-                            onClick={() => deleteWaterLog(log.id)}
+                            onClick={() => setPendingDeleteId(log.id)}
                             className="btn btn-secondary btn-sm"
                             style={{ 
                               padding: "4px 8px", 
@@ -615,7 +625,7 @@ export const WaterTracker: React.FC = () => {
                               background: "none",
                               color: "var(--text-muted)"
                             }}
-                            title="Delete record"
+                            title="Delete record (requires admin passcode)"
                           >
                             <Trash2 size={14} className="hover-danger" style={{ transition: "color 0.2s" }} />
                           </button>
@@ -630,6 +640,19 @@ export const WaterTracker: React.FC = () => {
         )}
       </div>
 
+      {/* Admin Auth Modal — shown when a delete is requested */}
+      {pendingDeleteId && (
+        <AdminAuthModal
+          title="Confirm Water Record Deletion"
+          onSuccess={() => {
+            deleteWaterLog(pendingDeleteId);
+            setPendingDeleteId(null);
+          }}
+          onClose={() => setPendingDeleteId(null)}
+        />
+      )}
+
     </div>
   );
 };
+
