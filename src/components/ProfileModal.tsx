@@ -1,8 +1,44 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Users, Plus, Trash2, Edit2, Lock } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
+
+// Scientific water target calculator helper
+const calculateAutoWaterTarget = (
+  gender: string,
+  weight: number,
+  season: string,
+  age: number
+): number => {
+  // Base: 35ml per kg of weight
+  let target = weight * 35;
+
+  // Age adjustments
+  if (age < 14) {
+    target *= 0.8;
+  } else if (age > 60) {
+    target *= 0.85;
+  }
+
+  // Gender adjustments
+  if (gender.toLowerCase() === "male") {
+    target += 300;
+  } else if (gender.toLowerCase() === "other") {
+    target += 150;
+  }
+
+  // Season adjustments
+  if (season.toLowerCase() === "summer") {
+    target += 500;
+  } else if (season.toLowerCase() === "winter") {
+    target -= 200;
+  }
+
+  // Bound target between 1000ml and 5000ml, rounded to nearest 50ml
+  const rounded = Math.round(target / 50) * 50;
+  return Math.min(5000, Math.max(1000, rounded));
+};
 
 interface ProfileModalProps {
   onClose: () => void;
@@ -13,6 +49,48 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
   const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete"; deleteId?: string } | null>(null);
+  const [useAutoWater, setUseAutoWater] = useState<boolean>(true);
+
+  // Auto calculate water target when metrics change
+  useEffect(() => {
+    if (!editingProfile || !useAutoWater) return;
+    
+    const weight = editingProfile.weight || 60;
+    const gender = editingProfile.gender || "Female";
+    const season = editingProfile.season || "Spring/Autumn";
+    const age = editingProfile.age || 40;
+    
+    const calculatedTarget = calculateAutoWaterTarget(gender, weight, season, age);
+    
+    if (editingProfile.targetWater !== calculatedTarget) {
+      setEditingProfile(prev => prev ? { ...prev, targetWater: calculatedTarget } : null);
+    }
+  }, [
+    editingProfile?.weight,
+    editingProfile?.gender,
+    editingProfile?.season,
+    editingProfile?.age,
+    useAutoWater
+  ]);
+
+  // Adjust useAutoWater toggle when editing profile loads
+  useEffect(() => {
+    if (editingProfile && editingProfile.id) {
+      const weight = editingProfile.weight || 60;
+      const gender = editingProfile.gender || "Female";
+      const season = editingProfile.season || "Spring/Autumn";
+      const age = editingProfile.age || 40;
+      const calc = calculateAutoWaterTarget(gender, weight, season, age);
+      
+      if (editingProfile.targetWater && editingProfile.targetWater !== calc) {
+        setUseAutoWater(false);
+      } else {
+        setUseAutoWater(true);
+      }
+    } else if (editingProfile) {
+      setUseAutoWater(true);
+    }
+  }, [editingProfile?.id]);
 
   const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
 
@@ -33,6 +111,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       id: `profile-${Date.now()}`,
       name: "",
       role: "Parent",
+      age: 40,
+      gender: "Female",
+      weight: 60,
+      season: "Spring/Autumn",
       targetGlucoseFasting: "70-110 mg/dL",
       targetGlucosePostMeal: "< 140 mg/dL",
       targetBP: "120/80 mmHg",
@@ -179,6 +261,45 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
               </div>
             </div>
 
+            <div className="grid-3" style={{ gap: "12px", marginBottom: "14px" }}>
+              <div className="form-group">
+                <label className="form-label">Gender</label>
+                <select
+                  value={editingProfile.gender || "Female"}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, gender: e.target.value })}
+                  className="form-input"
+                  style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
+                >
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Weight (kg)</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 60"
+                  value={editingProfile.weight || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, weight: Number(e.target.value) })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Current Season</label>
+                <select
+                  value={editingProfile.season || "Spring/Autumn"}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, season: e.target.value })}
+                  className="form-input"
+                  style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
+                >
+                  <option value="Spring/Autumn">Spring/Autumn</option>
+                  <option value="Summer">Summer (Hot)</option>
+                  <option value="Winter">Winter (Cold)</option>
+                </select>
+              </div>
+            </div>
+
             <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Target Glucose (Fasting)</label>
@@ -202,7 +323,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
               </div>
             </div>
 
-            <div className="grid-2">
+             <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Target Blood Pressure</label>
                 <input
@@ -214,13 +335,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Daily Water Goal (ml)</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Daily Water Goal (ml)</label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.775rem", cursor: "pointer", color: "var(--primary)" }}>
+                    <input
+                      type="checkbox"
+                      checked={useAutoWater}
+                      onChange={(e) => setUseAutoWater(e.target.checked)}
+                      style={{ cursor: "pointer" }}
+                    />
+                    Auto-Calculate
+                  </label>
+                </div>
                 <input
                   type="number"
                   placeholder="e.g. 2000"
                   value={editingProfile.targetWater || ""}
                   onChange={(e) => setEditingProfile({ ...editingProfile, targetWater: e.target.value ? Number(e.target.value) : undefined })}
                   className="form-input"
+                  disabled={useAutoWater}
+                  style={useAutoWater ? { opacity: 0.7, cursor: "not-allowed", backgroundColor: "var(--bg-secondary)" } : undefined}
                 />
               </div>
             </div>

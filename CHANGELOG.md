@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2026-07-31
+
+### Added
+- **Scientific Hydration Target Calculator**: Introduced an automated calculator that dynamically determines daily water targets using user gender, weight, season, and age.
+- **Dynamic Profile Metrics**: Added input selectors for Gender, Weight (kg), and Current Season in the profile manager modal, saving these values in PostgreSQL.
+- **Auto-Calculate Toggle UI**: Added an "Auto-Calculate" checkbox in the profile modal that locks and updates the water intake input field dynamically, supporting custom overrides when unchecked.
+
 ## [1.10.2] - 2026-07-31
 
 ### Added

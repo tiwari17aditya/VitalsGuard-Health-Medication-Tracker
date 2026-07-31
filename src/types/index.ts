@@ -13,6 +13,9 @@ export interface UserProfile {
   targetGlucosePostMeal?: string;
   targetBP?: string;
   targetWater?: number;
+  gender?: string;
+  weight?: number;
+  season?: string;
   emergencyContact?: string;
   doctorName?: string;
   notes?: string;
