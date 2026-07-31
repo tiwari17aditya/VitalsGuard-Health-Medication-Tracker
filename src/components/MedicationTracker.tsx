@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { Medication, FoodRelation } from "../types";
+import { AdminAuthModal } from "./AdminAuthModal";
 
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -46,6 +47,41 @@ export const MedicationTracker: React.FC = () => {
   const [instructions, setInstructions] = useState("");
   const [foodRelation, setFoodRelation] = useState<FoodRelation>("After Food");
   const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
+  
+  const [pendingDeleteAction, setPendingDeleteAction] = useState<{
+    type: "medication" | "log";
+    targetId: string;
+  } | null>(null);
+
+  const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+
+  const handleDeleteMedicationClick = (medId: string) => {
+    if (isAdminAuthed()) {
+      deleteMedication(medId);
+    } else {
+      setPendingDeleteAction({ type: "medication", targetId: medId });
+    }
+  };
+
+  const handleDeleteLogClick = (logId: string) => {
+    if (isAdminAuthed()) {
+      deleteMedicationLog(logId);
+    } else {
+      setPendingDeleteAction({ type: "log", targetId: logId });
+    }
+  };
+
+  const handleAuthDeleteSuccess = () => {
+    const act = pendingDeleteAction;
+    setPendingDeleteAction(null);
+    if (!act) return;
+
+    if (act.type === "medication") {
+      deleteMedication(act.targetId);
+    } else if (act.type === "log") {
+      deleteMedicationLog(act.targetId);
+    }
+  };
 
   const profileMeds = useMemo(() => activeProfile ? medications.filter(m => m.profileId === activeProfile.id) : [], [medications, activeProfile]);
   const profileLogs = useMemo(() => activeProfile ? medicationLogs.filter(l => l.profileId === activeProfile.id) : [], [medicationLogs, activeProfile]);
@@ -480,7 +516,7 @@ export const MedicationTracker: React.FC = () => {
 
                       {/* Delete Button */}
                       <button
-                        onClick={() => deleteMedication(med.id)}
+                        onClick={() => handleDeleteMedicationClick(med.id)}
                         className="btn btn-secondary btn-sm"
                         style={{ color: "#ef4444", flex: "0 0 auto" }}
                         title="Delete prescription"
@@ -576,7 +612,7 @@ export const MedicationTracker: React.FC = () => {
                       </td>
                       <td>
                         <button
-                          onClick={() => deleteMedicationLog(log.id)}
+                          onClick={() => handleDeleteLogClick(log.id)}
                           className="btn btn-secondary btn-sm"
                           style={{ padding: "2px 6px", minHeight: "28px", color: "#ef4444", fontSize: "0.75rem" }}
                           title="Undo / delete intake log"
@@ -791,6 +827,14 @@ export const MedicationTracker: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {pendingDeleteAction && (
+        <AdminAuthModal
+          onClose={() => setPendingDeleteAction(null)}
+          onSuccess={handleAuthDeleteSuccess}
+          title="Admin Passcode Required to Delete"
+        />
       )}
 
     </div>
