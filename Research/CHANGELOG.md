@@ -15,8 +15,8 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   - Implemented metadata serialization (`scheduleType`, `daysOfWeek`, `durationBasis`, `trackingEnabled`) within the `frequency` column when writing to Supabase, solving postgres schema constraints without requiring manual database migrations.
   - Automatically extracts and restores medication scheduling preferences upon load fallback from both local storage and database endpoints.
 - **Passcode-Protected Medication & History Deletion**:
-  - Implemented secure deletion flows for both medication prescriptions and log histories.
-  - Users are now prompted to enter the Admin/Developer passcode before any medication or log record is deleted from the active inventory or history table.
+  - Implemented secure deletion flows for user profiles, medication prescriptions, and log histories.
+  - Deletions now bypass cached authorization states; users are strictly prompted to enter the Admin/Developer passcode for **every individual deletion** to prevent unauthorized continuous modifications.
 
 ### 📁 Reorganized & Restructured
 - **Folder Categorization**:

@@ -25,11 +25,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   };
 
   const handleDeleteClick = (id: string) => {
-    if (isAdminAuthed()) {
-      deleteProfile(id);
-    } else {
-      setPendingAction({ type: "delete", deleteId: id });
-    }
+    setPendingAction({ type: "delete", deleteId: id });
   };
 
   const startCreatingProfile = () => {
@@ -52,8 +48,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       startCreatingProfile();
     } else if (act?.type === "delete" && act.deleteId) {
       deleteProfile(act.deleteId);
+      sessionStorage.removeItem("vitalsguard_admin_authed");
     }
   };
+
+
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

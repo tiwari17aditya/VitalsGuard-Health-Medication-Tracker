@@ -53,22 +53,12 @@ export const MedicationTracker: React.FC = () => {
     targetId: string;
   } | null>(null);
 
-  const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
-
   const handleDeleteMedicationClick = (medId: string) => {
-    if (isAdminAuthed()) {
-      deleteMedication(medId);
-    } else {
-      setPendingDeleteAction({ type: "medication", targetId: medId });
-    }
+    setPendingDeleteAction({ type: "medication", targetId: medId });
   };
 
   const handleDeleteLogClick = (logId: string) => {
-    if (isAdminAuthed()) {
-      deleteMedicationLog(logId);
-    } else {
-      setPendingDeleteAction({ type: "log", targetId: logId });
-    }
+    setPendingDeleteAction({ type: "log", targetId: logId });
   };
 
   const handleAuthDeleteSuccess = () => {
@@ -81,6 +71,7 @@ export const MedicationTracker: React.FC = () => {
     } else if (act.type === "log") {
       deleteMedicationLog(act.targetId);
     }
+    sessionStorage.removeItem("vitalsguard_admin_authed");
   };
 
   const profileMeds = useMemo(() => activeProfile ? medications.filter(m => m.profileId === activeProfile.id) : [], [medications, activeProfile]);
