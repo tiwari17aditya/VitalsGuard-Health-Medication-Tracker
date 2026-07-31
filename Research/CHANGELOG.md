@@ -6,6 +6,16 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## 🚀 [v1.11.2] — 2026-07-31 (Resilient DB Retries, Sample Cleanup & Safety Rules)
+
+### 🌟 Added & Enhanced
+- **Resilient Database Upsert Retry**:
+  - `saveProfileDB` in `supabase.ts` automatically detects schema cache misses (`PGRST204`) and falls back to core PostgreSQL columns, guaranteeing 100% successful profile creation.
+- **Sample Profile Cleanup**:
+  - Cleaned up out-of-the-box template profiles `Mom (Sarah)` and `Dad (James)`, preserving only genuine user custom profiles.
+- **Permanent Data Protection Rule**:
+  - Enforced a critical safety rule in `.agents/AGENTS.md` prohibiting automatic deletion of user database records.
+
 ## 🚀 [v1.11.0] — 2026-07-31 (Scientific Hydration Target Calculator)
 
 ### 🌟 Added & Enhanced

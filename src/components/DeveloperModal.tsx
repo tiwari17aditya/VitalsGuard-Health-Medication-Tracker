@@ -78,6 +78,36 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
 
   const versionHistory = [
     {
+      version: "v1.11.2",
+      date: "2026-07-31",
+      title: "Resilient DB Retries, Sample Cleanup & Safety Rules",
+      highlights: "Adds resilient fallback retry logic in saveProfileDB to handle PostgREST schema cache misses (PGRST204), cleans up out-of-the-box template profiles Mom (Sarah) and Dad (James), and enforces permanent data preservation rules in .agents/AGENTS.md."
+    },
+    {
+      version: "v1.11.1",
+      date: "2026-07-31",
+      title: "Indian Season Detection & Offline Fallback Override",
+      highlights: "Automates seasonal target calculation based on Indian weather calendar months, removing manual season selectors, and configures clean offline fallback behavior."
+    },
+    {
+      version: "v1.11.0",
+      date: "2026-07-31",
+      title: "Scientific Hydration Target Calculator",
+      highlights: "Introduces Redcliffe Labs weight-based water calculator (weight * 43.5 ml) with EFSA/IOM age/gender overrides and dynamic auto-calculate toggle controls in profile modal."
+    },
+    {
+      version: "v1.10.0",
+      date: "2026-07-31",
+      title: "PostgreSQL Water Target Storage & Caretaker Email Sync",
+      highlights: "Syncs water tracker targets under target_water column in profiles table, persists shared caretaker email under system-settings record, and enforces passcode authorization for water logs deletion."
+    },
+    {
+      version: "v1.9.1",
+      date: "2026-07-31",
+      title: "Cascading DB Deletes & Strict Authorization",
+      highlights: "Implements manual cascading deletes for dependent vitals and logs, enforces strict passcode verification on all individual record deletes."
+    },
+    {
       version: "v1.8.0",
       date: "2026-07-30",
       title: "UI Security Shield, Persistent Passcodes & Unified Email Reports",

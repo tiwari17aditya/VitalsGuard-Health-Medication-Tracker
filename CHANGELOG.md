@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.2] - 2026-07-31
+
+### Added & Fixed
+- **Resilient Database Upsert Retry**: Implemented automatic fallback retry in `saveProfileDB` to gracefully handle PostgREST schema cache misses (`PGRST204`), ensuring profile creation succeeds even if optional columns are absent in remote PostgreSQL tables.
+- **Sample Profile Cleanup**: Removed out-of-the-box sample profiles (`Mom (Sarah)` and `Dad (James)`) and their sample medications from default app configurations and launch cleanup routines, leaving only real user profiles active.
+- **Null-Safe Component Guarding**: Added safe optional checking for `currentProfile` and `activeProfile` across `App.tsx` and `AppContext.tsx` to prevent blank screen render crashes on empty profile states.
+- **Data Preservation Rule**: Added permanent rule in `.agents/AGENTS.md` strictly prohibiting any automatic or direct deletion of user records.
+
 ## [1.11.0] - 2026-07-31
 
 ### Added
