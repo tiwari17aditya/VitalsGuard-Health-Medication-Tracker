@@ -137,6 +137,47 @@ export async function deleteProfileDB(id: string): Promise<boolean> {
 }
 
 // --- MEDICATIONS ---
+function decodeMedication(item: any): Medication {
+  let frequency = item.frequency || "";
+  let scheduleType = item.schedule_type || item.scheduleType;
+  let daysOfWeek = item.days_of_week || item.daysOfWeek;
+  let durationBasis = item.duration_basis || item.durationBasis;
+  let trackingEnabled = item.tracking_enabled ?? item.trackingEnabled;
+
+  if (frequency.includes("|__METADATA__")) {
+    const parts = frequency.split("|__METADATA__");
+    frequency = parts[0];
+    try {
+      const meta = JSON.parse(parts[1]);
+      if (meta.scheduleType !== undefined) scheduleType = meta.scheduleType;
+      if (meta.daysOfWeek !== undefined) daysOfWeek = meta.daysOfWeek;
+      if (meta.durationBasis !== undefined) durationBasis = meta.durationBasis;
+      if (meta.trackingEnabled !== undefined) trackingEnabled = meta.trackingEnabled;
+    } catch (e) {
+      console.error("Error parsing medication metadata:", e);
+    }
+  }
+
+  return {
+    id: item.id,
+    profileId: item.profile_id || item.profileId,
+    name: item.name,
+    dosage: item.dosage,
+    frequency,
+    scheduleType: scheduleType || "daily",
+    daysOfWeek: daysOfWeek || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    durationBasis: durationBasis || "forever",
+    times: item.times || [],
+    stockCount: item.stock_count ?? item.stockCount ?? 0,
+    minStockAlert: item.min_stock_alert ?? item.minStockAlert ?? 5,
+    instructions: item.instructions || "",
+    foodRelation: item.food_relation || item.foodRelation || "After Food",
+    active: item.active ?? true,
+    trackingEnabled: trackingEnabled ?? true,
+    created_at: item.created_at
+  };
+}
+
 export async function fetchMedications(profileId?: string): Promise<Medication[]> {
   if (isSupabaseConfigured && supabase) {
     try {
@@ -145,30 +186,13 @@ export async function fetchMedications(profileId?: string): Promise<Medication[]
       const { data, error } = await query;
       if (!error && data) {
         if (data.length > 0) {
-          return data.map(item => ({
-            id: item.id,
-            profileId: item.profile_id || item.profileId,
-            name: item.name,
-            dosage: item.dosage,
-            frequency: item.frequency,
-            scheduleType: item.schedule_type || item.scheduleType || "daily",
-            daysOfWeek: item.days_of_week || item.daysOfWeek || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            durationBasis: item.duration_basis || item.durationBasis || "forever",
-            times: item.times || [],
-            stockCount: item.stock_count ?? item.stockCount ?? 0,
-            minStockAlert: item.min_stock_alert ?? item.minStockAlert ?? 5,
-            instructions: item.instructions || "",
-            foodRelation: item.food_relation || item.foodRelation || "After Food",
-            active: item.active ?? true,
-            trackingEnabled: item.tracking_enabled ?? item.trackingEnabled ?? true,
-            created_at: item.created_at
-          })) as Medication[];
+          return data.map(decodeMedication);
         } else if (!profileId) {
           console.log("Supabase medications table is empty. Seeding defaults...");
           for (const m of APP_CONFIG.defaultMedications) {
             await saveMedicationDB(m as Medication);
           }
-          return APP_CONFIG.defaultMedications as Medication[];
+          return APP_CONFIG.defaultMedications.map(decodeMedication) as Medication[];
         }
       }
     } catch (err) {
@@ -176,29 +200,34 @@ export async function fetchMedications(profileId?: string): Promise<Medication[]
     }
   }
   const meds = loadFromStorage<Medication[]>(STORAGE_KEYS.MEDICATIONS, APP_CONFIG.defaultMedications as Medication[]);
-  if (profileId) return meds.filter(m => m.profileId === profileId);
-  return meds;
+  const decodedMeds = meds.map(decodeMedication);
+  if (profileId) return decodedMeds.filter(m => m.profileId === profileId);
+  return decodedMeds;
 }
 
 export async function saveMedicationDB(med: Medication): Promise<Medication> {
   if (isSupabaseConfigured && supabase) {
     try {
+      const metadata = {
+        scheduleType: med.scheduleType,
+        daysOfWeek: med.daysOfWeek,
+        durationBasis: med.durationBasis,
+        trackingEnabled: med.trackingEnabled
+      };
+      const encodedFrequency = `${med.frequency}|__METADATA__${JSON.stringify(metadata)}`;
+
       const payload = {
         id: med.id,
         profile_id: med.profileId,
         name: med.name,
         dosage: med.dosage,
-        frequency: med.frequency,
-        schedule_type: med.scheduleType || "daily",
-        days_of_week: med.daysOfWeek || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-        duration_basis: med.durationBasis || "forever",
+        frequency: encodedFrequency,
         times: med.times,
         stock_count: med.stockCount,
         min_stock_alert: med.minStockAlert,
         instructions: med.instructions,
         food_relation: med.foodRelation,
-        active: med.active,
-        tracking_enabled: med.trackingEnabled ?? true
+        active: med.active
       };
       await supabase.from(APP_CONFIG.supabaseTables.medications).upsert(payload);
     } catch (err) {

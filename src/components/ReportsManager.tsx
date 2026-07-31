@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   FileText, Mail, Download, Printer, AlertTriangle, User, CheckCircle2, AlertCircle, Eye,
   Folder, FileJson, FileSpreadsheet, Calendar
@@ -33,7 +33,6 @@ export const ReportsManager: React.FC = () => {
     new Date().toISOString().split("T")[0]
   );
 
-  if (!activeProfile) return null;
 
   const isEmailValid = isValidEmail(emailInput);
 
@@ -60,46 +59,68 @@ export const ReportsManager: React.FC = () => {
     }
   };
 
-  const profileMeds = medications.filter(m => m.profileId === activeProfile.id);
-  const profileGlucose = glucoseLogs.filter(g => g.profileId === activeProfile.id);
-  const profileBP = bpLogs.filter(b => b.profileId === activeProfile.id);
-  const profileLogs = medicationLogs.filter(l => l.profileId === activeProfile.id);
+  const profileMeds = useMemo(() => activeProfile ? medications.filter(m => m.profileId === activeProfile.id) : [], [medications, activeProfile]);
+  const profileGlucose = useMemo(() => activeProfile ? glucoseLogs.filter(g => g.profileId === activeProfile.id) : [], [glucoseLogs, activeProfile]);
+  const profileBP = useMemo(() => activeProfile ? bpLogs.filter(b => b.profileId === activeProfile.id) : [], [bpLogs, activeProfile]);
+  const profileLogs = useMemo(() => activeProfile ? medicationLogs.filter(l => l.profileId === activeProfile.id) : [], [medicationLogs, activeProfile]);
 
   // Filter range data strictly for summary stats
   const { start: previewStart, end: previewEnd } = getSelectedLimitDateRange();
 
-  const rangeGlucose = profileGlucose.filter(g => {
-    const d = new Date(g.timestamp);
-    return d >= previewStart && d <= previewEnd;
-  });
-  const rangeBP = profileBP.filter(b => {
-    const d = new Date(b.timestamp);
-    return d >= previewStart && d <= previewEnd;
-  });
-  const rangeLogs = profileLogs.filter(l => {
-    const d = new Date(l.timestamp);
-    return d >= previewStart && d <= previewEnd;
-  });
+  const rangeGlucose = useMemo(() => {
+    return profileGlucose.filter(g => {
+      const d = new Date(g.timestamp);
+      return d >= previewStart && d <= previewEnd;
+    });
+  }, [profileGlucose, previewStart, previewEnd]);
+
+  const rangeBP = useMemo(() => {
+    return profileBP.filter(b => {
+      const d = new Date(b.timestamp);
+      return d >= previewStart && d <= previewEnd;
+    });
+  }, [profileBP, previewStart, previewEnd]);
+
+  const rangeLogs = useMemo(() => {
+    return profileLogs.filter(l => {
+      const d = new Date(l.timestamp);
+      return d >= previewStart && d <= previewEnd;
+    });
+  }, [profileLogs, previewStart, previewEnd]);
 
   // Group all activity logs & UI interaction audit logs into date-based daily log files
-  const dailyLogsMap = getDailyLogsGrouped(activeProfile, medications, medicationLogs, glucoseLogs, bpLogs, auditLogs);
+  const dailyLogsMap = useMemo(() => {
+    if (!activeProfile) return new Map();
+    return getDailyLogsGrouped(activeProfile, medications, medicationLogs, glucoseLogs, bpLogs, auditLogs);
+  }, [activeProfile, medications, medicationLogs, glucoseLogs, bpLogs, auditLogs]);
 
   // Compute adherence stats dynamically
   const totalMedsCount = profileMeds.length;
-  const takenLogsCount = rangeLogs.filter(l => l.status === "taken").length;
+  const takenLogsCount = useMemo(() => rangeLogs.filter(l => l.status === "taken").length, [rangeLogs]);
   
-  const uniqueDaysInRange = new Set(rangeLogs.map(l => l.timestamp.split('T')[0]));
-  const numDaysInRange = Math.max(1, uniqueDaysInRange.size);
-  const adherencePercent = totalMedsCount > 0 ? Math.min(100, Math.round((takenLogsCount / (totalMedsCount * numDaysInRange)) * 100)) : 100;
+  const adherencePercent = useMemo(() => {
+    const uniqueDaysInRange = new Set(rangeLogs.map(l => l.timestamp.split('T')[0]));
+    const numDaysInRange = Math.max(1, uniqueDaysInRange.size);
+    return totalMedsCount > 0 ? Math.min(100, Math.round((takenLogsCount / (totalMedsCount * numDaysInRange)) * 100)) : 100;
+  }, [rangeLogs, totalMedsCount, takenLogsCount]);
 
   // Average glucose
-  const avgGlucose = rangeGlucose.length > 0 
-    ? Math.round(rangeGlucose.reduce((acc, g) => acc + g.value, 0) / rangeGlucose.length) 
-    : 0;
+  const avgGlucose = useMemo(() => {
+    return rangeGlucose.length > 0 
+      ? Math.round(rangeGlucose.reduce((acc, g) => acc + g.value, 0) / rangeGlucose.length) 
+      : 0;
+  }, [rangeGlucose]);
 
   // Average BP
-  const avgSYS = rangeBP.length > 0 ? Math.round(rangeBP.reduce((acc, b) => acc + b.systolic, 0) / rangeBP.length) : 0;
-  const avgDIA = rangeBP.length > 0 ? Math.round(rangeBP.reduce((acc, b) => acc + b.diastolic, 0) / rangeBP.length) : 0;
+  const avgSYS = useMemo(() => {
+    return rangeBP.length > 0 ? Math.round(rangeBP.reduce((acc, b) => acc + b.systolic, 0) / rangeBP.length) : 0;
+  }, [rangeBP]);
+
+  const avgDIA = useMemo(() => {
+    return rangeBP.length > 0 ? Math.round(rangeBP.reduce((acc, b) => acc + b.diastolic, 0) / rangeBP.length) : 0;
+  }, [rangeBP]);
+
+  if (!activeProfile) return null;
 
   const handleSaveEmailConfig = (e: React.FormEvent) => {
     e.preventDefault();

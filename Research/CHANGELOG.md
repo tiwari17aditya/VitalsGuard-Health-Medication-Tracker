@@ -6,6 +6,30 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## 🚀 [v1.9.0] — 2026-07-31 (Custom Days Sync, Intake Checkoff Banners, Directory Restructure & Render Optimizations)
+
+### 🌟 Added & Enhanced
+- **Medication Taken-Today Checkoff Banners**:
+  - Replaced the medication card action buttons ("Take Dose", "Skip") with a clean green status banner "Taken Today at {Time}" once a medication is logged as taken today, making it extremely easy to identify which medications have already been taken.
+- **Custom Days Persistence Sync**:
+  - Implemented metadata serialization (`scheduleType`, `daysOfWeek`, `durationBasis`, `trackingEnabled`) within the `frequency` column when writing to Supabase, solving postgres schema constraints without requiring manual database migrations.
+  - Automatically extracts and restores medication scheduling preferences upon load fallback from both local storage and database endpoints.
+
+### 📁 Reorganized & Restructured
+- **Folder Categorization**:
+  - Created root-level folders `Research/` and `Utility/` to isolate supplementary documents and scripts.
+  - Relocated developer documents (`SUPABASE_SETUP.md`, `TECH_STACK.md`, `CHANGELOG.md`) to the `Research/` directory.
+  - Relocated backend configurations (`supabase/schema.sql`, `api/send_mail.js`) to the `Utility/` directory.
+  - Placed an API wrapper at `api/send_mail.js` to preserve production Vercel serverless routing, and updated developer configurations in `vite.config.ts`.
+
+### ⚡ Performance & Optimizations
+- **React Render Caching**:
+  - Cached all database filters and data compiled states inside `MedicationTracker.tsx` and `ReportsManager.tsx` using `useMemo` and `useCallback` hooks, ensuring lag-free interface rendering and reducing computation redundancy.
+
+### 🧹 Cleanup
+- **License Removal**:
+  - Deleted the generic project `LICENSE` file and stripped licensing terms/clauses from `README.md`, `TECH_STACK.md`, and `app.config.ts`.
+
 ## 🚀 [v1.8.0] — 2026-07-30 (UI Security Shield, Persistent Passcodes & Unified Email Reports)
 
 ### 🔒 Security & Privacy

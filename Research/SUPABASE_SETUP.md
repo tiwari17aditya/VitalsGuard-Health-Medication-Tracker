@@ -14,7 +14,7 @@ VitalsGuard Health & Medication Tracker utilizes **Supabase PostgreSQL Free Tier
 ## Step 2: Run Database Migration Script
 1. Once your project dashboard loads, click on the **SQL Editor** tab on the left sidebar.
 2. Click **New Query**.
-3. Copy and paste the entire contents of `supabase/schema.sql` into the SQL Editor window.
+3. Copy and paste the entire contents of `Utility/supabase/schema.sql` into the SQL Editor window.
 4. Click **Run** (or `Ctrl + Enter`).
 5. You will see success messages creating all 6 tables (`profiles`, `medications`, `medication_logs`, `glucose_logs`, `bp_logs`, `health_reports`) with Row-Level Security policies.
 

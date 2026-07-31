@@ -81,7 +81,7 @@ export default defineConfig(({ mode }) => {
 
                 // 4. Dynamically import and execute the handler
                 // @ts-ignore
-                const { default: handler } = await import('./api/send_mail.js');
+                const { default: handler } = await import('./Utility/api/send_mail.js');
                 await handler(reqMock, resMock);
               } catch (err: any) {
                 console.error('[API Emulator Error]:', err);

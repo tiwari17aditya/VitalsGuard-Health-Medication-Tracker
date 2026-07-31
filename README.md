@@ -64,8 +64,3 @@ All app parameters, medical reference ranges, and security passcodes are maintai
 - **Config File**: [`src/config/app.config.ts`](file:///d:/Antigravity-Projects/Medication%20Tracker/src/config/app.config.ts)
 - **Default Developer Passcode**: **`1234`**
 
----
-
-## 📄 License
-
-MIT License — 100% Lifetime Free & Open Source.

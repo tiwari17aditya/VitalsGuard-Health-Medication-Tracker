@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { 
   Pill, Plus, CheckCircle, AlertTriangle, RefreshCw, Trash2, Clock, 
   Edit, Eye, EyeOff, Calendar, Ban, CheckCircle2, XCircle
@@ -47,13 +47,11 @@ export const MedicationTracker: React.FC = () => {
   const [foodRelation, setFoodRelation] = useState<FoodRelation>("After Food");
   const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
 
-  if (!activeProfile) return null;
-
-  const profileMeds = medications.filter(m => m.profileId === activeProfile.id);
-  const profileLogs = medicationLogs.filter(l => l.profileId === activeProfile.id);
+  const profileMeds = useMemo(() => activeProfile ? medications.filter(m => m.profileId === activeProfile.id) : [], [medications, activeProfile]);
+  const profileLogs = useMemo(() => activeProfile ? medicationLogs.filter(l => l.profileId === activeProfile.id) : [], [medicationLogs, activeProfile]);
 
   // Helper to check if a medication is scheduled for today
-  const isScheduledToday = (med: Medication): boolean => {
+  const isScheduledToday = useCallback((med: Medication): boolean => {
     if (med.trackingEnabled === false) return false;
     const type = med.scheduleType || "daily";
     if (type === "daily" || type === "as_needed") return true;
@@ -73,15 +71,19 @@ export const MedicationTracker: React.FC = () => {
       return now.getDate() === 1;
     }
     return true;
-  };
+  }, []);
 
   // Filtered medications according to selected view tab
-  const displayedMeds = profileMeds.filter(m => {
-    if (viewFilter === "today") {
-      return isScheduledToday(m);
-    }
-    return true;
-  });
+  const displayedMeds = useMemo(() => {
+    return profileMeds.filter(m => {
+      if (viewFilter === "today") {
+        return isScheduledToday(m);
+      }
+      return true;
+    });
+  }, [profileMeds, viewFilter, isScheduledToday]);
+
+  if (!activeProfile) return null;
 
   const openAddModal = () => {
     setEditingMed(null);
@@ -281,6 +283,15 @@ export const MedicationTracker: React.FC = () => {
                 month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
               }) : null;
 
+              const todayLog = profileLogs.find(l => 
+                l.medicationId === med.id && 
+                l.status === "taken" && 
+                new Date(l.timestamp).toDateString() === new Date().toDateString()
+              );
+              const takenTodayTime = todayLog ? new Date(todayLog.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit' 
+              }) : null;
+
               return (
                 <div 
                   key={med.id} 
@@ -392,28 +403,47 @@ export const MedicationTracker: React.FC = () => {
                   {/* Card Action Buttons */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "10px" }}>
                     
-                    {/* Primary Take & Skip buttons */}
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button
-                        onClick={() => takeMedication(med.id, takeTime)}
-                        className="btn btn-success"
-                        style={{ flex: 2, minHeight: "40px", fontSize: "0.875rem" }}
-                        disabled={med.stockCount <= 0 || !isTracking}
-                        title={`Log dose taken at ${takeTime}`}
-                      >
-                        <CheckCircle size={16} /> Take Dose ({takeTime})
-                      </button>
+                    {/* Primary Take & Skip buttons or Taken Today Banner */}
+                    {todayLog ? (
+                      <div style={{
+                        background: "rgba(16, 185, 129, 0.12)",
+                        border: "1px solid rgba(16, 185, 129, 0.35)",
+                        color: "#10b981",
+                        borderRadius: "var(--radius-sm)",
+                        padding: "10px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        fontWeight: "bold",
+                        fontSize: "0.9rem",
+                        minHeight: "40px"
+                      }}>
+                        <CheckCircle2 size={18} color="#10b981" /> Taken Today at {takenTodayTime}
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button
+                          onClick={() => takeMedication(med.id, takeTime)}
+                          className="btn btn-success"
+                          style={{ flex: 2, minHeight: "40px", fontSize: "0.875rem" }}
+                          disabled={med.stockCount <= 0 || !isTracking}
+                          title={`Log dose taken at ${takeTime}`}
+                        >
+                          <CheckCircle size={16} /> Take Dose ({takeTime})
+                        </button>
 
-                      <button
-                        onClick={() => skipMedication(med.id, "Skipped by user")}
-                        className="btn btn-secondary btn-sm"
-                        style={{ flex: 1, minHeight: "40px", fontSize: "0.8rem", color: "var(--warning)" }}
-                        disabled={!isTracking}
-                        title="Mark dose as skipped"
-                      >
-                        <Ban size={14} /> Skip
-                      </button>
-                    </div>
+                        <button
+                          onClick={() => skipMedication(med.id, "Skipped by user")}
+                          className="btn btn-secondary btn-sm"
+                          style={{ flex: 1, minHeight: "40px", fontSize: "0.8rem", color: "var(--warning)" }}
+                          disabled={!isTracking}
+                          title="Mark dose as skipped"
+                        >
+                          <Ban size={14} /> Skip
+                        </button>
+                      </div>
+                    )}
 
                     {/* Secondary Management buttons */}
                     <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
