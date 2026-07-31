@@ -103,7 +103,7 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
 export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const payload = {
+      const payload: any = {
         id: profile.id,
         name: profile.name,
         role: profile.role,
@@ -112,16 +112,35 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
         target_glucose_post_meal: profile.targetGlucosePostMeal,
         target_bp: profile.targetBP,
         target_water: profile.targetWater || 2000,
-        gender: profile.gender || "Female",
-        weight: profile.weight || 60,
-        season: profile.season || "Spring/Autumn",
         emergency_contact: profile.emergencyContact,
         doctor_name: profile.doctorName,
         notes: profile.notes,
         avatar_color: profile.avatarColor
       };
+      if (profile.gender) payload.gender = profile.gender;
+      if (profile.weight) payload.weight = profile.weight;
+      if (profile.season) payload.season = profile.season;
+
       const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
-      if (error) throw error;
+      if (error) {
+        // Resilient fallback retry for core columns if gender/weight/season schema columns are missing
+        const corePayload = {
+          id: profile.id,
+          name: profile.name,
+          role: profile.role,
+          age: profile.age,
+          target_glucose_fasting: profile.targetGlucoseFasting,
+          target_glucose_post_meal: profile.targetGlucosePostMeal,
+          target_bp: profile.targetBP,
+          target_water: profile.targetWater || 2000,
+          emergency_contact: profile.emergencyContact,
+          doctor_name: profile.doctorName,
+          notes: profile.notes,
+          avatar_color: profile.avatarColor
+        };
+        const { error: retryErr } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(corePayload);
+        if (retryErr) throw retryErr;
+      }
     } catch (err) {
       console.warn("Supabase saveProfile fallback to LocalStorage:", err);
     }
