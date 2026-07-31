@@ -65,7 +65,8 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).select("*");
-      if (!error && data) {
+      if (error) throw error;
+      if (data) {
         if (data.length > 0) {
           return data.map(item => ({
             id: item.id,
@@ -111,7 +112,8 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
         notes: profile.notes,
         avatar_color: profile.avatarColor
       };
-      await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
+      if (error) throw error;
     } catch (err) {
       console.warn("Supabase saveProfile fallback to LocalStorage:", err);
     }
@@ -234,7 +236,8 @@ export async function fetchMedications(profileId?: string): Promise<Medication[]
       let query = supabase.from(APP_CONFIG.supabaseTables.medications).select("*");
       if (profileId) query = query.eq("profile_id", profileId);
       const { data, error } = await query;
-      if (!error && data) {
+      if (error) throw error;
+      if (data) {
         if (data.length > 0) {
           return data.map(decodeMedication);
         } else if (!profileId) {
@@ -279,7 +282,8 @@ export async function saveMedicationDB(med: Medication): Promise<Medication> {
         food_relation: med.foodRelation,
         active: med.active
       };
-      await supabase.from(APP_CONFIG.supabaseTables.medications).upsert(payload);
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.medications).upsert(payload);
+      if (error) throw error;
     } catch (err) {
       console.warn("Supabase saveMedication fallback:", err);
     }
@@ -364,7 +368,7 @@ export async function logAdherenceDB(
 
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from(APP_CONFIG.supabaseTables.medicationLogs).insert({
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.medicationLogs).insert({
         id: newLog.id,
         medication_id: newLog.medicationId,
         profile_id: newLog.profileId,
@@ -372,6 +376,7 @@ export async function logAdherenceDB(
         status: newLog.status,
         quantity_taken: newLog.quantityTaken
       });
+      if (error) throw error;
     } catch (err) {
       console.warn("Supabase logAdherence fallback:", err);
     }
@@ -390,7 +395,8 @@ export async function fetchMedicationLogs(profileId?: string): Promise<Medicatio
       let query = supabase.from(APP_CONFIG.supabaseTables.medicationLogs).select("*").order("timestamp", { ascending: false });
       if (profileId) query = query.eq("profile_id", profileId);
       const { data, error } = await query;
-      if (!error && data) {
+      if (error) throw error;
+      if (data) {
         return data.map(d => ({
           id: d.id,
           medicationId: d.medication_id || d.medicationId,
@@ -417,7 +423,8 @@ export async function fetchGlucoseLogs(profileId?: string): Promise<GlucoseLog[]
       let query = supabase.from(APP_CONFIG.supabaseTables.glucoseLogs).select("*").order("timestamp", { ascending: false });
       if (profileId) query = query.eq("profile_id", profileId);
       const { data, error } = await query;
-      if (!error && data) {
+      if (error) throw error;
+      if (data) {
         return data.map(d => ({
           id: d.id,
           profileId: d.profile_id || d.profileId,
@@ -440,7 +447,7 @@ export async function fetchGlucoseLogs(profileId?: string): Promise<GlucoseLog[]
 export async function saveGlucoseLogDB(log: GlucoseLog): Promise<GlucoseLog> {
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from(APP_CONFIG.supabaseTables.glucoseLogs).insert({
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.glucoseLogs).insert({
         id: log.id,
         profile_id: log.profileId,
         value: log.value,
@@ -449,6 +456,7 @@ export async function saveGlucoseLogDB(log: GlucoseLog): Promise<GlucoseLog> {
         status: log.status,
         notes: log.notes
       });
+      if (error) throw error;
     } catch (err) {
       console.warn("Supabase saveGlucoseLog fallback:", err);
     }
@@ -466,7 +474,8 @@ export async function fetchBPLogs(profileId?: string): Promise<BPLog[]> {
       let query = supabase.from(APP_CONFIG.supabaseTables.bpLogs).select("*").order("timestamp", { ascending: false });
       if (profileId) query = query.eq("profile_id", profileId);
       const { data, error } = await query;
-      if (!error && data) {
+      if (error) throw error;
+      if (data) {
         return data.map(d => ({
           id: d.id,
           profileId: d.profile_id || d.profileId,
@@ -490,7 +499,7 @@ export async function fetchBPLogs(profileId?: string): Promise<BPLog[]> {
 export async function saveBPLogDB(log: BPLog): Promise<BPLog> {
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from(APP_CONFIG.supabaseTables.bpLogs).insert({
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.bpLogs).insert({
         id: log.id,
         profile_id: log.profileId,
         systolic: log.systolic,
@@ -500,6 +509,7 @@ export async function saveBPLogDB(log: BPLog): Promise<BPLog> {
         timestamp: log.timestamp,
         notes: log.notes
       });
+      if (error) throw error;
     } catch (err) {
       console.warn("Supabase saveBPLog fallback:", err);
     }
@@ -517,7 +527,8 @@ export async function fetchWaterLogs(profileId?: string): Promise<WaterLog[]> {
       let query = supabase.from("water_logs").select("*").order("timestamp", { ascending: false });
       if (profileId) query = query.eq("profile_id", profileId);
       const { data, error } = await query;
-      if (!error && data) {
+      if (error) throw error;
+      if (data) {
         return data.map(d => ({
           id: d.id,
           profileId: d.profile_id || d.profileId,
@@ -538,13 +549,14 @@ export async function fetchWaterLogs(profileId?: string): Promise<WaterLog[]> {
 export async function saveWaterLogDB(log: WaterLog): Promise<WaterLog> {
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from("water_logs").insert({
+      const { error } = await supabase.from("water_logs").insert({
         id: log.id,
         profile_id: log.profileId,
         amount: log.amount,
         timestamp: log.timestamp,
         notes: log.notes
       });
+      if (error) throw error;
     } catch (err) {
       console.warn("Supabase saveWaterLog fallback to LocalStorage:", err);
     }

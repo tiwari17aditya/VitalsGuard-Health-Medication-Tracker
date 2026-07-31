@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.1] - 2026-07-31
+
+### Fixed
+- **Strict Database Error Handling**: Added explicit checks on returned Supabase response errors to correctly trigger the LocalStorage fallback flow instead of failing silently.
+- **Dynamic Connection Status Badge**: Replaced static build-time connection check with a dynamic connection check that periodically checks real-time database accessibility.
+- **Auto-Sync for Local Storage**: Added automatic synchronization on startup and network restoration to upload offline/locally-stored medications, logs, and vitals to Supabase.
+- **Auto-Polling Sync**: Added 30-second background polling (throttled by tab visibility) to keep multiple devices viewing the same active profiles in sync.
+
 ## [1.10.0] - 2026-07-31
 
 ### Added

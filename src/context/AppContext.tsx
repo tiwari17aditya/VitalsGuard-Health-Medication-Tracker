@@ -11,7 +11,8 @@ import {
   fetchGlucoseLogs, saveGlucoseLogDB,
   fetchBPLogs, saveBPLogDB,
   fetchWaterLogs, saveWaterLogDB, deleteWaterLogDB,
-  isSupabaseConfigured
+  isSupabaseConfigured,
+  supabase
 } from "../lib/supabase";
 import { sendEmailNotification, generateRefillAlertHTML, generateDailyCheckHTML } from "../services/emailService";
 
@@ -20,7 +21,7 @@ interface AppContextType {
   // Profiles
   profiles: UserProfile[];
   activeProfile: UserProfile | null;
-  setActiveProfileId: (id: string) => void;
+  setActiveProfileId: (id: string) => Promise<void>;
   addOrUpdateProfile: (profile: UserProfile) => Promise<void>;
   deleteProfile: (id: string) => Promise<void>;
 
@@ -80,6 +81,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [glucoseLogs, setGlucoseLogs] = useState<GlucoseLog[]>([]);
   const [bpLogs, setBpLogs] = useState<BPLog[]>([]);
   const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
+  const [isSupabaseActive, setIsSupabaseActive] = useState<boolean>(false);
   const [waterTargets, setWaterTargets] = useState<Record<string, number>>(() => {
     try {
       const raw = localStorage.getItem("vitalsguard_water_targets_v1");
@@ -105,9 +107,144 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
 
-  // Network offline listener
+  // Dynamic Database Connection Ping
+  const checkSupabaseConnection = async (): Promise<boolean> => {
+    if (!isSupabaseConfigured || !supabase) {
+      setIsSupabaseActive(false);
+      return false;
+    }
+    try {
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).select("id").limit(1);
+      if (error) {
+        setIsSupabaseActive(false);
+        return false;
+      }
+      setIsSupabaseActive(true);
+      return true;
+    } catch {
+      setIsSupabaseActive(false);
+      return false;
+    }
+  };
+
+  // Local-to-Cloud Auto Sync
+  const syncLocalDataToSupabase = async () => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      console.log("Checking if LocalStorage data needs to be synced to Supabase...");
+      
+      // 1. Sync Profiles
+      const localProfilesStr = localStorage.getItem("vitalsguard_profiles_v1");
+      if (localProfilesStr) {
+        const localProfiles = JSON.parse(localProfilesStr) as UserProfile[];
+        for (const p of localProfiles) {
+          if (p.id === "system-settings") continue;
+          await saveProfileDB(p);
+        }
+      }
+
+      // 2. Sync Medications
+      const localMedsStr = localStorage.getItem("vitalsguard_medications_v1");
+      if (localMedsStr) {
+        const localMeds = JSON.parse(localMedsStr) as Medication[];
+        for (const m of localMeds) {
+          await saveMedicationDB(m);
+        }
+      }
+
+      // 3. Sync Medication Logs
+      const localMedLogsStr = localStorage.getItem("vitalsguard_med_logs_v1");
+      if (localMedLogsStr) {
+        const localMedLogs = JSON.parse(localMedLogsStr) as MedicationLog[];
+        for (const l of localMedLogs) {
+          const payload = {
+            id: l.id,
+            medication_id: l.medicationId,
+            profile_id: l.profileId,
+            timestamp: l.timestamp,
+            status: l.status,
+            quantity_taken: l.quantityTaken,
+            notes: l.notes
+          };
+          await supabase.from(APP_CONFIG.supabaseTables.medicationLogs).upsert(payload);
+        }
+      }
+
+      // 4. Sync Glucose Logs
+      const localGlucoseStr = localStorage.getItem("vitalsguard_glucose_logs_v1");
+      if (localGlucoseStr) {
+        const localGlucose = JSON.parse(localGlucoseStr) as GlucoseLog[];
+        for (const g of localGlucose) {
+          const payload = {
+            id: g.id,
+            profile_id: g.profileId,
+            value: g.value,
+            meal_type: g.mealType,
+            timestamp: g.timestamp,
+            status: g.status,
+            notes: g.notes
+          };
+          await supabase.from(APP_CONFIG.supabaseTables.glucoseLogs).upsert(payload);
+        }
+      }
+
+      // 5. Sync BP Logs
+      const localBPStr = localStorage.getItem("vitalsguard_bp_logs_v1");
+      if (localBPStr) {
+        const localBP = JSON.parse(localBPStr) as BPLog[];
+        for (const b of localBP) {
+          const payload = {
+            id: b.id,
+            profile_id: b.profileId,
+            systolic: b.systolic,
+            diastolic: b.diastolic,
+            pulse: b.pulse,
+            category: b.category,
+            timestamp: b.timestamp,
+            notes: b.notes
+          };
+          await supabase.from(APP_CONFIG.supabaseTables.bpLogs).upsert(payload);
+        }
+      }
+
+      // 6. Sync Water Logs
+      const localWaterStr = localStorage.getItem("vitalsguard_water_logs_v1");
+      if (localWaterStr) {
+        const localWater = JSON.parse(localWaterStr) as WaterLog[];
+        for (const w of localWater) {
+          const payload = {
+            id: w.id,
+            profile_id: w.profileId,
+            amount: w.amount,
+            timestamp: w.timestamp,
+            notes: w.notes
+          };
+          try {
+            await supabase.from("water_logs").upsert(payload);
+          } catch (waterErr) {
+            console.warn("Could not sync water log row:", waterErr);
+          }
+        }
+      }
+
+      console.log("Local storage data sync to Supabase complete.");
+    } catch (err) {
+      console.warn("Error running syncLocalDataToSupabase:", err);
+    }
+  };
+
+  // Network offline listener & Sync Trigger
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => {
+      setIsOffline(false);
+      checkSupabaseConnection().then(active => {
+        if (active) {
+          syncLocalDataToSupabase().then(() => {
+            refreshAllData();
+          });
+        }
+      });
+    };
     const handleOffline = () => setIsOffline(true);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
@@ -204,13 +341,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Polling check for database changes
   useEffect(() => {
-    refreshAllData();
+    let intervalId: any;
+    
+    const startPolling = () => {
+      intervalId = setInterval(async () => {
+        if (document.visibilityState === "visible" && !isOffline) {
+          const active = await checkSupabaseConnection();
+          if (active) {
+            try {
+              let loadedProfiles = await fetchProfiles();
+              loadedProfiles = loadedProfiles.filter(p => p.id !== "system-settings");
+              if (loadedProfiles && loadedProfiles.length > 0) {
+                setProfiles(loadedProfiles);
+              }
+              
+              let loadedMeds = await fetchMedications();
+              if (loadedMeds && loadedMeds.length > 0) {
+                setMedications(loadedMeds);
+              }
+
+              const loadedMedLogs = await fetchMedicationLogs();
+              setMedicationLogs(loadedMedLogs);
+
+              const loadedGlucose = await fetchGlucoseLogs();
+              setGlucoseLogs(loadedGlucose);
+
+              const loadedBP = await fetchBPLogs();
+              setBpLogs(loadedBP);
+
+              const loadedWater = await fetchWaterLogs();
+              setWaterLogs(loadedWater);
+            } catch (err) {
+              console.warn("Background polling fetch failed:", err);
+            }
+          }
+        }
+      }, 30000); // 30s
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkSupabaseConnection().then(active => {
+          if (active) refreshAllData();
+        });
+      }
+    };
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isOffline]);
+
+  // Combined startup check, sync, and load
+  useEffect(() => {
+    const initApp = async () => {
+      const active = await checkSupabaseConnection();
+      if (active) {
+        await syncLocalDataToSupabase();
+      }
+      await refreshAllData();
+    };
+    initApp();
   }, []);
 
-  const setActiveProfileId = (id: string) => {
+  const setActiveProfileId = async (id: string) => {
     setActiveProfileIdState(id);
     localStorage.setItem("vitalsguard_active_profile", id);
+    await checkSupabaseConnection();
+    await refreshAllData();
   };
 
   const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || APP_CONFIG.defaultProfiles[0];
@@ -689,7 +893,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         removeToast,
 
         isOffline,
-        isSupabaseActive: isSupabaseConfigured,
+        isSupabaseActive,
         isLoading,
         lowStockMeds,
         updateAdminPasscode
