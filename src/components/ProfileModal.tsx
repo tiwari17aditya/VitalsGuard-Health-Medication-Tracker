@@ -11,33 +11,38 @@ const calculateAutoWaterTarget = (
   season: string,
   age: number
 ): number => {
-  // Base: 35ml per kg of weight
-  let target = weight * 35;
-
-  // Age adjustments
-  if (age < 14) {
-    target *= 0.8;
-  } else if (age > 60) {
-    target *= 0.85;
+  // 1. Check EFSA/IOM standards for children (age-based limits)
+  if (age < 4) {
+    return 1300;
+  }
+  if (age >= 4 && age < 9) {
+    return 1700;
+  }
+  if (age >= 9 && age < 14) {
+    return gender.toLowerCase() === "male" ? 2400 : 2100;
   }
 
-  // Gender adjustments
+  // 2. For adults (>=14), use Redcliffe Labs Weight-Based baseline:
+  // Weight (lbs) * 2/3 (in ounces) = Weight (kg) * 43.5 ml
+  let target = weight * 43.5;
+
+  // 3. Gender Adjustment (EFSA/IOM adult differences)
   if (gender.toLowerCase() === "male") {
-    target += 300;
+    target += 600; // Aligns Male averages closer to 3.3L-3.7L
   } else if (gender.toLowerCase() === "other") {
-    target += 150;
+    target += 300;
   }
 
-  // Season adjustments
+  // 4. Season Adjustments
   if (season.toLowerCase() === "summer") {
-    target += 500;
+    target += 500; // Increased sweat rate in summer
   } else if (season.toLowerCase() === "winter") {
-    target -= 200;
+    target -= 200; // Reduced cold weather evaporation
   }
 
-  // Bound target between 1000ml and 5000ml, rounded to nearest 50ml
+  // 5. Bounding & rounding
   const rounded = Math.round(target / 50) * 50;
-  return Math.min(5000, Math.max(1000, rounded));
+  return Math.min(6000, Math.max(1000, rounded));
 };
 
 interface ProfileModalProps {
