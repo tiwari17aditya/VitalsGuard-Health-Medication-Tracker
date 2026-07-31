@@ -6,6 +6,50 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## 🚀 [v1.11.0] — 2026-07-31 (Scientific Hydration Target Calculator)
+
+### 🌟 Added & Enhanced
+- **Scientific Hydration Target Calculator**:
+  - Automatically calculates daily water goals using user weight, gender, age, and current season.
+- **Dynamic Profile Metrics**:
+  - Integrated dropdown inputs for Gender, Current Season, and numeric input for Weight (kg) in the profile manager.
+- **Auto-Calculate Toggle UI**:
+  - Added an "Auto-Calculate" checkbox that dynamically computes the recommended hydration goal and locks the text input, supporting manual adjustments when unchecked.
+
+## 🚀 [v1.10.2] — 2026-07-31 (PostgreSQL Targets & Settings Sync)
+
+### 🌟 Added & Enhanced
+- **Water Targets Cloud Sync**:
+  - Moved daily water intake targets to PostgreSQL, adding a `target_water` column in the database schema.
+- **Caretaker Email Cloud Sync**:
+  - Configured shared caretaker email address sync to PostgreSQL via a system settings record row.
+- **Profile Goal Editors**:
+  - Enabled custom inputs for `Daily Water Goal` and `Target Glucose (Post-Meal)` in the user profile modal.
+
+## 🚀 [v1.10.1] — 2026-07-31 (Strict Database Error Handling & Dynamic Connections)
+
+### 🔧 Fixed & Optimized
+- **Strict Supabase Error Handling**:
+  - Updated database operations in `supabase.ts` to verify query errors and throw them, forcing the app to fall back to LocalStorage correctly instead of failing silently.
+- **Dynamic Database Badge**:
+  - Replaced static configuration check in the header with a dynamic connection check that periodically queries database accessibility.
+- **Self-Healing Local-to-Cloud Auto-Sync**:
+  - Implemented automatic database uploading for any offline/locally-saved medications, profiles, logs, and vitals upon connection restoration.
+- **Auto-Polling Synchronization**:
+  - Added 30-second polling to automatically keep multiple devices in sync.
+
+## 🚀 [v1.10.0] — 2026-07-31 (Water Intake Hydration Tracker)
+
+### 🌟 Added & Enhanced
+- **Hydration Tracker**:
+  - Implemented a complete water logging system supporting multi-profile daily goals, hydration history, and streaks.
+- **Fluid Wave SVG Animation**:
+  - Created a rich, dynamic fluid wave ripple SVG glass animation showing hydration completion percentage.
+- **Family Hydration Board**:
+  - Added a dashboard to display daily water progress and historical averages across all user profiles.
+
+---
+
 ## 🚀 [v1.9.0] — 2026-07-31 (Custom Days Sync, Intake Checkoff Banners, Directory Restructure & Render Optimizations)
 
 ### 🌟 Added & Enhanced
