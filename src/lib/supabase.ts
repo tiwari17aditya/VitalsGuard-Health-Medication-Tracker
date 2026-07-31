@@ -125,14 +125,51 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
 export async function deleteProfileDB(id: string): Promise<boolean> {
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from(APP_CONFIG.supabaseTables.profiles).delete().eq("id", id);
+      // 1. Delete dependent BP Logs
+      const { error: bpError } = await supabase.from(APP_CONFIG.supabaseTables.bpLogs).delete().eq("profile_id", id);
+      if (bpError) throw bpError;
+
+      // 2. Delete dependent Glucose Logs
+      const { error: glucoseError } = await supabase.from(APP_CONFIG.supabaseTables.glucoseLogs).delete().eq("profile_id", id);
+      if (glucoseError) throw glucoseError;
+
+      // 3. Delete dependent Medication Logs
+      const { error: logsError } = await supabase.from(APP_CONFIG.supabaseTables.medicationLogs).delete().eq("profile_id", id);
+      if (logsError) throw logsError;
+
+      // 4. Delete dependent Medications
+      const { error: medsError } = await supabase.from(APP_CONFIG.supabaseTables.medications).delete().eq("profile_id", id);
+      if (medsError) throw medsError;
+
+      // 5. Delete Profile
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).delete().eq("id", id);
+      if (error) throw error;
     } catch (err) {
-      console.warn("Supabase deleteProfile fallback:", err);
+      console.error("Supabase deleteProfile error:", err);
+      throw err;
     }
   }
+  
+  // Clean up profiles local storage
   const current = loadFromStorage<UserProfile[]>(STORAGE_KEYS.PROFILES, []);
-  const filtered = current.filter(p => p.id !== id);
-  saveToStorage(STORAGE_KEYS.PROFILES, filtered);
+  saveToStorage(STORAGE_KEYS.PROFILES, current.filter(p => p.id !== id));
+
+  // Clean up medications local storage
+  const meds = loadFromStorage<Medication[]>(STORAGE_KEYS.MEDICATIONS, []);
+  saveToStorage(STORAGE_KEYS.MEDICATIONS, meds.filter(m => m.profileId !== id));
+
+  // Clean up medication logs local storage
+  const logs = loadFromStorage<MedicationLog[]>(STORAGE_KEYS.MED_LOGS, []);
+  saveToStorage(STORAGE_KEYS.MED_LOGS, logs.filter(l => l.profileId !== id));
+
+  // Clean up glucose logs local storage
+  const gluc = loadFromStorage<GlucoseLog[]>(STORAGE_KEYS.GLUCOSE_LOGS, []);
+  saveToStorage(STORAGE_KEYS.GLUCOSE_LOGS, gluc.filter(g => g.profileId !== id));
+
+  // Clean up bp logs local storage
+  const bp = loadFromStorage<BPLog[]>(STORAGE_KEYS.BP_LOGS, []);
+  saveToStorage(STORAGE_KEYS.BP_LOGS, bp.filter(b => b.profileId !== id));
+
   return true;
 }
 
@@ -245,13 +282,42 @@ export async function saveMedicationDB(med: Medication): Promise<Medication> {
 export async function deleteMedicationDB(id: string): Promise<boolean> {
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from(APP_CONFIG.supabaseTables.medications).delete().eq("id", id);
+      // 1. Delete dependent medication logs first
+      const { error: logsError } = await supabase.from(APP_CONFIG.supabaseTables.medicationLogs).delete().eq("medication_id", id);
+      if (logsError) throw logsError;
+
+      // 2. Delete medication
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.medications).delete().eq("id", id);
+      if (error) throw error;
     } catch (err) {
-      console.warn("Supabase deleteMedication fallback:", err);
+      console.error("Supabase deleteMedication error:", err);
+      throw err;
     }
   }
+
+  // Clean up medications local storage
   const meds = loadFromStorage<Medication[]>(STORAGE_KEYS.MEDICATIONS, []);
   saveToStorage(STORAGE_KEYS.MEDICATIONS, meds.filter(m => m.id !== id));
+
+  // Clean up medication logs local storage
+  const logs = loadFromStorage<MedicationLog[]>(STORAGE_KEYS.MED_LOGS, []);
+  saveToStorage(STORAGE_KEYS.MED_LOGS, logs.filter(l => l.medicationId !== id));
+
+  return true;
+}
+
+export async function deleteMedicationLogDB(logId: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.medicationLogs).delete().eq("id", logId);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Supabase deleteMedicationLog error:", err);
+      throw err;
+    }
+  }
+  const logs = loadFromStorage<MedicationLog[]>(STORAGE_KEYS.MED_LOGS, []);
+  saveToStorage(STORAGE_KEYS.MED_LOGS, logs.filter(l => l.id !== logId));
   return true;
 }
 

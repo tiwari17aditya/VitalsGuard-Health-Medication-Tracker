@@ -7,7 +7,7 @@ import { APP_CONFIG } from "../config/app.config";
 import { 
   fetchProfiles, saveProfileDB, deleteProfileDB,
   fetchMedications, saveMedicationDB, deleteMedicationDB,
-  fetchMedicationLogs, logAdherenceDB,
+  fetchMedicationLogs, logAdherenceDB, deleteMedicationLogDB,
   fetchGlucoseLogs, saveGlucoseLogDB,
   fetchBPLogs, saveBPLogDB,
   isSupabaseConfigured
@@ -223,6 +223,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await deleteProfileDB(id);
       setProfiles(prev => prev.filter(p => p.id !== id));
+      setMedications(prev => prev.filter(m => m.profileId !== id));
+      setMedicationLogs(prev => prev.filter(l => l.profileId !== id));
+      setGlucoseLogs(prev => prev.filter(g => g.profileId !== id));
+      setBpLogs(prev => prev.filter(b => b.profileId !== id));
       if (activeProfileId === id && profiles.length > 1) {
         const remaining = profiles.filter(p => p.id !== id);
         setActiveProfileId(remaining[0].id);
@@ -266,6 +270,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const target = medications.find(m => m.id === id);
       await deleteMedicationDB(id);
       setMedications(prev => prev.filter(m => m.id !== id));
+      setMedicationLogs(prev => prev.filter(l => l.medicationId !== id));
       if (target) {
         logUserAction("UI_INTERACTION", `Deleted prescription ${target.name} from inventory`);
       }
@@ -369,10 +374,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteMedicationLog = async (logId: string) => {
     try {
+      await deleteMedicationLogDB(logId);
       setMedicationLogs(prev => prev.filter(l => l.id !== logId));
-      // Save updated logs to localStorage
-      const filtered = medicationLogs.filter(l => l.id !== logId);
-      localStorage.setItem("vitalsguard_med_logs_v1", JSON.stringify(filtered));
       showToast("info", "Log Deleted", "Intake log removed.");
     } catch (err: any) {
       showToast("error", "Delete Error", err.message || "Could not delete log.");
