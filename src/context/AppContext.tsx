@@ -75,7 +75,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profiles, setProfiles] = useState<UserProfile[]>(APP_CONFIG.defaultProfiles as UserProfile[]);
-  const [activeProfileId, setActiveProfileIdState] = useState<string>(APP_CONFIG.defaultProfiles[0].id);
+  const [activeProfileId, setActiveProfileIdState] = useState<string>((APP_CONFIG.defaultProfiles as UserProfile[])[0]?.id || "");
   const [medications, setMedications] = useState<Medication[]>(APP_CONFIG.defaultMedications as Medication[]);
   const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
   const [glucoseLogs, setGlucoseLogs] = useState<GlucoseLog[]>([]);
@@ -355,7 +355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       const savedId = localStorage.getItem("vitalsguard_active_profile");
       const match = loadedProfiles.find(p => p.id === savedId);
-      setActiveProfileIdState(match ? match.id : loadedProfiles[0].id);
+      setActiveProfileIdState(match ? match.id : (loadedProfiles[0]?.id || ""));
 
       let loadedMeds = await fetchMedications();
       if (!loadedMeds || loadedMeds.length === 0) {
@@ -444,6 +444,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const initApp = async () => {
       const active = await checkSupabaseConnection();
       if (active) {
+        // 1. Clean up local storage from old Mom/Dad placeholder profiles
+        const localProfilesStr = localStorage.getItem("vitalsguard_profiles_v1");
+        if (localProfilesStr) {
+          const localProfiles = JSON.parse(localProfilesStr) as UserProfile[];
+          const filteredProfiles = localProfiles.filter(p => 
+            p.id !== "profile-mom" && 
+            p.id !== "profile-dad"
+          );
+          if (filteredProfiles.length !== localProfiles.length) {
+            localStorage.setItem("vitalsguard_profiles_v1", JSON.stringify(filteredProfiles));
+          }
+        }
+
+        // 2. Programmatically clean up old Mom/Dad database placeholder entries
+        for (const deleteId of ["profile-mom", "profile-dad"]) {
+          try {
+            await deleteProfileDB(deleteId);
+          } catch {}
+        }
         await syncLocalDataToSupabase();
       }
       await refreshAllData();

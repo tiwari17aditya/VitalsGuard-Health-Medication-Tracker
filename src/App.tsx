@@ -10,7 +10,6 @@ import { ReportsManager } from "./components/ReportsManager";
 import { WaterTracker } from "./components/WaterTracker";
 import { ProfileModal } from "./components/ProfileModal";
 import { ToastContainer } from "./components/ToastContainer";
-import { APP_CONFIG } from "./config/app.config";
 
 const DashboardContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("vitals");
@@ -18,27 +17,29 @@ const DashboardContent: React.FC = () => {
 
   const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications, waterLogs, waterTargets } = useApp();
 
-  const currentProfile = activeProfile || (APP_CONFIG.defaultProfiles[0] as any);
+  const currentProfile = activeProfile || null;
 
   // Calculate top KPI statistics for current active profile
-  const profileGlucose = glucoseLogs.filter(g => g.profileId === currentProfile.id);
-  const profileBP = bpLogs.filter(b => b.profileId === currentProfile.id);
-  const profileMeds = medications.filter(m => m.profileId === currentProfile.id);
+  const profileGlucose = currentProfile ? glucoseLogs.filter(g => g.profileId === currentProfile.id) : [];
+  const profileBP = currentProfile ? bpLogs.filter(b => b.profileId === currentProfile.id) : [];
+  const profileMeds = currentProfile ? medications.filter(m => m.profileId === currentProfile.id) : [];
 
   const latestGlucose = profileGlucose.length > 0 ? profileGlucose[0] : null;
   const latestBP = profileBP.length > 0 ? profileBP[0] : null;
 
   const todayStr = new Date().toISOString().split("T")[0];
-  const logsToday = medicationLogs.filter(l => l.profileId === currentProfile.id && l.timestamp.startsWith(todayStr));
+  const logsToday = currentProfile ? medicationLogs.filter(l => l.profileId === currentProfile.id && l.timestamp.startsWith(todayStr)) : [];
   const takenTodayCount = logsToday.filter(l => l.status === "taken").length;
   const totalProfileMeds = profileMeds.length;
   const todayAdherence = totalProfileMeds > 0 ? Math.round((takenTodayCount / totalProfileMeds) * 100) : 0;
 
   // Calculate water metrics for top KPI card
-  const profileWaterToday = waterLogs
-    .filter(w => w.profileId === currentProfile.id && w.timestamp.startsWith(todayStr))
-    .reduce((sum, w) => sum + w.amount, 0);
-  const waterTarget = waterTargets[currentProfile.id] || 2000;
+  const profileWaterToday = currentProfile
+    ? waterLogs
+        .filter(w => w.profileId === currentProfile.id && w.timestamp.startsWith(todayStr))
+        .reduce((sum, w) => sum + w.amount, 0)
+    : 0;
+  const waterTarget = currentProfile ? (waterTargets[currentProfile.id] || 2000) : 2000;
   const waterProgressPercent = Math.round((profileWaterToday / waterTarget) * 100);
 
   return (
