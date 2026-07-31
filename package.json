@@ -1,7 +1,7 @@
 {
   "name": "medication-tracker",
   "private": true,
-  "version": "1.10.1",
+  "version": "1.10.2",
   "homepage": "https://vitalsguard-health-medication-track.vercel.app/",
   "type": "module",
   "scripts": {

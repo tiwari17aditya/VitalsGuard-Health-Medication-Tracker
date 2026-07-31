@@ -12,6 +12,7 @@ export interface UserProfile {
   targetGlucoseFasting?: string;
   targetGlucosePostMeal?: string;
   targetBP?: string;
+  targetWater?: number;
   emergencyContact?: string;
   doctorName?: string;
   notes?: string;

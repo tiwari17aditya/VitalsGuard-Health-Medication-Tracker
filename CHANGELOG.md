@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.2] - 2026-07-31
+
+### Added
+- **Water Target database storage**: Synced the water tracker daily targets directly to PostgreSQL under the new `target_water` column in the `profiles` table.
+- **Caretaker Email database storage**: Saved the caretaker email to the database under the `"system-settings"` profile's `emergencyContact` column, enabling dynamic multi-device synchronization.
+- **Goals and targets UI editor**: Added input fields for `Daily Water Goal` and `Target Glucose (Post-Meal)` in the user profile modal so that all goals are fully customizable in the UI.
+
 ## [1.10.1] - 2026-07-31
 
 ### Fixed

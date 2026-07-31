@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Droplet, Plus, Trash2, Award, Settings, Users, Calendar, TrendingUp, Clock, Info } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { AdminAuthModal } from "./AdminAuthModal";
+import type { UserProfile } from "../types";
 
 
 export const WaterTracker: React.FC = () => {
@@ -16,8 +17,8 @@ export const WaterTracker: React.FC = () => {
   } = useApp();
 
   // Selected profile settings
-  const currentProfile = activeProfile || { id: "default", name: "Guest" };
-  const currentTarget = waterTargets[currentProfile.id] || 2000;
+  const currentProfile = activeProfile || { id: "default", name: "Guest" } as UserProfile;
+  const currentTarget = currentProfile.targetWater || waterTargets[currentProfile.id] || 2000;
 
   // Local Form state
   const [customAmount, setCustomAmount] = useState<number>(250);
@@ -109,7 +110,7 @@ export const WaterTracker: React.FC = () => {
   while (true) {
     const checkDateStr = checkDate.toISOString().split("T")[0];
     const dayTotalAmount = logsByDate[checkDateStr] || 0;
-    const targetForDay = waterTargets[currentProfile.id] || 2000;
+    const targetForDay = currentProfile.targetWater || waterTargets[currentProfile.id] || 2000;
     if (dayTotalAmount >= targetForDay) {
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);
@@ -490,7 +491,7 @@ export const WaterTracker: React.FC = () => {
               .filter(log => log.profileId === prof.id && log.timestamp.startsWith(todayStr))
               .reduce((sum, log) => sum + log.amount, 0);
 
-            const profTarget = waterTargets[prof.id] || 2000;
+            const profTarget = prof.targetWater || waterTargets[prof.id] || 2000;
             const profPercent = Math.min(100, Math.round((profTodayTotal / profTarget) * 100));
 
             // Calculate average for this specific profile

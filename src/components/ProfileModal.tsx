@@ -34,7 +34,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       name: "",
       role: "Parent",
       targetGlucoseFasting: "70-110 mg/dL",
+      targetGlucosePostMeal: "< 140 mg/dL",
       targetBP: "120/80 mmHg",
+      targetWater: 2000,
       emergencyContact: "",
       doctorName: "",
       notes: ""
@@ -98,7 +100,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                   <div>
                     <h4 style={{ fontSize: "1.05rem" }}>{p.name}</h4>
                     <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>
-                      {p.role} • Target BP: {p.targetBP || "N/A"}
+                      {p.role} • BP: {p.targetBP || "N/A"} • Water: {p.targetWater ? `${p.targetWater}ml` : "2000ml"} • Sugar: {p.targetGlucoseFasting || "N/A"} / {p.targetGlucosePostMeal || "N/A"}
                     </p>
                   </div>
 
@@ -189,12 +191,35 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                 />
               </div>
               <div className="form-group">
+                <label className="form-label">Target Glucose (Post-Meal)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. < 140 mg/dL"
+                  value={editingProfile.targetGlucosePostMeal || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, targetGlucosePostMeal: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="grid-2">
+              <div className="form-group">
                 <label className="form-label">Target Blood Pressure</label>
                 <input
                   type="text"
                   placeholder="e.g. 120/80 mmHg"
                   value={editingProfile.targetBP || ""}
                   onChange={(e) => setEditingProfile({ ...editingProfile, targetBP: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Daily Water Goal (ml)</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 2000"
+                  value={editingProfile.targetWater || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, targetWater: e.target.value ? Number(e.target.value) : undefined })}
                   className="form-input"
                 />
               </div>

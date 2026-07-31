@@ -54,7 +54,7 @@ interface AppContextType {
 
   // Reports & Email
   caretakerEmail: string;
-  setCaretakerEmail: (email: string) => void;
+  setCaretakerEmail: (email: string) => Promise<void>;
   sendDailyCheckEmail: (profileId?: string) => Promise<void>;
   sendRefillAlertEmail: (profileId?: string) => Promise<void>;
 
@@ -227,6 +227,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // 7. Sync Caretaker Email
+      const localEmail = localStorage.getItem("vitalsguard_caretaker_email");
+      if (localEmail) {
+        const savedPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
+        await saveProfileDB({
+          id: "system-settings",
+          name: "System Settings",
+          role: "System",
+          notes: savedPin,
+          emergencyContact: localEmail
+        } as UserProfile);
+      }
+
       console.log("Local storage data sync to Supabase complete.");
     } catch (err) {
       console.warn("Error running syncLocalDataToSupabase:", err);
@@ -289,9 +302,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const setCaretakerEmail = (email: string) => {
+  const setCaretakerEmail = async (email: string) => {
     setCaretakerEmailState(email);
     localStorage.setItem("vitalsguard_caretaker_email", email);
+
+    try {
+      const savedPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
+      await saveProfileDB({
+        id: "system-settings",
+        name: "System Settings",
+        role: "System",
+        notes: savedPin,
+        emergencyContact: email
+      } as UserProfile);
+    } catch (err) {
+      console.warn("Error saving caretaker email to DB:", err);
+    }
+
     logUserAction("PROFILE_UPDATED", `Caretaker email address updated to ${email}`);
     showToast("info", "Email Saved", `Caretaker email updated to ${email}`);
   };
@@ -302,8 +329,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       let loadedProfiles = await fetchProfiles();
       const systemSettings = loadedProfiles.find(p => p.id === "system-settings");
-      if (systemSettings && systemSettings.notes) {
-        localStorage.setItem("vitalsguard_admin_pin", systemSettings.notes);
+      if (systemSettings) {
+        if (systemSettings.notes) {
+          localStorage.setItem("vitalsguard_admin_pin", systemSettings.notes);
+        }
+        if (systemSettings.emergencyContact) {
+          localStorage.setItem("vitalsguard_caretaker_email", systemSettings.emergencyContact);
+          setCaretakerEmailState(systemSettings.emergencyContact);
+        }
       }
       loadedProfiles = loadedProfiles.filter(p => p.id !== "system-settings");
 
@@ -311,6 +344,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loadedProfiles = APP_CONFIG.defaultProfiles as UserProfile[];
       }
       setProfiles(loadedProfiles);
+      
+      const targets: Record<string, number> = {};
+      loadedProfiles.forEach(p => {
+        if (p.targetWater) {
+          targets[p.id] = p.targetWater;
+        }
+      });
+      setWaterTargets(targets);
       
       const savedId = localStorage.getItem("vitalsguard_active_profile");
       const match = loadedProfiles.find(p => p.id === savedId);
@@ -775,6 +816,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateWaterTarget = async (profileId: string, amount: number) => {
     try {
+      const prof = profiles.find(p => p.id === profileId);
+      if (prof) {
+        const updatedProfile = { ...prof, targetWater: amount };
+        await addOrUpdateProfile(updatedProfile);
+      }
+
       const updatedTargets = { ...waterTargets, [profileId]: amount };
       setWaterTargets(updatedTargets);
       localStorage.setItem("vitalsguard_water_targets_v1", JSON.stringify(updatedTargets));
