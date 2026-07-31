@@ -90,9 +90,17 @@ export interface ActionAuditLog {
   id: string;
   profileId: string;
   timestamp: string; // ISO String
-  actionType: "MEDICATION_TAKEN" | "MEDICATION_SKIPPED" | "MEDICATION_ADDED" | "MEDICATION_EDITED" | "MEDICATION_PAUSED" | "EMAIL_SENT" | "PROFILE_UPDATED" | "LOG_EXPORTED" | "UI_INTERACTION";
+  actionType: "MEDICATION_TAKEN" | "MEDICATION_SKIPPED" | "MEDICATION_ADDED" | "MEDICATION_EDITED" | "MEDICATION_PAUSED" | "EMAIL_SENT" | "PROFILE_UPDATED" | "LOG_EXPORTED" | "UI_INTERACTION" | "WATER_LOGGED" | "WATER_TARGET_UPDATED" | "WATER_LOG_DELETED";
   description: string;
   details?: Record<string, any>;
+}
+
+export interface WaterLog {
+  id: string;
+  profileId: string;
+  amount: number; // in ml
+  timestamp: string; // ISO String
+  notes?: string;
 }
 
 export interface ToastMessage {
@@ -101,3 +109,4 @@ export interface ToastMessage {
   title: string;
   message: string;
 }
+

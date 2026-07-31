@@ -7,6 +7,7 @@ import { VitalsTracker } from "./components/VitalsTracker";
 import { MedicationTracker } from "./components/MedicationTracker";
 import { MedicationCalendar } from "./components/MedicationCalendar";
 import { ReportsManager } from "./components/ReportsManager";
+import { WaterTracker } from "./components/WaterTracker";
 import { ProfileModal } from "./components/ProfileModal";
 import { ToastContainer } from "./components/ToastContainer";
 import { APP_CONFIG } from "./config/app.config";
@@ -15,7 +16,7 @@ const DashboardContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("vitals");
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
 
-  const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications } = useApp();
+  const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications, waterLogs, waterTargets } = useApp();
 
   const currentProfile = activeProfile || (APP_CONFIG.defaultProfiles[0] as any);
 
@@ -33,13 +34,20 @@ const DashboardContent: React.FC = () => {
   const totalProfileMeds = profileMeds.length;
   const todayAdherence = totalProfileMeds > 0 ? Math.round((takenTodayCount / totalProfileMeds) * 100) : 0;
 
+  // Calculate water metrics for top KPI card
+  const profileWaterToday = waterLogs
+    .filter(w => w.profileId === currentProfile.id && w.timestamp.startsWith(todayStr))
+    .reduce((sum, w) => sum + w.amount, 0);
+  const waterTarget = waterTargets[currentProfile.id] || 2000;
+  const waterProgressPercent = Math.round((profileWaterToday / waterTarget) * 100);
+
   return (
     <div className="app-container">
       {/* Header */}
       <Header onOpenProfileModal={() => setShowProfileModal(true)} />
 
       {/* Top Overview KPI Quick Cards */}
-      <div className="grid-3" style={{ marginBottom: "20px" }}>
+      <div className="grid-4" style={{ marginBottom: "20px" }}>
         
         {/* Card 1: Today's Adherence */}
         <div className="glass-card" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "14px" }}>
@@ -95,6 +103,19 @@ const DashboardContent: React.FC = () => {
           </div>
         </div>
 
+        {/* Card 4: Water Intake Progress */}
+        <div className="glass-card" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ width: "46px", height: "46px", borderRadius: "12px", background: "rgba(59, 130, 246, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#60a5fa", fontWeight: "bold", fontSize: "1.1rem" }}>
+            💧
+          </div>
+          <div>
+            <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Today's Water Intake</h4>
+            <p style={{ fontSize: "1.05rem", fontWeight: "bold" }}>
+              {profileWaterToday} ml ({waterProgressPercent}%)
+            </p>
+          </div>
+        </div>
+
       </div>
 
       {/* Main Navigation Bar */}
@@ -103,6 +124,7 @@ const DashboardContent: React.FC = () => {
       {/* Active Tab View Rendering */}
       {activeTab === "vitals" && <VitalsTracker />}
       {activeTab === "medications" && <MedicationTracker />}
+      {activeTab === "water" && <WaterTracker />}
       {activeTab === "calendar" && <MedicationCalendar />}
       {activeTab === "reports" && <ReportsManager />}
 

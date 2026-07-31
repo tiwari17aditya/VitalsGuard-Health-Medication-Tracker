@@ -19,7 +19,7 @@ export const APP_CONFIG = {
     appName: "VitalsGuard Health & Medication Tracker",
     shortName: "VitalsGuard",
     tagline: "Lifesaver Diabetes, Blood Pressure & Medication Manager for Parents",
-    version: "1.9.1",
+    version: "1.10.0",
     developer: "Open Source Free Tech Project",
     githubRepo: "https://github.com/tiwari17aditya/VitalsGuard-Health-Medication-Tracker",
   },

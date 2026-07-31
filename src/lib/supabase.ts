@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import type { UserProfile, Medication, MedicationLog, GlucoseLog, BPLog } from "../types";
+import type { UserProfile, Medication, MedicationLog, GlucoseLog, BPLog, WaterLog } from "../types";
 import { APP_CONFIG } from "../config/app.config";
 
 // Read Supabase environment variables
@@ -26,7 +26,9 @@ const STORAGE_KEYS = {
   GLUCOSE_LOGS: "vitalsguard_glucose_logs_v1",
   BP_LOGS: "vitalsguard_bp_logs_v1",
   REPORTS: "vitalsguard_reports_v1",
+  WATER_LOGS: "vitalsguard_water_logs_v1",
 };
+
 
 // Helper to safely load from local storage or defaults
 function loadFromStorage<T>(key: string, defaultData: T): T {
@@ -141,7 +143,14 @@ export async function deleteProfileDB(id: string): Promise<boolean> {
       const { error: medsError } = await supabase.from(APP_CONFIG.supabaseTables.medications).delete().eq("profile_id", id);
       if (medsError) throw medsError;
 
-      // 5. Delete Profile
+      // 5. Delete dependent Water Logs (try-catch, in case table doesn't exist)
+      try {
+        await supabase.from("water_logs").delete().eq("profile_id", id);
+      } catch (waterErr) {
+        console.warn("Could not delete water logs from Supabase:", waterErr);
+      }
+
+      // 6. Delete Profile
       const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).delete().eq("id", id);
       if (error) throw error;
     } catch (err) {
@@ -169,6 +178,10 @@ export async function deleteProfileDB(id: string): Promise<boolean> {
   // Clean up bp logs local storage
   const bp = loadFromStorage<BPLog[]>(STORAGE_KEYS.BP_LOGS, []);
   saveToStorage(STORAGE_KEYS.BP_LOGS, bp.filter(b => b.profileId !== id));
+
+  // Clean up water logs local storage
+  const water = loadFromStorage<WaterLog[]>(STORAGE_KEYS.WATER_LOGS, []);
+  saveToStorage(STORAGE_KEYS.WATER_LOGS, water.filter(w => w.profileId !== id));
 
   return true;
 }
@@ -496,3 +509,63 @@ export async function saveBPLogDB(log: BPLog): Promise<BPLog> {
   saveToStorage(STORAGE_KEYS.BP_LOGS, logs);
   return log;
 }
+
+// --- WATER INTAKE LOGS ---
+export async function fetchWaterLogs(profileId?: string): Promise<WaterLog[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      let query = supabase.from("water_logs").select("*").order("timestamp", { ascending: false });
+      if (profileId) query = query.eq("profile_id", profileId);
+      const { data, error } = await query;
+      if (!error && data) {
+        return data.map(d => ({
+          id: d.id,
+          profileId: d.profile_id || d.profileId,
+          amount: d.amount,
+          timestamp: d.timestamp,
+          notes: d.notes
+        })) as WaterLog[];
+      }
+    } catch (err) {
+      console.warn("Supabase fetchWaterLogs fallback to LocalStorage:", err);
+    }
+  }
+  const logs = loadFromStorage<WaterLog[]>(STORAGE_KEYS.WATER_LOGS, []);
+  if (profileId) return logs.filter(l => l.profileId === profileId);
+  return logs;
+}
+
+export async function saveWaterLogDB(log: WaterLog): Promise<WaterLog> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from("water_logs").insert({
+        id: log.id,
+        profile_id: log.profileId,
+        amount: log.amount,
+        timestamp: log.timestamp,
+        notes: log.notes
+      });
+    } catch (err) {
+      console.warn("Supabase saveWaterLog fallback to LocalStorage:", err);
+    }
+  }
+  const logs = loadFromStorage<WaterLog[]>(STORAGE_KEYS.WATER_LOGS, []);
+  logs.unshift(log);
+  saveToStorage(STORAGE_KEYS.WATER_LOGS, logs);
+  return log;
+}
+
+export async function deleteWaterLogDB(id: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from("water_logs").delete().eq("id", id);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase deleteWaterLog error:", err);
+    }
+  }
+  const logs = loadFromStorage<WaterLog[]>(STORAGE_KEYS.WATER_LOGS, []);
+  saveToStorage(STORAGE_KEYS.WATER_LOGS, logs.filter(l => l.id !== id));
+  return true;
+}
+

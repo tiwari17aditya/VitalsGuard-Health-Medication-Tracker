@@ -1,7 +1,7 @@
 import React from "react";
-import { Activity, Pill, Calendar, FileText } from "lucide-react";
+import { Activity, Pill, Calendar, FileText, Droplet } from "lucide-react";
 
-export type NavTab = "vitals" | "medications" | "calendar" | "reports";
+export type NavTab = "vitals" | "medications" | "water" | "calendar" | "reports";
 
 interface NavigationProps {
   activeTab: NavTab;
@@ -36,6 +36,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
           style={{ flex: 1 }}
         >
           <Pill size={18} /> Medications & Stock Inventory
+        </button>
+
+        <button
+          onClick={() => setActiveTab("water")}
+          className={`btn ${activeTab === "water" ? "btn-primary" : "btn-secondary"}`}
+          style={{ flex: 1 }}
+        >
+          <Droplet size={18} color={activeTab === "water" ? "#ffffff" : "var(--primary)"} /> Water Tracker
         </button>
 
         <button
@@ -74,6 +82,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
         </button>
 
         <button 
+          onClick={() => setActiveTab("water")}
+          className={`nav-item ${activeTab === "water" ? "active" : ""}`}
+        >
+          <Droplet />
+          <span>Water</span>
+        </button>
+
+        <button 
           onClick={() => setActiveTab("calendar")}
           className={`nav-item ${activeTab === "calendar" ? "active" : ""}`}
         >
@@ -92,3 +108,4 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
     </>
   );
 };
+

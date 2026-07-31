@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import type { 
-  UserProfile, Medication, MedicationLog, GlucoseLog, BPLog, ToastMessage, MealType, BPCategory, ActionAuditLog 
+  UserProfile, Medication, MedicationLog, GlucoseLog, BPLog, ToastMessage, MealType, BPCategory, ActionAuditLog, WaterLog 
 } from "../types";
 import { APP_CONFIG } from "../config/app.config";
 import { 
@@ -10,9 +10,11 @@ import {
   fetchMedicationLogs, logAdherenceDB, deleteMedicationLogDB,
   fetchGlucoseLogs, saveGlucoseLogDB,
   fetchBPLogs, saveBPLogDB,
+  fetchWaterLogs, saveWaterLogDB, deleteWaterLogDB,
   isSupabaseConfigured
 } from "../lib/supabase";
 import { sendEmailNotification, generateRefillAlertHTML, generateDailyCheckHTML } from "../services/emailService";
+
 
 interface AppContextType {
   // Profiles
@@ -37,6 +39,13 @@ interface AppContextType {
   addGlucoseLog: (val: number, mealType: MealType, notes?: string, customTimeStr?: string) => Promise<void>;
   bpLogs: BPLog[];
   addBPLog: (sys: number, dia: number, pulse: number, notes?: string, customTimeStr?: string) => Promise<void>;
+
+  // Water Intake Tracking
+  waterLogs: WaterLog[];
+  waterTargets: Record<string, number>;
+  addWaterLog: (amount: number, notes?: string, customTimeStr?: string) => Promise<void>;
+  deleteWaterLog: (logId: string) => Promise<void>;
+  updateWaterTarget: (profileId: string, amount: number) => Promise<void>;
 
   // Audit Action Logs
   auditLogs: ActionAuditLog[];
@@ -70,6 +79,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
   const [glucoseLogs, setGlucoseLogs] = useState<GlucoseLog[]>([]);
   const [bpLogs, setBpLogs] = useState<BPLog[]>([]);
+  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
+  const [waterTargets, setWaterTargets] = useState<Record<string, number>>(() => {
+    try {
+      const raw = localStorage.getItem("vitalsguard_water_targets_v1");
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
   const [auditLogs, setAuditLogs] = useState<ActionAuditLog[]>(() => {
     try {
       const raw = localStorage.getItem("vitalsguard_audit_logs_v1");
@@ -175,6 +193,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const loadedBP = await fetchBPLogs();
       setBpLogs(loadedBP);
+
+      const loadedWater = await fetchWaterLogs();
+      setWaterLogs(loadedWater);
     } catch (err) {
       console.error("Error loading application data:", err);
       showToast("error", "Data Error", "Could not load records. Operating in fallback mode.");
@@ -483,6 +504,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // WATER INTAKE LOGGING
+  const addWaterLog = async (amount: number, notes?: string, customTimeStr?: string) => {
+    if (!activeProfile) {
+      showToast("error", "No User Profile", "Please select or create a user profile first.");
+      return;
+    }
+
+    let timestampToLog = new Date().toISOString();
+    if (customTimeStr) {
+      const [hours, minutes] = customTimeStr.split(":").map(Number);
+      const customDate = new Date();
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        customDate.setHours(hours, minutes, 0, 0);
+        timestampToLog = customDate.toISOString();
+      }
+    }
+
+    const newLog: WaterLog = {
+      id: `wat-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      profileId: activeProfile.id,
+      amount,
+      timestamp: timestampToLog,
+      notes
+    };
+
+    try {
+      await saveWaterLogDB(newLog);
+      setWaterLogs(prev => [newLog, ...prev]);
+
+      const formattedTime = new Date(timestampToLog).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      showToast("success", "Water Logged", `${amount} ml of water logged at ${formattedTime}.`);
+      logUserAction("WATER_LOGGED", `Logged ${amount} ml of water intake`);
+
+      // Check if target is met today and trigger confetti celebration!
+      const target = waterTargets[activeProfile.id] || 2000;
+      const todayStr = new Date().toISOString().split("T")[0];
+      
+      const todayLogs = waterLogs.filter(l => l.profileId === activeProfile.id && l.timestamp.startsWith(todayStr));
+      const totalBefore = todayLogs.reduce((sum, l) => sum + l.amount, 0);
+      const totalAfter = totalBefore + amount;
+
+      if (totalBefore < target && totalAfter >= target) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+        showToast("success", "Target Reached! 🎉", `Awesome! You have met your daily water intake target of ${target} ml!`);
+      }
+    } catch (err: any) {
+      showToast("error", "Water Log Error", err.message || "Could not save water record.");
+    }
+  };
+
+  const deleteWaterLog = async (logId: string) => {
+    try {
+      await deleteWaterLogDB(logId);
+      setWaterLogs(prev => prev.filter(l => l.id !== logId));
+      logUserAction("WATER_LOG_DELETED", `Deleted water intake record`);
+      showToast("info", "Log Deleted", "Water log removed.");
+    } catch (err: any) {
+      showToast("error", "Delete Error", err.message || "Could not delete water log.");
+    }
+  };
+
+  const updateWaterTarget = async (profileId: string, amount: number) => {
+    try {
+      const updatedTargets = { ...waterTargets, [profileId]: amount };
+      setWaterTargets(updatedTargets);
+      localStorage.setItem("vitalsguard_water_targets_v1", JSON.stringify(updatedTargets));
+      logUserAction("WATER_TARGET_UPDATED", `Updated daily water intake target to ${amount} ml`);
+      showToast("success", "Target Saved", `Daily target updated to ${amount} ml.`);
+    } catch (err: any) {
+      showToast("error", "Error Updating Target", err.message || "Could not update water intake target.");
+    }
+  };
+
   // EMAIL REPORT DISPATCHERS
   const sendDailyCheckEmail = async (targetProfileId?: string) => {
     const prof = profiles.find(p => p.id === (targetProfileId || activeProfileId)) || activeProfile;
@@ -571,6 +669,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addGlucoseLog,
         bpLogs,
         addBPLog,
+
+        waterLogs,
+        waterTargets,
+        addWaterLog,
+        deleteWaterLog,
+        updateWaterTarget,
 
         auditLogs,
         logUserAction,

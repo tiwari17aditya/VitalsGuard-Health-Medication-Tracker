@@ -273,6 +273,14 @@ h3 { font-size: 1.1rem; }
   width: 100%;
 }
 
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+
 .sub-tabs-container {
   display: flex;
   gap: 8px;
@@ -433,7 +441,7 @@ h3 { font-size: 1.1rem; }
   }
 
   /* Stack ALL Grid Layouts into Single Column on Mobile */
-  .grid-2, .grid-3 {
+  .grid-2, .grid-3, .grid-4 {
     grid-template-columns: 1fr !important;
     gap: 12px;
   }

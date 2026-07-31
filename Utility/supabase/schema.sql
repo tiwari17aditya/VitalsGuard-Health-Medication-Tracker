@@ -94,6 +94,17 @@ ALTER TABLE public.glucose_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bp_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.health_reports ENABLE ROW LEVEL SECURITY;
 
+-- 7. WATER LOGS TABLE
+CREATE TABLE IF NOT EXISTS public.water_logs (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    profile_id TEXT REFERENCES public.profiles(id) ON DELETE CASCADE,
+    amount INTEGER NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    notes TEXT
+);
+
+ALTER TABLE public.water_logs ENABLE ROW LEVEL SECURITY;
+
 -- Allow public access for simple deployment (or customize RLS as needed)
 CREATE POLICY "Allow public read/write profiles" ON public.profiles FOR ALL USING (true);
 CREATE POLICY "Allow public read/write medications" ON public.medications FOR ALL USING (true);
@@ -101,3 +112,5 @@ CREATE POLICY "Allow public read/write med_logs" ON public.medication_logs FOR A
 CREATE POLICY "Allow public read/write glucose" ON public.glucose_logs FOR ALL USING (true);
 CREATE POLICY "Allow public read/write bp" ON public.bp_logs FOR ALL USING (true);
 CREATE POLICY "Allow public read/write reports" ON public.health_reports FOR ALL USING (true);
+CREATE POLICY "Allow public read/write water" ON public.water_logs FOR ALL USING (true);
+
