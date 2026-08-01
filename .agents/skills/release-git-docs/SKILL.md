@@ -11,7 +11,7 @@ Applies during task completion / packup, updating `CHANGELOG.md`, `README.md`, v
 ## Core Rules & Constraints
 - **AUTOMATIC DOC UPDATES**: Just before every task completion/packup, automatically update all documentation, changelogs (`CHANGELOG.md`), token usage ledgers (`Research/TOKEN_USAGE_LOG.md`), trackers, and version files with details of your changes without waiting for user requests.
 - **AUTOMATIC GIT WORKFLOW**: Automatically stage (`git add .`), commit with descriptive message (`git commit -m "..."`), and push (`git push`) all changes to the remote git repository on task completion.
-- **Changelog & Token Log Formatting**: Format changelog entries chronologically and record estimated token usage / savings per session in `Research/TOKEN_USAGE_LOG.md`.
+- **Changelog & Token Log Formatting**: Format changelog entries chronologically. In `Research/TOKEN_USAGE_LOG.md`, group chat session entries by date (`### 📅 Date: YYYY-MM-DD`) and separate date blocks with 3 empty lines for clean visual separation.
 
 ## Verification Checklist
 - [ ] `CHANGELOG.md` updated with relative content of completed changes.
