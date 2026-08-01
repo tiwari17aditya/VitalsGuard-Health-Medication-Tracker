@@ -15,6 +15,7 @@ This log explicitly records estimated Input and Output token consumption, active
 | **15:53 IST** | `c40dabde...` — Directory Cleanup | `release-git-docs` | ~8,400 | ~2,100 | ~420 | **~75% Savings** | Removed duplicate `.agent` folder in favor of `.agents`. |
 | **15:55 IST** | `c40dabde...` — Explicit Token Tracker | `release-git-docs` | ~6,200 | ~1,500 | ~650 | **~75% Savings** | Initialized explicit token usage log in `Research/TOKEN_USAGE_LOG.md`. |
 | **15:57 IST** | `c40dabde...` — Visual Date Grouping | `release-git-docs` | ~4,500 | ~1,200 | ~380 | **~73% Savings** | Formatted token log grouped by date with 3-line spacing for clean visualization. |
+| **16:00 IST** | `c40dabde...` — Duplicate File Removal | `release-git-docs`, `api-services` | ~5,100 | ~1,300 | ~410 | **~74.5% Savings** | Removed duplicate files (`Research/CHANGELOG.md`, `.agents/AGENTS.md`, `Utility/api/send_mail.js`, unused SVGs). |
 
 
 
