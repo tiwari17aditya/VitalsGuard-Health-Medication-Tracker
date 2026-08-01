@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0] - 2026-08-01
+
+### Added
+- **Antigravity Hierarchical Skills Migration**: Migrated workspace rules architecture to the Antigravity Hierarchical Skills Standard to reduce prompt token overhead and prevent context stuffing.
+- **Root Router (`AGENTS.md`)**: Implemented a lightweight routing table (< 30 lines) at the root of the workspace mapping file extensions and tasks to active domain skills.
+- **Domain Skills (`.agents/skills/`)**: Created modular, token-optimized skill definitions for `database-storage`, `ui-components`, `api-services`, `quality-deployment`, and `release-git-docs`.
+- **Legacy Backup**: Preserved original monolithic rules in `.agents/AGENTS.md` as a backup.
+
 ## [1.11.2] - 2026-07-31
 
 ### Added & Fixed
