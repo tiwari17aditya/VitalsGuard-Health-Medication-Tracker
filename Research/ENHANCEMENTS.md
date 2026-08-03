@@ -50,3 +50,25 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Admin-Only Visibility for `test_user` & Admin Profiles**:
     - Register default `admin` and `test_user` profile entries in initial app state and database configurations.
     - Enforce strict UI filtering so `Admin` and `test_user` profiles are hidden from standard member views and visible **only** when authenticated under Admin mode.
+
+### 5. Water Tracking Database Persistence & Multi-Device Sync
+- **Goal**: Track, save, and synchronize all profile water intake entries, daily hydration targets, and container logs directly in the PostgreSQL database with zero data loss.
+- **Rationale**: Ensures hydration records are permanently stored in PostgreSQL (`water_logs` table in Supabase) rather than remaining localized to a single browser storage instance. Enables seamless hydration tracking sync across mobile phones, tablets, and desktop computers.
+- **Proposed Implementation**:
+  - **PostgreSQL Table Schema**: Ensure `public.water_logs` table definition in `Utility/supabase/schema.sql` contains `id`, `profile_id`, `amount_ml`, `timestamp`, `container_type`, `notes`, and foreign key constraints to `public.profiles`.
+  - **Database Adapter Sync**: Expand `fetchWaterLogs()`, `saveWaterLogDB()`, and `deleteWaterLogDB()` in `src/lib/supabase.ts` to map columns between camelCase TypeScript models and snake_case PostgreSQL columns.
+  - **Offline Storage Sync Engine**: Queue water log entries taken offline in LocalStorage (`vitalsguard_offline_water_logs`) and automatically flush to Supabase when network connectivity is restored.
+
+### 6. Email Pipeline, CSV Attachment Formatting & Messaging System Bug Fixes
+- **Goal**: Fix formatting bugs in daily caretaker email reports, enhance CSV attachment formatting for health logs (medications, BP, glucose, water), and improve serverless email delivery resilience.
+- **Rationale**: Caretakers relying on emailed health digests need clean, error-free CSV exports that open seamlessly in Microsoft Excel/Google Sheets, formatted HTML tables with clear status badges, and reliable Nodemailer dispatch without serverless timeouts or formatting corruptions.
+- **Proposed Implementation**:
+  - **CSV Export Sanitization**:
+    - Standardize CSV generation logic in `src/services/emailService.ts` to include clean column headers (`Timestamp`, `Profile Name`, `Log Type`, `Dosage / Reading / Intake`, `Status / Notes`).
+    - Add UTF-8 BOM encoding (`\uFEFF`) to prevent character distortion in Excel.
+    - Escape field commas, quotes, and line breaks to eliminate CSV parsing crashes.
+  - **HTML Email Template Redesign**:
+    - Replace basic plain text emails in `api/send-email.js` with responsive, styled HTML templates featuring VitalsGuard glassmorphic cards, colored alert pill badges, and summarized patient health stats.
+  - **Serverless Bug Fixes & Resilience**:
+    - Resolve bugs in `api/send-email.js` handling missing environment variables (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`), timeout retries, and invalid recipient email syntax.
+    - Add structured JSON logger output for all Nodemailer transaction events and failure diagnostic tracebacks.
