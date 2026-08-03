@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-08-03
+
+### Added
+- **Water Tracking Database Sync & Multi-Device Persistence Roadmap**: Added technical specification to `Research/ENHANCEMENTS.md` for PostgreSQL schema mapping (`water_logs` table), Supabase adapter methods (`fetchWaterLogs`, `saveWaterLogDB`, `deleteWaterLogDB`), and offline queue syncing.
+- **Email Pipeline, CSV Attachment Formatting & Messaging System Bug Fixes Roadmap**: Added technical specification to `Research/ENHANCEMENTS.md` covering CSV export sanitization (`\uFEFF` UTF-8 BOM, comma escaping, clean headers), styled HTML email templates in `api/send-email.js`, and Nodemailer serverless error handling.
+- **Profile-Level Automatic Reminders, Water Logging & Privacy Lock Proposals**: Recorded feature proposals for automated multi-channel medication alerts, customizable quick-add hydration containers, profile PIN locks, and Admin master vault security in `Research/ENHANCEMENTS.md`.
+
 ## [1.12.0] - 2026-08-01
 
 ### Added
