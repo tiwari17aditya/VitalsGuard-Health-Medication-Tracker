@@ -12,3 +12,7 @@
 - Activate the appropriate skill(s) before performing domain modifications.
 - Combine skills for multi-domain features (e.g. UI + Database).
 - Keep active context lightweight by referencing domain SKILL.md rules.
+
+## Development & Deployment Protocol
+- All feature additions, bug fixes, and schema/code modifications must be made and verified in the local environment first.
+- Perform complete end-to-end testing locally before committing, staging, or promoting changes to the main production environment to avoid live feature conflicts and disruption for active users.

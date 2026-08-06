@@ -99,9 +99,21 @@ export interface ActionAuditLog {
   details?: Record<string, any>;
 }
 
+export interface WaterItem {
+  id: string;
+  profileId: string;
+  name: string;
+  amount: number; // in ml
+  times?: string[];
+  active: boolean;
+  icon?: string;
+  created_at?: string;
+}
+
 export interface WaterLog {
   id: string;
   profileId: string;
+  waterId?: string;
   amount: number; // in ml
   timestamp: string; // ISO String
   notes?: string;

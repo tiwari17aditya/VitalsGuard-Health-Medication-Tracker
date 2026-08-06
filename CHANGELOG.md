@@ -2,12 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.13.0] - 2026-08-03
+## [1.13.0] - 2026-08-06
 
-### Added
-- **Water Tracking Database Sync & Multi-Device Persistence Roadmap**: Added technical specification to `Research/ENHANCEMENTS.md` for PostgreSQL schema mapping (`water_logs` table), Supabase adapter methods (`fetchWaterLogs`, `saveWaterLogDB`, `deleteWaterLogDB`), and offline queue syncing.
-- **Email Pipeline, CSV Attachment Formatting & Messaging System Bug Fixes Roadmap**: Added technical specification to `Research/ENHANCEMENTS.md` covering CSV export sanitization (`\uFEFF` UTF-8 BOM, comma escaping, clean headers), styled HTML email templates in `api/send-email.js`, and Nodemailer serverless error handling.
-- **Profile-Level Automatic Reminders, Water Logging & Privacy Lock Proposals**: Recorded feature proposals for automated multi-channel medication alerts, customizable quick-add hydration containers, profile PIN locks, and Admin master vault security in `Research/ENHANCEMENTS.md`.
+### Added & Enhanced
+- **Hierarchical User Water Storage**: Implemented user-level `WaterItem` hydration containers (`UserProfile` → `WaterItem` → `WaterLog`) synced to `public.water_items` PostgreSQL table and LocalStorage (`vitalsguard_water_items_v1`).
+- **Custom Water Containers Management**: Added interactive container creator in `WaterTracker.tsx` allowing each user profile to create and manage custom hydration items (e.g. *Hydro Flask 600ml*, *Morning Glass 250ml*).
+- **Custom Date & Time Backdating**: Integrated date picker (`YYYY-MM-DD`) and time picker (`HH:MM`) in `WaterTracker.tsx` and `AppContext.tsx` allowing users to log past water records accurately for any date.
+- **Single Dynamic Filled Glass Container UI for Past Days**: Each past day in the history list is rendered as a single glass SVG filled with liquid percentage (`0%` to `100%+`) reflecting exact daily goal progress, with an expandable log details view.
+- **Local Development Protocol**: Updated `AGENTS.md` requiring all changes and features to be developed and verified locally first.
 
 ## [1.12.0] - 2026-08-01
 

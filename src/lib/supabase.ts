@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import type { UserProfile, Medication, MedicationLog, GlucoseLog, BPLog, WaterLog } from "../types";
+import type { UserProfile, Medication, MedicationLog, GlucoseLog, BPLog, WaterLog, WaterItem } from "../types";
 import { APP_CONFIG } from "../config/app.config";
 
 // Read Supabase environment variables
@@ -26,6 +26,7 @@ const STORAGE_KEYS = {
   GLUCOSE_LOGS: "vitalsguard_glucose_logs_v1",
   BP_LOGS: "vitalsguard_bp_logs_v1",
   REPORTS: "vitalsguard_reports_v1",
+  WATER_ITEMS: "vitalsguard_water_items_v1",
   WATER_LOGS: "vitalsguard_water_logs_v1",
 };
 
@@ -547,6 +548,75 @@ export async function saveBPLogDB(log: BPLog): Promise<BPLog> {
   return log;
 }
 
+// --- WATER CONTAINERS & ITEMS ---
+export async function fetchWaterItems(profileId?: string): Promise<WaterItem[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      let query = supabase.from("water_items").select("*").order("created_at", { ascending: true });
+      if (profileId) query = query.eq("profile_id", profileId);
+      const { data, error } = await query;
+      if (error) throw error;
+      if (data) {
+        return data.map(d => ({
+          id: d.id,
+          profileId: d.profile_id || d.profileId,
+          name: d.name,
+          amount: d.amount,
+          times: d.times,
+          active: d.active !== false,
+          created_at: d.created_at
+        })) as WaterItem[];
+      }
+    } catch (err) {
+      console.warn("Supabase fetchWaterItems fallback to LocalStorage:", err);
+    }
+  }
+  const items = loadFromStorage<WaterItem[]>(STORAGE_KEYS.WATER_ITEMS, []);
+  if (profileId) return items.filter(i => i.profileId === profileId);
+  return items;
+}
+
+export async function saveWaterItemDB(item: WaterItem): Promise<WaterItem> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from("water_items").upsert({
+        id: item.id,
+        profile_id: item.profileId,
+        name: item.name,
+        amount: item.amount,
+        times: item.times || ['08:00'],
+        active: item.active !== false
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase saveWaterItem fallback to LocalStorage:", err);
+    }
+  }
+  const items = loadFromStorage<WaterItem[]>(STORAGE_KEYS.WATER_ITEMS, []);
+  const idx = items.findIndex(i => i.id === item.id);
+  if (idx >= 0) {
+    items[idx] = item;
+  } else {
+    items.push(item);
+  }
+  saveToStorage(STORAGE_KEYS.WATER_ITEMS, items);
+  return item;
+}
+
+export async function deleteWaterItemDB(id: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from("water_items").delete().eq("id", id);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase deleteWaterItem error:", err);
+    }
+  }
+  const items = loadFromStorage<WaterItem[]>(STORAGE_KEYS.WATER_ITEMS, []);
+  saveToStorage(STORAGE_KEYS.WATER_ITEMS, items.filter(i => i.id !== id));
+  return true;
+}
+
 // --- WATER INTAKE LOGS ---
 export async function fetchWaterLogs(profileId?: string): Promise<WaterLog[]> {
   if (isSupabaseConfigured && supabase) {
@@ -559,6 +629,7 @@ export async function fetchWaterLogs(profileId?: string): Promise<WaterLog[]> {
         return data.map(d => ({
           id: d.id,
           profileId: d.profile_id || d.profileId,
+          waterId: d.water_id || d.waterId,
           amount: d.amount,
           timestamp: d.timestamp,
           notes: d.notes
@@ -579,6 +650,7 @@ export async function saveWaterLogDB(log: WaterLog): Promise<WaterLog> {
       const { error } = await supabase.from("water_logs").insert({
         id: log.id,
         profile_id: log.profileId,
+        water_id: log.waterId || null,
         amount: log.amount,
         timestamp: log.timestamp,
         notes: log.notes
