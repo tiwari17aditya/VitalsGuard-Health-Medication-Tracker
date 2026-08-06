@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { 
-  Heart, Users, AlertTriangle, ShieldCheck, 
+import { BookOpen, Heart, Users, AlertTriangle, ShieldCheck, 
   Phone, CheckCircle2, WifiOff, Wrench, Lock, Unlock, KeyRound, Shield
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -9,6 +8,7 @@ import { AdminAuthModal } from "./AdminAuthModal";
 import { DeveloperModal } from "./DeveloperModal";
 import { ChangePinModal } from "./ChangePinModal";
 import { AdminView } from "./AdminView";
+import { UserGuideModal } from "./UserGuideModal";
 
 interface HeaderProps {
   onOpenProfileModal?: () => void;
@@ -29,6 +29,7 @@ export const Header: React.FC<HeaderProps> = () => {
   const [showDevModal, setShowDevModal] = useState<boolean>(false);
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [showChangePinModal, setShowChangePinModal] = useState<boolean>(false);
+  const [showUserGuideModal, setShowUserGuideModal] = useState<boolean>(false);
   const [pendingLockProfileId, setPendingLockProfileId] = useState<string | null>(null);
 
   const isAdminProfile = activeProfile?.name.toLowerCase() === "aditya" || activeProfile?.role === "Admin";
@@ -172,6 +173,17 @@ export const Header: React.FC<HeaderProps> = () => {
             </button>
           )}
 
+          {/* User Guide & Help Documentation Button */}
+          <button
+            id="header-user-guide-btn"
+            onClick={() => setShowUserGuideModal(true)}
+            className="btn btn-secondary btn-sm"
+            style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px", borderColor: "rgba(59, 130, 246, 0.4)", color: "var(--primary)" }}
+            title="Open User Guide & Documentation"
+          >
+            <BookOpen size={13} /> User Guide
+          </button>
+
           {/* Emergency Doctor Call Button */}
           {activeProfile?.emergencyContact && (
             <a
@@ -283,6 +295,11 @@ export const Header: React.FC<HeaderProps> = () => {
           profile={activeProfile}
           onClose={() => setShowChangePinModal(false)}
         />
+      )}
+
+      {/* User Guide & Documentation Modal */}
+      {showUserGuideModal && (
+        <UserGuideModal onClose={() => setShowUserGuideModal(false)} />
       )}
 
     </header>
