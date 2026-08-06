@@ -122,6 +122,11 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
             const rawPin = item.pin || pinsMap[item.id] || "1234";
             const pinVal = encryptPII(rawPin);
 
+            // If Supabase database column contains unencrypted cleartext PIN, automatically update database to encrypted PII ciphertext
+            if (item.pin && !item.pin.startsWith("PII_ENC:")) {
+              supabase.from(APP_CONFIG.supabaseTables.profiles).update({ pin: pinVal }).eq("id", item.id).then();
+            }
+
             // Keep local maps synchronized
             lockedMap[item.id] = isLockedVal;
             saveLockedProfilesMap(lockedMap);

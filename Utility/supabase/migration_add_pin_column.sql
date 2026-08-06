@@ -8,3 +8,8 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pin TEXT DEFAULT '1234';
 
 -- Tag PIN column with PII Sensitive Credential Security Label
 COMMENT ON COLUMN public.profiles.pin IS 'PII_SENSITIVE_CREDENTIAL: Encrypted PII PIN payload protected by VitalsGuard PII Security Protocol.';
+
+-- Optional SQL snippet to obscure/encrypt existing cleartext PIN values directly in Supabase SQL Editor:
+UPDATE public.profiles 
+SET pin = 'PII_ENC:' || encode(pin::bytea, 'hex') 
+WHERE pin IS NOT NULL AND pin NOT LIKE 'PII_ENC:%';

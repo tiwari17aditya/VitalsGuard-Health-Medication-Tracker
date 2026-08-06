@@ -50,6 +50,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
     addOrUpdateProfile({ ...p, isLocked: !p.isLocked });
   };
 
+  const handleEncryptAllDatabasePins = async () => {
+    try {
+      for (const p of profiles) {
+        const encrypted = encryptPII(p.pin || "1234");
+        await addOrUpdateProfile({ ...p, pin: encrypted });
+      }
+      showToast("success", "Database PINs Encrypted!", `All ${profiles.length} profile PINs in database are now encrypted PII ciphertext (PII_ENC:...).`);
+    } catch (err: any) {
+      showToast("error", "Encryption Failed", err.message || "Failed to encrypt database PINs.");
+    }
+  };
+
   const handleSyncAllProfilesToDB = async () => {
     try {
       for (const p of profiles) {
@@ -148,7 +160,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
               <Users size={20} color="var(--primary)" /> Registered User Profiles ({profiles.length})
             </h3>
 
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <button 
+                onClick={handleEncryptAllDatabasePins} 
+                className="btn btn-secondary btn-sm"
+                style={{ color: "#10b981" }}
+                title="Encrypt and mask all database PINs with PII security cipher"
+              >
+                <Lock size={14} /> Encrypt DB PINs
+              </button>
               <button 
                 onClick={handleSyncAllProfilesToDB} 
                 className="btn btn-secondary btn-sm"
