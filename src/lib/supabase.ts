@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { UserProfile, Medication, MedicationLog, GlucoseLog, BPLog, WaterLog, WaterItem } from "../types";
 import { APP_CONFIG } from "../config/app.config";
+import { encryptPII } from "../utils/piiSecurity";
 
 // Read Supabase environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
@@ -118,7 +119,8 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
               ? Boolean(item.is_locked)
               : (item.isLocked !== undefined ? Boolean(item.isLocked) : Boolean(lockedMap[item.id]));
 
-            const pinVal = item.pin || pinsMap[item.id] || "1234";
+            const rawPin = item.pin || pinsMap[item.id] || "1234";
+            const pinVal = encryptPII(rawPin);
 
             // Keep local maps synchronized
             lockedMap[item.id] = isLockedVal;
@@ -174,13 +176,14 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
   saveLockedProfilesMap(lockedMap);
 
   const pinsMap = getProfilePinsMap();
-  const pinVal = profile.pin || pinsMap[profile.id] || "1234";
-  pinsMap[profile.id] = pinVal;
+  const rawPin = profile.pin || pinsMap[profile.id] || "1234";
+  const encryptedPin = encryptPII(rawPin);
+  pinsMap[profile.id] = encryptedPin;
   saveProfilePinsMap(pinsMap);
 
   const fullProfile: UserProfile = {
     ...profile,
-    pin: pinVal,
+    pin: encryptedPin,
     isLocked: Boolean(profile.isLocked)
   };
 

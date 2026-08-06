@@ -6,6 +6,7 @@ import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
 import { DeveloperModal } from "./DeveloperModal";
+import { decryptPII, encryptPII, maskPII } from "../utils/piiSecurity";
 
 interface AdminViewProps {
   onClose?: () => void;
@@ -104,7 +105,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProfile || !editingProfile.name) return;
-    await addOrUpdateProfile(editingProfile as UserProfile);
+    const encryptedPin = encryptPII(editingProfile.pin || "1234");
+    await addOrUpdateProfile({ ...editingProfile, pin: encryptedPin } as UserProfile);
     setEditingProfile(null);
   };
 
@@ -164,7 +166,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
             {profiles.map(p => {
               const isCurrent = p.id === activeProfile?.id;
               const isPinVisible = Boolean(showPinMap[p.id]);
-              const displayPin = p.pin || "1234";
 
               return (
                 <div
@@ -195,17 +196,25 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
                         </span>
                       )}
 
-                      {/* Admin PIN Control Pill */}
-                      <span 
-                        className="badge badge-secondary" 
-                        style={{ fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}
-                        onClick={() => togglePinVisibility(p.id)}
-                        title="Click to toggle PIN visibility for Admin"
-                      >
-                        <KeyRound size={12} color="var(--primary)" />
-                        <span>PIN: {isPinVisible ? <strong>{displayPin}</strong> : "••••"}</span>
-                        {isPinVisible ? <EyeOff size={12} /> : <Eye size={12} />}
-                      </span>
+                      {/* Admin PIN Control Pill with PII Tagging */}
+                      {(() => {
+                        const clearPin = decryptPII(p.pin || "1234");
+                        return (
+                          <span 
+                            className="badge badge-secondary" 
+                            style={{ fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}
+                            onClick={() => togglePinVisibility(p.id)}
+                            title="Click to toggle PIN visibility (Protected PII Sensitive)"
+                          >
+                            <KeyRound size={12} color="var(--primary)" />
+                            <span>PIN: {isPinVisible ? <strong>{clearPin}</strong> : <code>{maskPII(clearPin)}</code>}</span>
+                            <span style={{ fontSize: "0.65rem", background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", padding: "1px 4px", borderRadius: "4px", fontWeight: "bold" }}>
+                              🔒 PII Sensitive
+                            </span>
+                            {isPinVisible ? <EyeOff size={12} /> : <Eye size={12} />}
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>

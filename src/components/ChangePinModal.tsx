@@ -3,6 +3,7 @@ import { KeyRound, ShieldCheck, AlertCircle, CheckCircle2, Lock } from "lucide-r
 import type { UserProfile } from "../types";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
+import { verifyPIIPin, encryptPII } from "../utils/piiSecurity";
 
 interface ChangePinModalProps {
   profile: UserProfile;
@@ -30,8 +31,9 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
     const newPinInput = newPin.trim();
     const confirmInput = confirmPin.trim();
 
-    // 1. Verify Current PIN or Master Admin PIN
-    if (currInput !== existingProfilePin && currInput !== masterAdminPin) {
+    // 1. Verify Current PIN or Master Admin PIN using PII verification
+    const isCurrentValid = verifyPIIPin(currInput, existingProfilePin, masterAdminPin);
+    if (!isCurrentValid) {
       setErrorMsg("Current PIN is incorrect! Please enter your existing profile PIN or Admin Passcode.");
       return;
     }
@@ -50,10 +52,11 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
 
     setIsSubmitting(true);
     try {
-      // Update profile with new PIN
+      // Update profile with PII encrypted new PIN
+      const encryptedNewPin = encryptPII(newPinInput);
       const updatedProfile: UserProfile = {
         ...profile,
-        pin: newPinInput
+        pin: encryptedNewPin
       };
 
       await addOrUpdateProfile(updatedProfile);

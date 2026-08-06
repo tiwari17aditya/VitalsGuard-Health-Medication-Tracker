@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+COMMENT ON COLUMN public.profiles.pin IS 'PII_SENSITIVE_CREDENTIAL: Encrypted PII PIN payload protected by VitalsGuard PII Security Protocol.';
+
 -- 2. MEDICATIONS TABLE
 CREATE TABLE IF NOT EXISTS public.medications (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,

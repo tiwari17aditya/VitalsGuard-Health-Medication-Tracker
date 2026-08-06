@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Lock, Key, ShieldCheck, AlertCircle } from "lucide-react";
 import { APP_CONFIG } from "../config/app.config";
+import { verifyPIIPin } from "../utils/piiSecurity";
 
 interface AdminAuthModalProps {
   onSuccess: () => void;
@@ -28,7 +29,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     e.preventDefault();
     const input = pinInput.trim();
     const isMasterValid = input === savedPin;
-    const isProfileValid = expectedPin ? input === expectedPin : false;
+    const isProfileValid = expectedPin ? verifyPIIPin(input, expectedPin) : false;
 
     const isValid = isMasterOnly ? isMasterValid : (isMasterValid || isProfileValid);
 
