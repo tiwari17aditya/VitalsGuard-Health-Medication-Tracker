@@ -44,6 +44,16 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Instant Inactive Profile Lock & Switch Enforcement (v1.17.0)**: Automatic revocation of session unlock tokens for inactive profiles in `AppContext.tsx`, mandatory PIN prompt on profile switch across Header, ProfileModal, and AdminView, and strict family board confidentiality.
   - **Database Schema Sync & Master Admin Control (v1.17.0)**: Complete PostgreSQL `public.profiles` database schema synchronization (storing `pin`, `is_locked`, `role`, and targets) for all saved user profiles. Master Admin control capabilities in `AdminView.tsx` enabling Admin ("Aditya") to reveal/hide PINs, reset PINs, toggle locks, execute instant Admin profile takeover, and trigger batch schema sync.
   - **Aditya-Exclusive Admin & Developer Controls + Profile Bar Header Hub (v1.17.0)**: Restricted Developer Settings button and Supabase Live status pill strictly to Aditya/Admin profile. Removed Admin tab from main navigation bar, relocated `🛡️ Admin Hub` button to the top header profile bar for Aditya, and enabled modal overlay launcher for Admin Control Center.
+  - **PII Security & Cipher Encryption (v1.18.0)**: Encrypted all user PINs with `PII_ENC:...` ciphertext payloads in Supabase PostgreSQL and LocalStorage. Masked PINs as `••••` with `🔒 PII Sensitive` badge tag in UI, requiring Master Admin passcode authorization to reveal cleartext PINs.
+  - **Strict Single-PIN Enforcement & Reset to Default (v1.18.0)**: Fixed dual-password bug by removing default `"1234"` fallback override in `verifyPIIPin`. Added `🔄 Reset PIN to Default (1234)` action button in `ChangePinModal.tsx` and `AdminView.tsx`.
+
+### 8. Diabetes Date Selection, Calendar Vitals Timeline, Log Search & User Guide (Released in v1.18.0)
+- **Status**: ✅ **Released in v1.18.0**
+- **Highlights**:
+  - **Blood Glucose Date Picker**: Added a custom `Record Date` date picker alongside Record Time in `VitalsTracker.tsx`, enabling users to log blood sugar readings for current and past dates.
+  - **Unified Health Schedule Calendar**: Upgraded `MedicationCalendar.tsx` to display daily prescription adherence schedules, Blood Glucose logs, and Blood Pressure logs together under any selected date timeline with day ribbon indicators (`🩸` and `❤️`).
+  - **Customizable Email Report Ranges & Log Search Dispatch**: Added report range radio options (Daily / Custom Date Range / All Time) and a search mechanism allowing users to search logs by date or keyword and email targeted reports specifically for those searched days.
+  - **In-App User Guide & Documentation**: Created `UserGuideModal.tsx` categorized help guide and added a top header bar button (`📖 User Guide`) for instant access.
 
 ### 5. Water Tracking Database Persistence & Multi-Device Sync
 - **Goal**: Track, save, and synchronize all profile water intake entries, daily hydration targets, and container logs directly in the PostgreSQL database with zero data loss.

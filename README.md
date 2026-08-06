@@ -25,6 +25,7 @@ Detailed release notes and developer changelogs are maintained in [**`CHANGELOG.
 
 | Version | Release Date | Key Highlights |
 | :--- | :--- | :--- |
+| **`v1.18.0`** | 2026-08-06 | Glucose Custom Date Selection, Unified Calendar Vitals Timeline, Flexible Email Scopes, Log Search & Emailing, PII Encryption (`PII_ENC:`), In-App User Guide, and Strict Single-PIN Enforcement with Reset to 1234 |
 | **`v1.17.0`** | 2026-08-06 | Instant Profile Re-Locking on Switch, Database Schema Sync (`public.profiles`), Aditya-Exclusive Developer & Database Controls, Top Header Profile Bar Admin Hub |
 | **`v1.16.0`** | 2026-08-06 | Per-Profile Security PIN Management (`ChangePinModal.tsx`), Header Lock/Unlock Toggle, and Resilient Dual-Storage PIN Sync |
 | **`v1.15.0`** | 2026-08-06 | Profile Privacy Lock Screen Gate (`PrivacyLockGate.tsx`), Supabase Admin Role & Lock Sync, and Instant Cache-First Refresh Optimization (< 50ms) |
