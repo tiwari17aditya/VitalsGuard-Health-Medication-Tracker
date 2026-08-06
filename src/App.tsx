@@ -10,6 +10,7 @@ import { ReportsManager } from "./components/ReportsManager";
 import { WaterTracker } from "./components/WaterTracker";
 import { AdminView } from "./components/AdminView";
 import { ProfileModal } from "./components/ProfileModal";
+import { PrivacyLockGate } from "./components/PrivacyLockGate";
 import { ToastContainer } from "./components/ToastContainer";
 
 const DashboardContent: React.FC = () => {
@@ -27,6 +28,16 @@ const DashboardContent: React.FC = () => {
       setActiveTab("vitals");
     }
   }, [isAdminProfile, activeTab]);
+
+  // Check if current active profile session is unlocked
+  const isUnlocked = () => {
+    if (!currentProfile || !currentProfile.isLocked) return true;
+    const adminAuthed = sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+    const profUnlocked = sessionStorage.getItem(`vitalsguard_unlocked_${currentProfile.id}`) === "true";
+    return adminAuthed || profUnlocked;
+  };
+
+  const unlocked = isUnlocked();
 
   // Calculate top KPI statistics for current active profile
   const profileGlucose = currentProfile ? glucoseLogs.filter(g => g.profileId === currentProfile.id) : [];
@@ -67,22 +78,22 @@ const DashboardContent: React.FC = () => {
               height: "46px", 
               padding: "0 10px", 
               borderRadius: "12px", 
-              background: todayAdherence > 0 ? "rgba(16, 185, 129, 0.2)" : "rgba(100, 116, 139, 0.2)", 
+              background: unlocked && todayAdherence > 0 ? "rgba(16, 185, 129, 0.2)" : "rgba(100, 116, 139, 0.2)", 
               display: "flex", 
               alignItems: "center", 
               justifyContent: "center", 
-              color: todayAdherence > 0 ? "#10b981" : "#94a3b8", 
+              color: unlocked && todayAdherence > 0 ? "#10b981" : "#94a3b8", 
               fontWeight: "bold", 
               fontSize: "0.95rem",
               whiteSpace: "nowrap"
             }}
           >
-            {todayAdherence}%
+            {unlocked ? `${todayAdherence}%` : "🔒"}
           </div>
           <div>
             <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Today's Pill Adherence</h4>
             <p style={{ fontSize: "1.05rem", fontWeight: "bold" }}>
-              {takenTodayCount} of {totalProfileMeds} Doses Recorded
+              {unlocked ? `${takenTodayCount} of ${totalProfileMeds} Doses Recorded` : "🔒 Profile Locked"}
             </p>
           </div>
         </div>
@@ -95,7 +106,7 @@ const DashboardContent: React.FC = () => {
           <div>
             <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Latest Blood Sugar</h4>
             <p style={{ fontSize: "1.05rem", fontWeight: "bold" }}>
-              {latestGlucose ? `${latestGlucose.value} mg/dL` : "No log today"}
+              {unlocked ? (latestGlucose ? `${latestGlucose.value} mg/dL` : "No log today") : "🔒 Profile Locked"}
             </p>
           </div>
         </div>
@@ -108,7 +119,7 @@ const DashboardContent: React.FC = () => {
           <div>
             <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Latest Blood Pressure</h4>
             <p style={{ fontSize: "1.05rem", fontWeight: "bold" }}>
-              {latestBP ? `${latestBP.systolic}/${latestBP.diastolic} mmHg` : "No log today"}
+              {unlocked ? (latestBP ? `${latestBP.systolic}/${latestBP.diastolic} mmHg` : "No log today") : "🔒 Profile Locked"}
             </p>
           </div>
         </div>
@@ -121,7 +132,7 @@ const DashboardContent: React.FC = () => {
           <div>
             <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Today's Water Intake</h4>
             <p style={{ fontSize: "1.05rem", fontWeight: "bold" }}>
-              {profileWaterToday} ml ({waterProgressPercent}%)
+              {unlocked ? `${profileWaterToday} ml (${waterProgressPercent}%)` : "🔒 Profile Locked"}
             </p>
           </div>
         </div>
@@ -131,13 +142,15 @@ const DashboardContent: React.FC = () => {
       {/* Main Navigation Bar */}
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Active Tab View Rendering */}
-      {activeTab === "vitals" && <VitalsTracker />}
-      {activeTab === "medications" && <MedicationTracker />}
-      {activeTab === "water" && <WaterTracker />}
-      {activeTab === "calendar" && <MedicationCalendar />}
-      {activeTab === "reports" && <ReportsManager />}
-      {activeTab === "admin" && isAdminProfile && <AdminView />}
+      {/* Active Tab View Rendering Protected by Privacy Lock Gate */}
+      <PrivacyLockGate profile={currentProfile}>
+        {activeTab === "vitals" && <VitalsTracker />}
+        {activeTab === "medications" && <MedicationTracker />}
+        {activeTab === "water" && <WaterTracker />}
+        {activeTab === "calendar" && <MedicationCalendar />}
+        {activeTab === "reports" && <ReportsManager />}
+        {activeTab === "admin" && isAdminProfile && <AdminView />}
+      </PrivacyLockGate>
 
       {/* Modals */}
       {showProfileModal && <ProfileModal onClose={() => setShowProfileModal(false)} />}

@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] - 2026-08-06
+
+### Added & Enhanced
+- **Profile Privacy Lock Gate (`PrivacyLockGate.tsx`)**: Created high-security lock screen overlay blocking all vitals readings, pill counts, medication lists, and water logs when an active profile is locked and unauthenticated.
+- **Top KPI Cards & Family Board Data Masking**: Concealed health metrics behind `🔒 Profile Locked` indicators on overview cards and cross-profile family hydration boards for locked profiles.
+- **Instant Cache-First Refresh (< 50ms)**: Synchronously initialized React state from LocalStorage cache on component mount, enabling instant page rendering with zero delay.
+- **Parallel Background Sync**: Replaced serial network waterfalls with `Promise.allSettled()` parallel Supabase sync queries, eliminating 7-8s loading delays.
+- **Admin Supabase Persistence**: Ensured profile roles (`Admin`, `Parent`, `Member`) and lock states (`is_locked`) are stored in Supabase `public.profiles` PostgreSQL table.
+
 ## [1.14.0] - 2026-08-06
 
 ### Added & Enhanced

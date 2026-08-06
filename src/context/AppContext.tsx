@@ -12,6 +12,7 @@ import {
   fetchBPLogs, saveBPLogDB,
   fetchWaterLogs, saveWaterLogDB, deleteWaterLogDB,
   fetchWaterItems, saveWaterItemDB, deleteWaterItemDB,
+  loadFromStorage, STORAGE_KEYS,
   isSupabaseConfigured,
   supabase
 } from "../lib/supabase";
@@ -79,14 +80,33 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [profiles, setProfiles] = useState<UserProfile[]>(APP_CONFIG.defaultProfiles as UserProfile[]);
-  const [activeProfileId, setActiveProfileIdState] = useState<string>((APP_CONFIG.defaultProfiles as UserProfile[])[0]?.id || "");
-  const [medications, setMedications] = useState<Medication[]>(APP_CONFIG.defaultMedications as Medication[]);
-  const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
-  const [glucoseLogs, setGlucoseLogs] = useState<GlucoseLog[]>([]);
-  const [bpLogs, setBpLogs] = useState<BPLog[]>([]);
-  const [waterLogs, setWaterLogs] = useState<WaterLog[]>([]);
-  const [waterItems, setWaterItems] = useState<WaterItem[]>([]);
+  const [profiles, setProfiles] = useState<UserProfile[]>(() => 
+    loadFromStorage<UserProfile[]>(STORAGE_KEYS.PROFILES, APP_CONFIG.defaultProfiles as UserProfile[])
+  );
+  const [activeProfileId, setActiveProfileIdState] = useState<string>(() => {
+    const savedId = localStorage.getItem("vitalsguard_active_profile");
+    const cachedProfiles = loadFromStorage<UserProfile[]>(STORAGE_KEYS.PROFILES, APP_CONFIG.defaultProfiles as UserProfile[]);
+    const match = cachedProfiles.find((p: UserProfile) => p.id === savedId);
+    return match ? match.id : (cachedProfiles[0]?.id || "");
+  });
+  const [medications, setMedications] = useState<Medication[]>(() => 
+    loadFromStorage<Medication[]>(STORAGE_KEYS.MEDICATIONS, APP_CONFIG.defaultMedications as Medication[])
+  );
+  const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>(() => 
+    loadFromStorage<MedicationLog[]>(STORAGE_KEYS.MED_LOGS, [])
+  );
+  const [glucoseLogs, setGlucoseLogs] = useState<GlucoseLog[]>(() => 
+    loadFromStorage<GlucoseLog[]>(STORAGE_KEYS.GLUCOSE_LOGS, [])
+  );
+  const [bpLogs, setBpLogs] = useState<BPLog[]>(() => 
+    loadFromStorage<BPLog[]>(STORAGE_KEYS.BP_LOGS, [])
+  );
+  const [waterLogs, setWaterLogs] = useState<WaterLog[]>(() => 
+    loadFromStorage<WaterLog[]>(STORAGE_KEYS.WATER_LOGS, [])
+  );
+  const [waterItems, setWaterItems] = useState<WaterItem[]>(() => 
+    loadFromStorage<WaterItem[]>(STORAGE_KEYS.WATER_ITEMS, [])
+  );
   const [isSupabaseActive, setIsSupabaseActive] = useState<boolean>(false);
   const [waterTargets, setWaterTargets] = useState<Record<string, number>>(() => {
     try {
@@ -110,7 +130,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
 
   // Dynamic Database Connection Ping
@@ -329,63 +349,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast("info", "Email Saved", `Caretaker email updated to ${email}`);
   };
 
-  // Initial Load from Supabase / LocalStorage
+  // Initial Load from Supabase / LocalStorage (Parallel Background Sync)
   const refreshAllData = async () => {
-    setIsLoading(true);
     try {
-      let loadedProfiles = await fetchProfiles();
-      const systemSettings = loadedProfiles.find(p => p.id === "system-settings");
-      if (systemSettings) {
-        if (systemSettings.notes) {
-          localStorage.setItem("vitalsguard_admin_pin", systemSettings.notes);
+      const [profsRes, medsRes, logsRes, glucRes, bpRes, waterRes, itemsRes] = await Promise.allSettled([
+        fetchProfiles(),
+        fetchMedications(),
+        fetchMedicationLogs(),
+        fetchGlucoseLogs(),
+        fetchBPLogs(),
+        fetchWaterLogs(),
+        fetchWaterItems()
+      ]);
+
+      if (profsRes.status === "fulfilled" && profsRes.value) {
+        let loadedProfiles = profsRes.value;
+        const systemSettings = loadedProfiles.find(p => p.id === "system-settings");
+        if (systemSettings) {
+          if (systemSettings.notes) {
+            localStorage.setItem("vitalsguard_admin_pin", systemSettings.notes);
+          }
+          if (systemSettings.emergencyContact) {
+            localStorage.setItem("vitalsguard_caretaker_email", systemSettings.emergencyContact);
+            setCaretakerEmailState(systemSettings.emergencyContact);
+          }
         }
-        if (systemSettings.emergencyContact) {
-          localStorage.setItem("vitalsguard_caretaker_email", systemSettings.emergencyContact);
-          setCaretakerEmailState(systemSettings.emergencyContact);
+        loadedProfiles = loadedProfiles.filter(p => p.id !== "system-settings");
+
+        if (loadedProfiles.length > 0) {
+          setProfiles(loadedProfiles);
+          const targets: Record<string, number> = {};
+          loadedProfiles.forEach(p => {
+            if (p.targetWater) targets[p.id] = p.targetWater;
+          });
+          setWaterTargets(targets);
+          
+          const savedId = localStorage.getItem("vitalsguard_active_profile");
+          const match = loadedProfiles.find(p => p.id === savedId);
+          if (match) setActiveProfileIdState(match.id);
         }
       }
-      loadedProfiles = loadedProfiles.filter(p => p.id !== "system-settings");
 
-      if (!loadedProfiles || loadedProfiles.length === 0) {
-        loadedProfiles = APP_CONFIG.defaultProfiles as UserProfile[];
-      }
-      setProfiles(loadedProfiles);
-      
-      const targets: Record<string, number> = {};
-      loadedProfiles.forEach(p => {
-        if (p.targetWater) {
-          targets[p.id] = p.targetWater;
-        }
-      });
-      setWaterTargets(targets);
-      
-      const savedId = localStorage.getItem("vitalsguard_active_profile");
-      const match = loadedProfiles.find(p => p.id === savedId);
-      setActiveProfileIdState(match ? match.id : (loadedProfiles[0]?.id || ""));
-
-      let loadedMeds = await fetchMedications();
-      if (!loadedMeds || loadedMeds.length === 0) {
-        loadedMeds = APP_CONFIG.defaultMedications as Medication[];
-      }
-      setMedications(loadedMeds);
-
-      const loadedMedLogs = await fetchMedicationLogs();
-      setMedicationLogs(loadedMedLogs);
-
-      const loadedGlucose = await fetchGlucoseLogs();
-      setGlucoseLogs(loadedGlucose);
-
-      const loadedBP = await fetchBPLogs();
-      setBpLogs(loadedBP);
-
-      const loadedWater = await fetchWaterLogs();
-      setWaterLogs(loadedWater);
-
-      const loadedWaterItems = await fetchWaterItems();
-      setWaterItems(loadedWaterItems);
+      if (medsRes.status === "fulfilled" && medsRes.value?.length) setMedications(medsRes.value);
+      if (logsRes.status === "fulfilled" && logsRes.value) setMedicationLogs(logsRes.value);
+      if (glucRes.status === "fulfilled" && glucRes.value) setGlucoseLogs(glucRes.value);
+      if (bpRes.status === "fulfilled" && bpRes.value) setBpLogs(bpRes.value);
+      if (waterRes.status === "fulfilled" && waterRes.value) setWaterLogs(waterRes.value);
+      if (itemsRes.status === "fulfilled" && itemsRes.value) setWaterItems(itemsRes.value);
     } catch (err) {
-      console.error("Error loading application data:", err);
-      showToast("error", "Data Error", "Could not load records. Operating in fallback mode.");
+      console.warn("Background data sync warning:", err);
     } finally {
       setIsLoading(false);
     }

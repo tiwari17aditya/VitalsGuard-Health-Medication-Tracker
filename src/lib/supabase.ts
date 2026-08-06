@@ -19,7 +19,7 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
   : null;
 
 // LOCAL STORAGE FALLBACK ENGINE
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   PROFILES: "vitalsguard_profiles_v1",
   MEDICATIONS: "vitalsguard_medications_v1",
   MED_LOGS: "vitalsguard_med_logs_v1",
@@ -32,7 +32,7 @@ const STORAGE_KEYS = {
 
 
 // Helper to safely load from local storage or defaults
-function loadFromStorage<T>(key: string, defaultData: T): T {
+export function loadFromStorage<T>(key: string, defaultData: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) {

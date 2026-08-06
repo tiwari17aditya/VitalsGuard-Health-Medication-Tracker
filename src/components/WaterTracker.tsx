@@ -606,6 +606,9 @@ export const WaterTracker: React.FC = () => {
             const pAverage = pDates.length ? Math.round(pTotalWater / pDates.length) : 0;
 
             const isSelf = prof.id === currentProfile.id;
+            const adminAuthed = sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+            const profUnlocked = sessionStorage.getItem(`vitalsguard_unlocked_${prof.id}`) === "true";
+            const isUnlocked = !prof.isLocked || adminAuthed || profUnlocked;
 
             return (
               <div 
@@ -619,35 +622,44 @@ export const WaterTracker: React.FC = () => {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                  <strong style={{ fontSize: "1rem", color: "var(--text-primary)" }}>
+                  <strong style={{ fontSize: "1rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "6px" }}>
                     {prof.name} {isSelf && <span style={{ fontSize: "0.75rem", color: "var(--primary)" }}>(Active)</span>}
+                    {prof.isLocked && <span style={{ fontSize: "0.75rem", color: "#f59e0b" }}>🔒</span>}
                   </strong>
                   <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{prof.role}</span>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", margin: "6px 0" }}>
-                  <span>Today: <strong>{profTodayTotal} ml</strong></span>
-                  <span style={{ color: "var(--text-secondary)" }}>Goal: {profTarget} ml</span>
-                </div>
+                {isUnlocked ? (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", margin: "6px 0" }}>
+                      <span>Today: <strong>{profTodayTotal} ml</strong></span>
+                      <span style={{ color: "var(--text-secondary)" }}>Goal: {profTarget} ml</span>
+                    </div>
 
-                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Daily Avg: <strong>{pAverage} ml</strong> ({pDates.length} days)
-                </div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "6px" }}>
+                      Daily Avg: <strong>{pAverage} ml</strong> ({pDates.length} days)
+                    </div>
 
-                <div className="family-progress-bar-container">
-                  <div 
-                    className="family-progress-bar-fill" 
-                    style={{ 
-                      width: `${profPercent}%`,
-                      background: profPercent >= 100 
-                        ? "linear-gradient(90deg, #10b981, #34d399)" 
-                        : "linear-gradient(90deg, #3b82f6, #60a5fa)" 
-                    }}
-                  ></div>
-                </div>
-                <div style={{ fontSize: "0.75rem", textAlign: "right", marginTop: "4px", color: profPercent >= 100 ? "var(--success)" : "var(--primary)" }}>
-                  {profPercent}% Completed
-                </div>
+                    <div className="family-progress-bar-container">
+                      <div 
+                        className="family-progress-bar-fill" 
+                        style={{ 
+                          width: `${profPercent}%`,
+                          background: profPercent >= 100 
+                            ? "linear-gradient(90deg, #10b981, #34d399)" 
+                            : "linear-gradient(90deg, #3b82f6, #60a5fa)" 
+                        }}
+                      ></div>
+                    </div>
+                    <div style={{ fontSize: "0.75rem", textAlign: "right", marginTop: "4px", color: profPercent >= 100 ? "var(--success)" : "var(--primary)" }}>
+                      {profPercent}% Completed
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ padding: "12px 0", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+                    🔒 <strong>Health Data Private & Locked</strong>
+                  </div>
+                )}
               </div>
             );
           })}
