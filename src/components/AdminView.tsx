@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, Wrench, KeyRound 
+  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, Wrench, KeyRound, Eye, EyeOff, Database 
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
@@ -13,32 +13,47 @@ export const AdminView: React.FC = () => {
     activeProfile, 
     addOrUpdateProfile, 
     deleteProfile, 
-    setActiveProfileId
+    setActiveProfileId,
+    showToast
   } = useApp();
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
   const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile" | "dev_settings"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
   const [showDevModal, setShowDevModal] = useState<boolean>(false);
+  const [showPinMap, setShowPinMap] = useState<Record<string, boolean>>({});
+
+  const togglePinVisibility = (profileId: string) => {
+    setShowPinMap(prev => ({ ...prev, [profileId]: !prev[profileId] }));
+  };
 
   const handleSelectProfileClick = (p: UserProfile) => {
     if (p.id === activeProfile?.id) return;
-    if (p.isLocked) {
-      setPendingAction({ type: "select_profile", targetProfile: p });
-    } else {
-      setActiveProfileId(p.id);
-    }
+    sessionStorage.setItem(`vitalsguard_unlocked_${p.id}`, "true");
+    setActiveProfileId(p.id);
+    showToast("info", "Admin Switch", `Switched active profile control to ${p.name}`);
   };
 
   const handleCreateNewClick = () => {
-    setPendingAction({ type: "add" });
+    startCreatingProfile();
   };
 
   const handleDeleteClick = (id: string) => {
-    setPendingAction({ type: "delete", deleteId: id });
+    deleteProfile(id);
   };
 
   const handleToggleLockClick = (p: UserProfile) => {
-    setPendingAction({ type: "toggle_lock", targetProfile: p });
+    addOrUpdateProfile({ ...p, isLocked: !p.isLocked });
+  };
+
+  const handleSyncAllProfilesToDB = async () => {
+    try {
+      for (const p of profiles) {
+        await addOrUpdateProfile(p);
+      }
+      showToast("success", "DB Schema Sync", `Successfully synced ${profiles.length} profiles to database schema.`);
+    } catch (err: any) {
+      showToast("error", "Sync Failed", err.message || "Failed to sync profiles to DB.");
+    }
   };
 
   const handleDeveloperClick = () => {
@@ -117,19 +132,31 @@ export const AdminView: React.FC = () => {
       {/* Profile Management Cards Grid */}
       {!editingProfile ? (
         <div className="glass-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
             <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Users size={20} color="var(--primary)" /> Registered User Profiles ({profiles.length})
             </h3>
 
-            <button onClick={handleCreateNewClick} className="btn btn-success btn-sm">
-              <Plus size={16} /> Add New User
-            </button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button 
+                onClick={handleSyncAllProfilesToDB} 
+                className="btn btn-secondary btn-sm"
+                title="Sync all profile records to Supabase PostgreSQL database schema"
+              >
+                <Database size={15} /> Sync Schema to DB
+              </button>
+              <button onClick={handleCreateNewClick} className="btn btn-success btn-sm">
+                <Plus size={16} /> Add New User
+              </button>
+            </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {profiles.map(p => {
               const isCurrent = p.id === activeProfile?.id;
+              const isPinVisible = Boolean(showPinMap[p.id]);
+              const displayPin = p.pin || "1234";
+
               return (
                 <div
                   key={p.id}
@@ -146,7 +173,7 @@ export const AdminView: React.FC = () => {
                   }}
                 >
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                       <strong style={{ fontSize: "1.1rem" }}>{p.name}</strong>
                       {isCurrent && <span className="badge badge-primary" style={{ fontSize: "0.75rem" }}>Active</span>}
                       {p.isLocked ? (
@@ -158,7 +185,20 @@ export const AdminView: React.FC = () => {
                           <Unlock size={12} /> Unlocked
                         </span>
                       )}
+
+                      {/* Admin PIN Control Pill */}
+                      <span 
+                        className="badge badge-secondary" 
+                        style={{ fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}
+                        onClick={() => togglePinVisibility(p.id)}
+                        title="Click to toggle PIN visibility for Admin"
+                      >
+                        <KeyRound size={12} color="var(--primary)" />
+                        <span>PIN: {isPinVisible ? <strong>{displayPin}</strong> : "••••"}</span>
+                        {isPinVisible ? <EyeOff size={12} /> : <Eye size={12} />}
+                      </span>
                     </div>
+
                     <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>
                       Role: <strong>{p.role}</strong> • Target Water: <strong>{p.targetWater || 2000} ml</strong> • Target BP: <strong>{p.targetBP || "120/80 mmHg"}</strong> • Sugar: <strong>{p.targetGlucoseFasting || "70-100"}</strong>
                     </p>
@@ -169,8 +209,9 @@ export const AdminView: React.FC = () => {
                       <button
                         onClick={() => handleSelectProfileClick(p)}
                         className="btn btn-primary btn-sm"
+                        title="Admin Control: Switch active profile immediately"
                       >
-                        Switch Profile
+                        Take Admin Control
                       </button>
                     )}
 
@@ -179,7 +220,7 @@ export const AdminView: React.FC = () => {
                       onClick={() => handleToggleLockClick(p)}
                       className="btn btn-secondary btn-sm"
                       style={{ color: p.isLocked ? "#f59e0b" : "var(--primary)", display: "flex", alignItems: "center", gap: "4px" }}
-                      title={p.isLocked ? "Unlock Profile (Passcode Protected)" : "Lock Profile (Passcode Protected)"}
+                      title={p.isLocked ? "Unlock Profile Privacy" : "Lock Profile Privacy"}
                     >
                       {p.isLocked ? <><Lock size={14} /> Unlock</> : <><Unlock size={14} /> Lock</>}
                     </button>
@@ -187,7 +228,7 @@ export const AdminView: React.FC = () => {
                     <button
                       onClick={() => setEditingProfile(p)}
                       className="btn btn-secondary btn-sm"
-                      title="Edit Profile Details"
+                      title="Edit Profile Details & PIN"
                     >
                       <Edit2 size={14} /> Edit
                     </button>
@@ -197,7 +238,7 @@ export const AdminView: React.FC = () => {
                         onClick={() => handleDeleteClick(p.id)}
                         className="btn btn-secondary btn-sm"
                         style={{ color: "#ef4444" }}
-                        title="Delete Profile (Passcode Protected)"
+                        title="Delete Profile"
                       >
                         <Trash2 size={14} /> Delete
                       </button>

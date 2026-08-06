@@ -174,49 +174,56 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
   saveLockedProfilesMap(lockedMap);
 
   const pinsMap = getProfilePinsMap();
-  if (profile.pin) {
-    pinsMap[profile.id] = profile.pin;
-    saveProfilePinsMap(pinsMap);
-  }
+  const pinVal = profile.pin || pinsMap[profile.id] || "1234";
+  pinsMap[profile.id] = pinVal;
+  saveProfilePinsMap(pinsMap);
+
+  const fullProfile: UserProfile = {
+    ...profile,
+    pin: pinVal,
+    isLocked: Boolean(profile.isLocked)
+  };
 
   if (isSupabaseConfigured && supabase) {
     try {
       const payload: any = {
-        id: profile.id,
-        name: profile.name,
-        role: profile.role,
-        age: profile.age,
-        target_glucose_fasting: profile.targetGlucoseFasting,
-        target_glucose_post_meal: profile.targetGlucosePostMeal,
-        target_bp: profile.targetBP,
-        target_water: profile.targetWater || 2000,
-        emergency_contact: profile.emergencyContact,
-        doctor_name: profile.doctorName,
-        notes: profile.notes,
-        avatar_color: profile.avatarColor,
-        is_locked: Boolean(profile.isLocked),
-        pin: profile.pin || pinsMap[profile.id] || "1234"
+        id: fullProfile.id,
+        name: fullProfile.name,
+        role: fullProfile.role || "Member",
+        age: fullProfile.age,
+        target_glucose_fasting: fullProfile.targetGlucoseFasting,
+        target_glucose_post_meal: fullProfile.targetGlucosePostMeal,
+        target_bp: fullProfile.targetBP,
+        target_water: fullProfile.targetWater || 2000,
+        emergency_contact: fullProfile.emergencyContact,
+        doctor_name: fullProfile.doctorName,
+        notes: fullProfile.notes,
+        avatar_color: fullProfile.avatarColor || "#3b82f6",
+        is_locked: fullProfile.isLocked,
+        pin: fullProfile.pin
       };
-      if (profile.gender) payload.gender = profile.gender;
-      if (profile.weight) payload.weight = profile.weight;
-      if (profile.season) payload.season = profile.season;
+      if (fullProfile.gender) payload.gender = fullProfile.gender;
+      if (fullProfile.weight) payload.weight = fullProfile.weight;
+      if (fullProfile.season) payload.season = fullProfile.season;
 
       const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
       if (error) {
-        // Resilient fallback retry for core columns if optional/new columns are missing in Supabase schema
+        // Resilient fallback retry keeping security fields
         const corePayload = {
-          id: profile.id,
-          name: profile.name,
-          role: profile.role,
-          age: profile.age,
-          target_glucose_fasting: profile.targetGlucoseFasting,
-          target_glucose_post_meal: profile.targetGlucosePostMeal,
-          target_bp: profile.targetBP,
-          target_water: profile.targetWater || 2000,
-          emergency_contact: profile.emergencyContact,
-          doctor_name: profile.doctorName,
-          notes: profile.notes,
-          avatar_color: profile.avatarColor
+          id: fullProfile.id,
+          name: fullProfile.name,
+          role: fullProfile.role || "Member",
+          age: fullProfile.age,
+          target_glucose_fasting: fullProfile.targetGlucoseFasting,
+          target_glucose_post_meal: fullProfile.targetGlucosePostMeal,
+          target_bp: fullProfile.targetBP,
+          target_water: fullProfile.targetWater || 2000,
+          emergency_contact: fullProfile.emergencyContact,
+          doctor_name: fullProfile.doctorName,
+          notes: fullProfile.notes,
+          avatar_color: fullProfile.avatarColor || "#3b82f6",
+          is_locked: fullProfile.isLocked,
+          pin: fullProfile.pin
         };
         const { error: retryErr } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(corePayload);
         if (retryErr) console.warn("Supabase corePayload upsert retry failed:", retryErr);
@@ -226,11 +233,11 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
     }
   }
   const current = loadFromStorage<UserProfile[]>(STORAGE_KEYS.PROFILES, APP_CONFIG.defaultProfiles as UserProfile[]);
-  const index = current.findIndex(p => p.id === profile.id);
-  if (index >= 0) current[index] = profile;
-  else current.push(profile);
+  const index = current.findIndex(p => p.id === fullProfile.id);
+  if (index >= 0) current[index] = fullProfile;
+  else current.push(fullProfile);
   saveToStorage(STORAGE_KEYS.PROFILES, current);
-  return profile;
+  return fullProfile;
 }
 
 export async function deleteProfileDB(id: string): Promise<boolean> {
