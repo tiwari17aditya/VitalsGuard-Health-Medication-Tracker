@@ -18,5 +18,5 @@
 - Perform complete end-to-end testing locally before committing, staging, or promoting changes to the main production environment to avoid live feature conflicts and disruption for active users.
 
 ## Environment Isolation & Resource Cleanup Protocol
-- Always run commands, node scripts, and dependencies strictly isolated within the local project workspace (or virtual environment) to prevent polluting personal system module versions.
+- Always run commands, scripts, and dependencies strictly isolated within the local `.venv` virtual environment (or workspace `node_modules`) to prevent polluting personal system module versions.
 - Automatically clean up temporary scratch files, local download caches, and intermediate build output artifacts after task verification to preserve user storage and system resources.
