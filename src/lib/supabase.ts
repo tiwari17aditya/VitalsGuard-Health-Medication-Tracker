@@ -84,7 +84,8 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
             emergencyContact: item.emergency_contact || item.emergencyContact,
             doctorName: item.doctor_name || item.doctorName,
             notes: item.notes,
-            avatarColor: item.avatar_color || item.avatarColor || "#3b82f6"
+            avatarColor: item.avatar_color || item.avatarColor || "#3b82f6",
+            isLocked: Boolean(item.is_locked ?? item.isLocked)
           })) as UserProfile[];
         } else {
           console.log("Supabase profiles table is empty. Seeding defaults...");
@@ -116,7 +117,8 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
         emergency_contact: profile.emergencyContact,
         doctor_name: profile.doctorName,
         notes: profile.notes,
-        avatar_color: profile.avatarColor
+        avatar_color: profile.avatarColor,
+        is_locked: Boolean(profile.isLocked)
       };
       if (profile.gender) payload.gender = profile.gender;
       if (profile.weight) payload.weight = profile.weight;
@@ -124,7 +126,7 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
 
       const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
       if (error) {
-        // Resilient fallback retry for core columns if gender/weight/season schema columns are missing
+        // Resilient fallback retry for core columns if optional columns are missing
         const corePayload = {
           id: profile.id,
           name: profile.name,
@@ -137,7 +139,8 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
           emergency_contact: profile.emergencyContact,
           doctor_name: profile.doctorName,
           notes: profile.notes,
-          avatar_color: profile.avatarColor
+          avatar_color: profile.avatarColor,
+          is_locked: Boolean(profile.isLocked)
         };
         const { error: retryErr } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(corePayload);
         if (retryErr) throw retryErr;

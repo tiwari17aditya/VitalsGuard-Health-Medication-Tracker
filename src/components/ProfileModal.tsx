@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, Plus, Trash2, Edit2, Lock } from "lucide-react";
+import { Users, Plus, Trash2, Edit2, Lock, Unlock } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
@@ -11,36 +11,14 @@ const calculateAutoWaterTarget = (
   season: string,
   age: number
 ): number => {
-  // 1. Check EFSA/IOM standards for children (age-based limits)
-  if (age < 4) {
-    return 1300;
-  }
-  if (age >= 4 && age < 9) {
-    return 1700;
-  }
-  if (age >= 9 && age < 14) {
-    return gender.toLowerCase() === "male" ? 2400 : 2100;
-  }
-
-  // 2. For adults (>=14), use Redcliffe Labs Weight-Based baseline:
-  // Weight (lbs) * 2/3 (in ounces) = Weight (kg) * 43.5 ml
+  if (age < 4) return 1300;
+  if (age >= 4 && age < 9) return 1700;
+  if (age >= 9 && age < 14) return gender.toLowerCase() === "male" ? 2400 : 2100;
   let target = weight * 43.5;
-
-  // 3. Gender Adjustment (EFSA/IOM adult differences)
-  if (gender.toLowerCase() === "male") {
-    target += 600; // Aligns Male averages closer to 3.3L-3.7L
-  } else if (gender.toLowerCase() === "other") {
-    target += 300;
-  }
-
-  // 4. Season Adjustments
-  if (season.toLowerCase() === "summer") {
-    target += 500; // Increased sweat rate in summer
-  } else if (season.toLowerCase() === "winter") {
-    target -= 200; // Reduced cold weather evaporation
-  }
-
-  // 5. Bounding & rounding
+  if (gender.toLowerCase() === "male") target += 600;
+  else if (gender.toLowerCase() === "other") target += 300;
+  if (season.toLowerCase() === "summer") target += 500;
+  else if (season.toLowerCase() === "winter") target -= 200;
   const rounded = Math.round(target / 50) * 50;
   return Math.min(6000, Math.max(1000, rounded));
 };
@@ -53,20 +31,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   const { profiles, activeProfile, addOrUpdateProfile, deleteProfile, setActiveProfileId } = useApp();
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete"; deleteId?: string } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
   const [useAutoWater, setUseAutoWater] = useState<boolean>(true);
 
-  // Auto calculate water target when metrics change
   useEffect(() => {
     if (!editingProfile || !useAutoWater) return;
-    
     const weight = editingProfile.weight || 60;
     const gender = editingProfile.gender || "Female";
     const season = editingProfile.season || "Spring/Autumn";
     const age = editingProfile.age || 40;
-    
     const calculatedTarget = calculateAutoWaterTarget(gender, weight, season, age);
-    
     if (editingProfile.targetWater !== calculatedTarget) {
       setEditingProfile(prev => prev ? { ...prev, targetWater: calculatedTarget } : null);
     }
@@ -78,7 +52,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
     useAutoWater
   ]);
 
-  // Adjust useAutoWater toggle when editing profile loads
   useEffect(() => {
     if (editingProfile && editingProfile.id) {
       const weight = editingProfile.weight || 60;
@@ -86,7 +59,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       const season = editingProfile.season || "Spring/Autumn";
       const age = editingProfile.age || 40;
       const calc = calculateAutoWaterTarget(gender, weight, season, age);
-      
       if (editingProfile.targetWater && editingProfile.targetWater !== calc) {
         setUseAutoWater(false);
       } else {
@@ -111,6 +83,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
     setPendingAction({ type: "delete", deleteId: id });
   };
 
+  const handleToggleLockClick = (p: UserProfile) => {
+    if (isAdminAuthed()) {
+      addOrUpdateProfile({ ...p, isLocked: !p.isLocked });
+    } else {
+      setPendingAction({ type: "toggle_lock", targetProfile: p });
+    }
+  };
+
   const startCreatingProfile = () => {
     setEditingProfile({
       id: `profile-${Date.now()}`,
@@ -126,7 +106,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       targetWater: 2000,
       emergencyContact: "",
       doctorName: "",
-      notes: ""
+      notes: "",
+      isLocked: false
     });
   };
 
@@ -138,15 +119,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
     } else if (act?.type === "delete" && act.deleteId) {
       deleteProfile(act.deleteId);
       sessionStorage.removeItem("vitalsguard_admin_authed");
+    } else if (act?.type === "toggle_lock" && act.targetProfile) {
+      addOrUpdateProfile({ ...act.targetProfile, isLocked: !act.targetProfile.isLocked });
     }
   };
-
-
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProfile || !editingProfile.name) return;
-
     await addOrUpdateProfile(editingProfile as UserProfile);
     setEditingProfile(null);
   };
@@ -165,7 +145,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
         {!editingProfile ? (
           <div>
             <p style={{ color: "var(--text-secondary)", marginBottom: "16px" }}>
-              Switch or manage family member profiles. <em>(Adding or deleting users requires Admin Passcode)</em>
+              Switch or manage family member profiles. <em>(Adding, deleting, or locking users requires Admin Passcode)</em>
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
@@ -185,7 +165,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                   }}
                 >
                   <div>
-                    <h4 style={{ fontSize: "1.05rem" }}>{p.name}</h4>
+                    <h4 style={{ fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "6px" }}>
+                      {p.name} {p.isLocked ? <span title="Locked Profile"><Lock size={14} color="#f59e0b" /></span> : <span title="Unlocked Profile"><Unlock size={14} color="#10b981" /></span>}
+                    </h4>
                     <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)" }}>
                       {p.role} • BP: {p.targetBP || "N/A"} • Water: {p.targetWater ? `${p.targetWater}ml` : "2000ml"} • Sugar: {p.targetGlucoseFasting || "N/A"} / {p.targetGlucosePostMeal || "N/A"}
                     </p>
@@ -197,6 +179,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                       className="btn btn-primary btn-sm"
                     >
                       Select Profile
+                    </button>
+                    <button
+                      onClick={() => handleToggleLockClick(p)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ color: p.isLocked ? "#f59e0b" : "var(--primary)" }}
+                      title={p.isLocked ? "Unlock Profile (Passcode Protected)" : "Lock Profile (Passcode Protected)"}
+                    >
+                      {p.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
                     </button>
                     <button
                       onClick={() => setEditingProfile(p)}

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2026-08-06
+
+### Added & Enhanced
+- **Profile-Level Locking Mechanism**: Added `isLocked` state to `UserProfile` model and PostgreSQL `profiles` table (`is_locked` column). Lock (🔒) / Unlock (🔓) visual indicators rendered next to all profile options in selectors, profile cards, and modal lists.
+- **Passcode Protection**: Enforced passcode verification when switching to a locked profile or toggling lock status.
+- **"Aditya"-Exclusive "Admin" Navigation Tab**: Removed `+ Users` button from the top header and introduced a dedicated **"Admin"** tab in `Navigation.tsx` (Desktop & Mobile), which is **only visible** when the active profile is **"Aditya"**.
+- **Admin Hub View (`AdminView.tsx`)**: Created `AdminView.tsx` component allowing Aditya to manage user profiles, toggle profile privacy locks, edit target goals, and launch the Developer Settings Hub.
+
 ## [1.13.0] - 2026-08-06
 
 ### Added & Enhanced

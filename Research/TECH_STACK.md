@@ -11,8 +11,8 @@ This document details every technology, framework, database tier, email provider
 | **Frontend Core** | React 18 + TypeScript | Free | SPA architecture, modular components, strict type safety |
 | **Build Tooling** | Vite 5 | Free | Next-gen hot reload, optimized production bundle |
 | **Mobile PWA** | `vite-plugin-pwa` | Free | Web Manifest & Service Worker for downloadable iOS/Android app |
-| **Database** | Supabase (PostgreSQL) | Lifetime Free Tier (500MB DB) | Multi-user relational storage (`profiles`, `medications`, `medication_logs`, `glucose_logs`, `bp_logs`, `water_items`, `water_logs`), RLS policies |
-| **Offline Storage** | HTML5 LocalStorage API | Built-in Browser Standard | Zero-config offline fallback (`vitalsguard_water_items_v1`, `vitalsguard_water_logs_v1`) |
+| **Database** | Supabase (PostgreSQL) | Lifetime Free Tier (500MB DB) | Multi-user relational storage (`profiles` with `is_locked` column, `medications`, `medication_logs`, `glucose_logs`, `bp_logs`, `water_items`, `water_logs`), RLS policies |
+| **Offline Storage** | HTML5 LocalStorage API | Built-in Browser Standard | Zero-config offline fallback (`vitalsguard_profiles_v1`, `vitalsguard_water_items_v1`, `vitalsguard_water_logs_v1`) |
 | **Styling & UI** | Vanilla CSS + Design Tokens | Free | Glassmorphism, accessible tap targets for elderly parents |
 | **Icons & Visuals** | `lucide-react` | Free | Accessible vector icons for health & medical metrics |
 | **Email Engine** | Nodemailer / SMTP | Free (No direct API limit) | Refill alert emails & end-of-day compliance check digests via secure SMTP |

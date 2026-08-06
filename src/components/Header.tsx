@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
   Heart, Users, AlertTriangle, ShieldCheck, 
-  Phone, CheckCircle2, WifiOff, Wrench
+  Phone, CheckCircle2, WifiOff, Wrench, Lock, Unlock
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
@@ -9,10 +9,10 @@ import { AdminAuthModal } from "./AdminAuthModal";
 import { DeveloperModal } from "./DeveloperModal";
 
 interface HeaderProps {
-  onOpenProfileModal: () => void;
+  onOpenProfileModal?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
+export const Header: React.FC<HeaderProps> = () => {
   const { 
     profiles, 
     activeProfile, 
@@ -24,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
 
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [showDevModal, setShowDevModal] = useState<boolean>(false);
+  const [pendingLockProfileId, setPendingLockProfileId] = useState<string | null>(null);
 
   // Filter low stock meds ONLY for current active user profile
   const profileLowStockMeds = medications.filter(
@@ -31,6 +32,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
   );
 
   const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+
+  const handleProfileSelectChange = (profileId: string) => {
+    const targetProf = profiles.find(p => p.id === profileId);
+    if (targetProf?.isLocked && !isAdminAuthed()) {
+      setPendingLockProfileId(profileId);
+    } else {
+      setActiveProfileId(profileId);
+    }
+  };
 
   const handleDeveloperClick = () => {
     if (isAdminAuthed()) {
@@ -78,12 +88,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
         {/* User Profiles Switcher & Status Badges */}
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", width: "100%", maxWidth: "100%", marginTop: "4px" }}>
           
-          {/* Profile Selector */}
+          {/* Profile Selector with Lock/Unlock Status */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--bg-primary)", padding: "4px 8px", borderRadius: "var(--radius-full)", border: "1px solid var(--border-color)", flex: "1 1 auto" }}>
             <Users size={16} color="var(--primary)" />
             <select
               value={activeProfile?.id || ""}
-              onChange={(e) => setActiveProfileId(e.target.value)}
+              onChange={(e) => handleProfileSelectChange(e.target.value)}
               style={{
                 background: "transparent",
                 border: "none",
@@ -92,33 +102,25 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
                 fontSize: "0.875rem",
                 outline: "none",
                 cursor: "pointer",
-                maxWidth: "140px",
+                maxWidth: "150px",
                 textOverflow: "ellipsis"
               }}
             >
               {profiles.map(p => (
                 <option key={p.id} value={p.id} style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}>
-                  {p.name}
+                  {p.isLocked ? "🔒 " : "🔓 "}{p.name}
                 </option>
               ))}
             </select>
-            <button 
-              onClick={onOpenProfileModal}
-              title="Manage Profiles"
-              style={{
-                background: "var(--bg-card-hover)",
-                border: "none",
-                color: "var(--text-primary)",
-                padding: "4px 8px",
-                borderRadius: "var(--radius-full)",
-                fontSize: "0.75rem",
-                fontWeight: "600",
-                cursor: "pointer",
-                whiteSpace: "nowrap"
-              }}
-            >
-              + Users
-            </button>
+            {activeProfile?.isLocked ? (
+              <span style={{ fontSize: "0.75rem", color: "#f59e0b", display: "flex", alignItems: "center", gap: "2px" }} title="Profile Locked">
+                <Lock size={12} />
+              </span>
+            ) : (
+              <span style={{ fontSize: "0.75rem", color: "#10b981", display: "flex", alignItems: "center", gap: "2px" }} title="Profile Unlocked">
+                <Unlock size={12} />
+              </span>
+            )}
           </div>
 
           {/* Emergency Doctor Call Button */}
@@ -169,7 +171,19 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfileModal }) => {
 
       </div>
 
-      {/* Passcode Authentication Modal */}
+      {/* Profile Lock Passcode Modal Gate */}
+      {pendingLockProfileId && (
+        <AdminAuthModal
+          onSuccess={() => {
+            setActiveProfileId(pendingLockProfileId);
+            setPendingLockProfileId(null);
+          }}
+          onClose={() => setPendingLockProfileId(null)}
+          title="Profile Locked — Enter Passcode to Switch"
+        />
+      )}
+
+      {/* Developer Passcode Authentication Modal */}
       {showAuthModal && (
         <AdminAuthModal
           onSuccess={handleAuthSuccess}

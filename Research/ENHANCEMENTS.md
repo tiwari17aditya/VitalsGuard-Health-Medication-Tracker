@@ -33,21 +33,13 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Custom Date & Time Backdating**: Date picker (`YYYY-MM-DD`) and time picker (`HH:MM`) in `WaterTracker.tsx` and `AppContext.tsx` allowing users to accurately log past hydration records for any date.
   - **Single Dynamic Filled Glass Container UI**: Past days rendered as a single SVG glass container dynamically filled with liquid level percentage (`0%` to `100%+`) matching daily goal progress, with an expandable log breakdown.
 
-### 4. Profile Privacy Lock & Admin Security Management
-- **Goal**: Introduce profile-level PIN/password protection for sensitive health profiles, centralized database credential storage, admin master override vault, and restricted visibility for diagnostic test profiles (`test_user`).
-- **Rationale**: When multiple family members or caretakers share a single device dashboard, privacy and data protection are vital. Profile locks prevent unauthorized access or accidental edits to personal health data, while providing designated Admin users master access to manage credentials, change Admin passwords in real time, and inspect diagnostic test environments (`test_user`).
-- **Proposed Implementation**:
-  - **Profile Lock & Credentials Schema**:
-    - Extend `UserProfile` in `src/types/index.ts` with `isLocked?: boolean`, `pinHash?: string`, `passwordHash?: string`, and `userRole` (`"admin"`, `"member"`, `"test"`).
-    - Store and synchronize profile lock settings and hashed credentials in PostgreSQL (`profiles` table in Supabase).
-  - **PIN Prompt & Session Security**:
-    - Display a secure PIN/password verification modal when switching to a locked profile or the `Admin` profile from the header dropdown or multi-user management board.
-    - Add interactive Password Protection toggle switches (`🔒 PIN Protected` / `🔓 Lock: OFF`) directly on profile cards in `ProfileModal.tsx`.
-  - **Admin Security Dashboard & Password Management**:
-    - Build a multi-tab Admin Dashboard (`AdminVaultModal.tsx`) allowing authenticated Admins to view PIN keys, reset passwords, update the master Admin password directly in PostgreSQL, edit caretaker email alerts, and view system action audit logs.
-  - **Admin-Only Visibility for `test_user` & Admin Profiles**:
-    - Register default `admin` and `test_user` profile entries in initial app state and database configurations.
-    - Enforce strict UI filtering so `Admin` and `test_user` profiles are hidden from standard member views and visible **only** when authenticated under Admin mode.
+### 4. Profile Privacy Lock & Admin Security Management (Released in v1.14.0)
+- **Status**: ✅ **Released in v1.14.0**
+- **Highlights**:
+  - **Profile Lock Schema**: Added `isLocked?: boolean` to `UserProfile` and PostgreSQL `profiles` table (`is_locked` column).
+  - **Lock Indicators**: Lock (🔒) / Unlock (🔓) visual badges displayed beside profile options in dropdown selectors and profile cards.
+  - **Passcode Gate**: Passcode authentication (`AdminAuthModal`) enforced when switching to a locked profile or toggling lock status.
+  - **Aditya-Exclusive Admin Tab**: Dedicated `"admin"` navigation tab (`AdminView.tsx`) restricted exclusively to profile "Aditya" for centralized user management and security administration.
 
 ### 5. Water Tracking Database Persistence & Multi-Device Sync
 - **Goal**: Track, save, and synchronize all profile water intake entries, daily hydration targets, and container logs directly in the PostgreSQL database with zero data loss.

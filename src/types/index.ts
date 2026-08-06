@@ -20,6 +20,7 @@ export interface UserProfile {
   doctorName?: string;
   notes?: string;
   avatarColor?: string;
+  isLocked?: boolean;
   created_at?: string;
 }
 
