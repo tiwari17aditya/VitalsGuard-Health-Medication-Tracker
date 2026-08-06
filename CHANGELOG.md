@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.1] - 2026-08-06
+
+### Fixed & Enhanced (RCA Resolution)
+- **Profile Lock Persistence Engine Fix**: Resolved root cause where Supabase database fetches returning `null` for unmigrated `is_locked` columns were overwriting local lock states. Implemented a 3-layer hybrid lock map (`vitalsguard_locked_profiles_map`) in `src/lib/supabase.ts` ensuring lock/unlock states remain 100% persistent across network syncs and page refreshes.
+
 ## [1.15.0] - 2026-08-06
 
 ### Added & Enhanced

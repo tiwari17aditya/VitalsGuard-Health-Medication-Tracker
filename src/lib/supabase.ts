@@ -59,34 +59,67 @@ function saveToStorage<T>(key: string, data: T): void {
   }
 }
 
+// Helper for profile lock persistence
+const LOCKED_PROFILES_KEY = "vitalsguard_locked_profiles_map";
+
+export function getLockedProfilesMap(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(LOCKED_PROFILES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveLockedProfilesMap(map: Record<string, boolean>): void {
+  try {
+    localStorage.setItem(LOCKED_PROFILES_KEY, JSON.stringify(map));
+  } catch (err) {
+    console.warn("Error saving locked profiles map:", err);
+  }
+}
+
 // DATABASE ADAPTER IMPLEMENTATION
 
 // --- PROFILES ---
 export async function fetchProfiles(): Promise<UserProfile[]> {
+  const lockedMap = getLockedProfilesMap();
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).select("*");
       if (error) throw error;
       if (data) {
         if (data.length > 0) {
-          return data.map(item => ({
-            id: item.id,
-            name: item.name,
-            role: item.role || "Parent",
-            age: item.age,
-            targetGlucoseFasting: item.target_glucose_fasting || item.targetGlucoseFasting,
-            targetGlucosePostMeal: item.target_glucose_post_meal || item.targetGlucosePostMeal,
-            targetBP: item.target_bp || item.targetBP,
-            targetWater: item.target_water || item.targetWater || 2000,
-            gender: item.gender || "Female",
-            weight: item.weight || 60,
-            season: item.season || "Spring/Autumn",
-            emergencyContact: item.emergency_contact || item.emergencyContact,
-            doctorName: item.doctor_name || item.doctorName,
-            notes: item.notes,
-            avatarColor: item.avatar_color || item.avatarColor || "#3b82f6",
-            isLocked: Boolean(item.is_locked ?? item.isLocked)
-          })) as UserProfile[];
+          return data.map(item => {
+            const hasRemoteLock = item.is_locked !== undefined && item.is_locked !== null;
+            const isLockedVal = hasRemoteLock 
+              ? Boolean(item.is_locked)
+              : (item.isLocked !== undefined ? Boolean(item.isLocked) : Boolean(lockedMap[item.id]));
+
+            // Keep local map synchronized
+            lockedMap[item.id] = isLockedVal;
+            saveLockedProfilesMap(lockedMap);
+
+            return {
+              id: item.id,
+              name: item.name,
+              role: item.role || "Parent",
+              age: item.age,
+              targetGlucoseFasting: item.target_glucose_fasting || item.targetGlucoseFasting,
+              targetGlucosePostMeal: item.target_glucose_post_meal || item.targetGlucosePostMeal,
+              targetBP: item.target_bp || item.targetBP,
+              targetWater: item.target_water || item.targetWater || 2000,
+              gender: item.gender || "Female",
+              weight: item.weight || 60,
+              season: item.season || "Spring/Autumn",
+              emergencyContact: item.emergency_contact || item.emergencyContact,
+              doctorName: item.doctor_name || item.doctorName,
+              notes: item.notes,
+              avatarColor: item.avatar_color || item.avatarColor || "#3b82f6",
+              isLocked: isLockedVal
+            };
+          }) as UserProfile[];
         } else {
           console.log("Supabase profiles table is empty. Seeding defaults...");
           for (const p of APP_CONFIG.defaultProfiles) {
@@ -99,10 +132,20 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
       console.warn("Supabase fetchProfiles fallback to LocalStorage:", err);
     }
   }
-  return loadFromStorage<UserProfile[]>(STORAGE_KEYS.PROFILES, APP_CONFIG.defaultProfiles as UserProfile[]);
+
+  const localProfiles = loadFromStorage<UserProfile[]>(STORAGE_KEYS.PROFILES, APP_CONFIG.defaultProfiles as UserProfile[]);
+  return localProfiles.map(p => ({
+    ...p,
+    isLocked: p.isLocked !== undefined ? p.isLocked : Boolean(lockedMap[p.id])
+  }));
 }
 
 export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> {
+  // Update local lock map
+  const lockedMap = getLockedProfilesMap();
+  lockedMap[profile.id] = Boolean(profile.isLocked);
+  saveLockedProfilesMap(lockedMap);
+
   if (isSupabaseConfigured && supabase) {
     try {
       const payload: any = {
@@ -126,7 +169,7 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
 
       const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
       if (error) {
-        // Resilient fallback retry for core columns if optional columns are missing
+        // Resilient fallback retry for core columns if optional/new columns are missing in Supabase schema
         const corePayload = {
           id: profile.id,
           name: profile.name,
@@ -139,11 +182,10 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
           emergency_contact: profile.emergencyContact,
           doctor_name: profile.doctorName,
           notes: profile.notes,
-          avatar_color: profile.avatarColor,
-          is_locked: Boolean(profile.isLocked)
+          avatar_color: profile.avatarColor
         };
         const { error: retryErr } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(corePayload);
-        if (retryErr) throw retryErr;
+        if (retryErr) console.warn("Supabase corePayload upsert retry failed:", retryErr);
       }
     } catch (err) {
       console.warn("Supabase saveProfile fallback to LocalStorage:", err);
