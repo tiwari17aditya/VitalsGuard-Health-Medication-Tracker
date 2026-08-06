@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import { Header } from "./components/Header";
 import { Navigation } from "./components/Navigation";
@@ -8,7 +8,6 @@ import { MedicationTracker } from "./components/MedicationTracker";
 import { MedicationCalendar } from "./components/MedicationCalendar";
 import { ReportsManager } from "./components/ReportsManager";
 import { WaterTracker } from "./components/WaterTracker";
-import { AdminView } from "./components/AdminView";
 import { ProfileModal } from "./components/ProfileModal";
 import { PrivacyLockGate } from "./components/PrivacyLockGate";
 import { ToastContainer } from "./components/ToastContainer";
@@ -20,14 +19,6 @@ const DashboardContent: React.FC = () => {
   const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications, waterLogs, waterTargets } = useApp();
 
   const currentProfile = activeProfile || null;
-  const isAdminProfile = currentProfile?.name.toLowerCase() === "aditya";
-
-  // Security guard: Fallback to "vitals" if non-Aditya profile is active on admin tab
-  useEffect(() => {
-    if (!isAdminProfile && activeTab === "admin") {
-      setActiveTab("vitals");
-    }
-  }, [isAdminProfile, activeTab]);
 
   // Check if current active profile session is unlocked
   const isUnlocked = () => {
@@ -147,7 +138,6 @@ const DashboardContent: React.FC = () => {
         {activeTab === "water" && <WaterTracker />}
         {activeTab === "calendar" && <MedicationCalendar />}
         {activeTab === "reports" && <ReportsManager />}
-        {activeTab === "admin" && isAdminProfile && <AdminView />}
       </PrivacyLockGate>
 
       {/* Modals */}

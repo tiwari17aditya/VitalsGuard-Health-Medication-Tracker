@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { 
   Heart, Users, AlertTriangle, ShieldCheck, 
-  Phone, CheckCircle2, WifiOff, Wrench, Lock, Unlock, KeyRound
+  Phone, CheckCircle2, WifiOff, Wrench, Lock, Unlock, KeyRound, Shield
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
 import { AdminAuthModal } from "./AdminAuthModal";
 import { DeveloperModal } from "./DeveloperModal";
 import { ChangePinModal } from "./ChangePinModal";
+import { AdminView } from "./AdminView";
 
 interface HeaderProps {
   onOpenProfileModal?: () => void;
@@ -26,8 +27,11 @@ export const Header: React.FC<HeaderProps> = () => {
 
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [showDevModal, setShowDevModal] = useState<boolean>(false);
+  const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [showChangePinModal, setShowChangePinModal] = useState<boolean>(false);
   const [pendingLockProfileId, setPendingLockProfileId] = useState<string | null>(null);
+
+  const isAdminProfile = activeProfile?.name.toLowerCase() === "aditya" || activeProfile?.role === "Admin";
 
   // Filter low stock meds ONLY for current active user profile
   const profileLowStockMeds = medications.filter(
@@ -188,35 +192,57 @@ export const Header: React.FC<HeaderProps> = () => {
             </span>
           )}
 
-          {/* Database / Connection Status Pill */}
-          {isOffline ? (
-            <span className="badge badge-warning" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
-              <WifiOff size={12} /> Offline
-            </span>
-          ) : isSupabaseActive ? (
-            <span className="badge badge-success" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
-              <ShieldCheck size={12} /> Supabase Live
-            </span>
-          ) : (
-            <span className="badge badge-primary" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
-              <CheckCircle2 size={12} /> Local Storage
-            </span>
+          {/* Database / Connection Status Pill (Visible ONLY to Aditya / Admin) */}
+          {isAdminProfile && (
+            isOffline ? (
+              <span className="badge badge-warning" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
+                <WifiOff size={12} /> Offline
+              </span>
+            ) : isSupabaseActive ? (
+              <span className="badge badge-success" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
+                <ShieldCheck size={12} /> Supabase Live
+              </span>
+            ) : (
+              <span className="badge badge-primary" style={{ fontSize: "0.775rem", padding: "6px 10px" }}>
+                <CheckCircle2 size={12} /> Local Storage
+              </span>
+            )
           )}
 
-          {/* Developer Settings Button */}
-          <button
-            id="header-dev-settings-btn"
-            onClick={handleDeveloperClick}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px" }}
-            title="Developer Settings Hub"
-          >
-            <Wrench size={13} /> Developer Settings
-          </button>
+          {/* Admin Control Hub Button (Visible ONLY to Aditya / Admin) */}
+          {isAdminProfile && (
+            <button
+              id="header-admin-hub-btn"
+              onClick={() => setShowAdminModal(true)}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px", borderColor: "rgba(245, 158, 11, 0.4)", color: "#f59e0b" }}
+              title="Admin Security & User Profiles Hub"
+            >
+              <Shield size={13} color="#f59e0b" /> Admin Hub
+            </button>
+          )}
+
+          {/* Developer Settings Button (Visible ONLY to Aditya / Admin) */}
+          {isAdminProfile && (
+            <button
+              id="header-dev-settings-btn"
+              onClick={handleDeveloperClick}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px" }}
+              title="Developer Settings Hub"
+            >
+              <Wrench size={13} /> Developer Settings
+            </button>
+          )}
 
         </div>
 
       </div>
+
+      {/* Admin Security & User Profiles Hub Modal */}
+      {showAdminModal && (
+        <AdminView onClose={() => setShowAdminModal(false)} />
+      )}
 
       {/* Profile Switch Lock Verification Gate */}
       {pendingLockProfileId && (

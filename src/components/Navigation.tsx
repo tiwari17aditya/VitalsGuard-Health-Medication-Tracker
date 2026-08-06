@@ -1,8 +1,7 @@
 import React from "react";
-import { Activity, Pill, Calendar, FileText, Droplet, Shield } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { Activity, Pill, Calendar, FileText, Droplet } from "lucide-react";
 
-export type NavTab = "vitals" | "medications" | "water" | "calendar" | "reports" | "admin";
+export type NavTab = "vitals" | "medications" | "water" | "calendar" | "reports";
 
 interface NavigationProps {
   activeTab: NavTab;
@@ -10,9 +9,6 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
-  const { activeProfile } = useApp();
-  const isAdminProfile = activeProfile?.name.toLowerCase() === "aditya";
-
   return (
     <>
       {/* Desktop & Tablet Top Navigation Tabs (Hidden on mobile via CSS) */}
@@ -65,17 +61,6 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
         >
           <FileText size={18} /> Caretaker Email & Reports
         </button>
-
-        {/* Admin Tab (ONLY visible to profile "aditya") */}
-        {isAdminProfile && (
-          <button
-            onClick={() => setActiveTab("admin")}
-            className={`btn ${activeTab === "admin" ? "btn-primary" : "btn-secondary"}`}
-            style={{ flex: 1, borderColor: activeTab === "admin" ? "var(--primary)" : "#f59e0b" }}
-          >
-            <Shield size={18} color={activeTab === "admin" ? "#ffffff" : "#f59e0b"} /> Admin
-          </button>
-        )}
       </div>
 
       {/* Mobile Fixed Bottom Navigation Bar (Hidden on desktop via CSS) */}
@@ -119,18 +104,6 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
           <FileText />
           <span>Reports</span>
         </button>
-
-        {/* Mobile Admin Tab (ONLY visible to profile "aditya") */}
-        {isAdminProfile && (
-          <button 
-            onClick={() => setActiveTab("admin")}
-            className={`nav-item ${activeTab === "admin" ? "active" : ""}`}
-            style={{ color: activeTab === "admin" ? "var(--primary)" : "#f59e0b" }}
-          >
-            <Shield />
-            <span>Admin</span>
-          </button>
-        )}
       </div>
     </>
   );

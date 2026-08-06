@@ -7,7 +7,11 @@ import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
 import { DeveloperModal } from "./DeveloperModal";
 
-export const AdminView: React.FC = () => {
+interface AdminViewProps {
+  onClose?: () => void;
+}
+
+export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
   const { 
     profiles, 
     activeProfile, 
@@ -104,7 +108,7 @@ export const AdminView: React.FC = () => {
     setEditingProfile(null);
   };
 
-  return (
+  const viewContent = (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       
       {/* Top Banner */}
@@ -119,13 +123,18 @@ export const AdminView: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={handleDeveloperClick}
-            className="btn btn-secondary"
-            style={{ display: "flex", alignItems: "center", gap: "6px" }}
-          >
-            <Wrench size={16} /> Open Developer Vault
-          </button>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button
+              onClick={handleDeveloperClick}
+              className="btn btn-secondary btn-sm"
+              style={{ display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <Wrench size={15} /> Open Developer Vault
+            </button>
+            {onClose && (
+              <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ padding: "6px 12px", minHeight: "34px" }}>✕</button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -402,4 +411,16 @@ export const AdminView: React.FC = () => {
 
     </div>
   );
+
+  if (onClose) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" style={{ maxWidth: "880px", width: "95%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+          {viewContent}
+        </div>
+      </div>
+    );
+  }
+
+  return viewContent;
 };
