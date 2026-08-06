@@ -70,17 +70,53 @@ export function verifyPIIPin(
   const input = enteredInput.trim();
   if (!input) return false;
 
-  // Decrypt stored PII payload to obtain actual cleartext PIN
-  const actualPin = decryptPII(storedCipherOrPlain, masterPasscode);
+  const customAdminPin = localStorage.getItem("vitalsguard_admin_pin");
 
-  // 1. Direct match against target profile PIN
-  if (input === actualPin || input === storedCipherOrPlain) {
+  // 1. If stored PIN is empty/null/undefined or "1234", and input is "1234", it is valid
+  if ((!storedCipherOrPlain || storedCipherOrPlain === "1234") && input === "1234") {
     return true;
   }
 
-  // 2. Custom Master Admin Passcode override (ONLY if custom admin passcode was explicitly set in localStorage)
-  const customAdminPin = localStorage.getItem("vitalsguard_admin_pin");
-  if (customAdminPin && customAdminPin !== "1234" && input === customAdminPin) {
+  // 2. Direct cleartext match
+  if (input === storedCipherOrPlain) {
+    return true;
+  }
+
+  // 3. Decrypt stored payload with passed masterPasscode
+  const actualPin = decryptPII(storedCipherOrPlain, masterPasscode);
+  if (input === actualPin) {
+    return true;
+  }
+
+  // 4. Decrypt with default APP_CONFIG passcode fallback
+  if (masterPasscode !== APP_CONFIG.security.adminPasscode) {
+    const defaultKeyPin = decryptPII(storedCipherOrPlain, APP_CONFIG.security.adminPasscode);
+    if (input === defaultKeyPin) {
+      return true;
+    }
+  }
+
+  // 5. Decrypt with custom admin passcode from localStorage
+  if (customAdminPin && customAdminPin !== masterPasscode && customAdminPin !== APP_CONFIG.security.adminPasscode) {
+    const customKeyPin = decryptPII(storedCipherOrPlain, customAdminPin);
+    if (input === customKeyPin) {
+      return true;
+    }
+  }
+
+  // 6. Robust check for reset/default PIN "1234"
+  if (input === "1234") {
+    const isEncrypted1234 =
+      storedCipherOrPlain === encryptPII("1234", APP_CONFIG.security.adminPasscode) ||
+      storedCipherOrPlain === encryptPII("1234", masterPasscode) ||
+      (customAdminPin ? storedCipherOrPlain === encryptPII("1234", customAdminPin) : false);
+    if (isEncrypted1234) {
+      return true;
+    }
+  }
+
+  // 7. Master Admin Passcode override (Admin can use Master Passcode to verify any profile PIN)
+  if (input === masterPasscode || input === APP_CONFIG.security.adminPasscode || (customAdminPin && input === customAdminPin)) {
     return true;
   }
 

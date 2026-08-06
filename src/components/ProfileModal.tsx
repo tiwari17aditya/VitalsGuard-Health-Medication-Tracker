@@ -3,6 +3,7 @@ import { Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound } from "lucide-react
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
+import { encryptPII } from "../utils/piiSecurity";
 
 // Scientific water target calculator helper
 const calculateAutoWaterTarget = (
@@ -134,7 +135,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProfile || !editingProfile.name) return;
-    await addOrUpdateProfile(editingProfile as UserProfile);
+    const encryptedPin = encryptPII(editingProfile.pin || "1234");
+    await addOrUpdateProfile({ ...editingProfile, pin: encryptedPin } as UserProfile);
     setEditingProfile(null);
   };
 

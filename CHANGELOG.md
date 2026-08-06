@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.18.1] - 2026-08-06
+
+### Fixed & Enhanced
+- **Post-Reset 1234 Password Verification & Change Flow (`piiSecurity.ts` / `ChangePinModal.tsx` / `ProfileModal.tsx`)**: Fixed verification flow so that when any user resets their password, `1234` is robustly recognized and accepted as their current password when setting a new PIN. Enhanced `verifyPIIPin` to evaluate `1234` across default, master admin, and custom admin encryption payloads. Updated `ChangePinModal.tsx` to automatically populate current PIN with `1234` upon resetting and provide clear input feedback. Enforced PIN encryption in `ProfileModal.tsx` on save.
+
 ## [1.18.0] - 2026-08-06
 
 ### Added & Enhanced

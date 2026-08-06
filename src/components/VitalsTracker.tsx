@@ -36,21 +36,23 @@ export const VitalsTracker: React.FC = () => {
   const [bpNotes, setBpNotes] = useState<string>("");
   const [bpTime, setBpTime] = useState<string>(getCurrentHHMM());
 
-  if (!activeProfile) return null;
-
   const profileGlucose = useMemo(() => {
+    if (!activeProfile) return [];
     return glucoseLogs.filter(g => g.profileId === activeProfile.id);
-  }, [glucoseLogs, activeProfile.id]);
+  }, [glucoseLogs, activeProfile?.id]);
 
   const profileBP = useMemo(() => {
+    if (!activeProfile) return [];
     return bpLogs.filter(b => b.profileId === activeProfile.id);
-  }, [bpLogs, activeProfile.id]);
+  }, [bpLogs, activeProfile?.id]);
 
   // Filtered Glucose logs
   const displayedGlucoseLogs = useMemo(() => {
     if (glucoseFilter === "all") return profileGlucose;
     return profileGlucose.filter(g => g.mealType === glucoseFilter);
   }, [profileGlucose, glucoseFilter]);
+
+  if (!activeProfile) return null;
 
   // KPI Calculations for Diabetes
   const fastingLogs = profileGlucose.filter(g => g.mealType === "fasting");

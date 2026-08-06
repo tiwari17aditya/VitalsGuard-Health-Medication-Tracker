@@ -88,9 +88,10 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
       await addOrUpdateProfile(updatedProfile);
       sessionStorage.setItem(`vitalsguard_unlocked_${profile.id}`, "true");
       logUserAction("PROFILE_UPDATED", `Reset security PIN to default (1234) for profile: ${profile.name}`);
-      showToast("success", "PIN Reset to Default", `Security PIN for ${profile.name} has been reset to 1234.`);
+      showToast("success", "PIN Reset to Default (1234)", `Security PIN for ${profile.name} has been reset to 1234. Current PIN set to 1234.`);
+      setCurrentPin("1234");
+      setErrorMsg("");
       if (onSuccess) onSuccess();
-      onClose();
     } catch (err) {
       console.error("Error resetting PIN:", err);
       setErrorMsg("Failed to reset PIN to default.");
@@ -133,7 +134,7 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
             <input
               id="change-pin-current"
               type="password"
-              placeholder="Enter current PIN (Default: 1234)"
+              placeholder="Enter current PIN (If resetted/default, use: 1234)"
               value={currentPin}
               onChange={(e) => { setCurrentPin(e.target.value); setErrorMsg(""); }}
               className="form-input"
