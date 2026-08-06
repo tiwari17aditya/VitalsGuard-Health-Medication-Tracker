@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.18.0] - 2026-08-06
+
+### Added & Enhanced
+- **Diabetes Blood Sugar Date Option (`VitalsTracker.tsx` / `AppContext.tsx`)**: Added a custom **Record Date** date picker input alongside Record Time in the blood glucose log form, enabling users to log blood sugar readings for both current and past historical dates.
+- **Unified Health Schedule & Calendar Timeline (`MedicationCalendar.tsx`)**: Upgraded the daily schedule calendar view to display prescription adherence schedules, Blood Glucose logs, and Blood Pressure logs together under any selected date timeline, with day ribbon badges (`🩸` and `❤️`).
+- **Tabbed Vitals Tracking & Customizable Email Report Scopes (`VitalsTracker.tsx` / `ReportsManager.tsx`)**: Preserved distinct sub-tabs for Diabetes and Blood Pressure, and added flexible report scope options (Daily / Custom Date Range / All Time) for generating formatted email reports and CSV attachments.
+- **Log Search & Specific Days Email Dispatch (`ReportsManager.tsx`)**: Added a search mechanism allowing users to search health logs by date (e.g. `2026-08-06`), status (`Fasting`, `High`), or notes keyword, preview matching day logs, and dispatch targeted email reports specifically for those searched days.
+
 ## [1.17.0] - 2026-08-06
 
 ### Added & Enhanced

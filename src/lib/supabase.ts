@@ -581,6 +581,20 @@ export async function saveGlucoseLogDB(log: GlucoseLog): Promise<GlucoseLog> {
   return log;
 }
 
+export async function deleteGlucoseLogDB(id: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.glucoseLogs).delete().eq("id", id);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase deleteGlucoseLog error:", err);
+    }
+  }
+  const logs = loadFromStorage<GlucoseLog[]>(STORAGE_KEYS.GLUCOSE_LOGS, []);
+  saveToStorage(STORAGE_KEYS.GLUCOSE_LOGS, logs.filter(l => l.id !== id));
+  return true;
+}
+
 // --- BLOOD PRESSURE LOGS ---
 export async function fetchBPLogs(profileId?: string): Promise<BPLog[]> {
   if (isSupabaseConfigured && supabase) {

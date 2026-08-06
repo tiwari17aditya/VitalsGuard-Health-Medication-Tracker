@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { 
-  FileText, Mail, Download, Printer, AlertTriangle, User, CheckCircle2, AlertCircle, Eye,
-  Folder, FileJson, FileSpreadsheet, Calendar
+  FileText, Mail, Download, Printer, AlertTriangle, CheckCircle2, AlertCircle, Eye,
+  Folder, FileJson, FileSpreadsheet, Calendar, Search, Filter
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isValidEmail, sendEmailNotification, generateTabularReportHTML, generateRefillAlertHTML } from "../services/emailService";
@@ -24,6 +24,9 @@ export const ReportsManager: React.FC = () => {
   const [isSending, setIsSending] = useState<boolean>(false);
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
 
+  // Search mechanism in mailing logs state
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   // CSV Custom Export & Email states
   const [csvLimitType, setCsvLimitType] = useState<"today" | "custom" | "all">("today");
   const [csvStartDate, setCsvStartDate] = useState<string>(
@@ -32,7 +35,6 @@ export const ReportsManager: React.FC = () => {
   const [csvEndDate, setCsvEndDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
-
 
   const isEmailValid = isValidEmail(emailInput);
 
@@ -88,6 +90,41 @@ export const ReportsManager: React.FC = () => {
     });
   }, [profileLogs, previewStart, previewEnd]);
 
+  // Search filter logs by specific query / dates
+  const searchedLogs = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    const q = searchQuery.toLowerCase().trim();
+
+    const matchedGlucose = profileGlucose.filter(g => 
+      g.timestamp.includes(q) ||
+      g.status.toLowerCase().includes(q) ||
+      g.mealType.toLowerCase().includes(q) ||
+      (g.notes && g.notes.toLowerCase().includes(q)) ||
+      String(g.value).includes(q)
+    );
+
+    const matchedBP = profileBP.filter(b => 
+      b.timestamp.includes(q) ||
+      b.category.toLowerCase().includes(q) ||
+      (b.notes && b.notes.toLowerCase().includes(q)) ||
+      String(b.systolic).includes(q) ||
+      String(b.diastolic).includes(q)
+    );
+
+    const matchedMeds = profileLogs.filter(l => 
+      l.timestamp.includes(q) ||
+      l.status.toLowerCase().includes(q) ||
+      (l.notes && l.notes.toLowerCase().includes(q))
+    );
+
+    return {
+      glucose: matchedGlucose,
+      bp: matchedBP,
+      meds: matchedMeds,
+      totalCount: matchedGlucose.length + matchedBP.length + matchedMeds.length
+    };
+  }, [profileGlucose, profileBP, profileLogs, searchQuery]);
+
   // Group all activity logs & UI interaction audit logs into date-based daily log files
   const dailyLogsMap = useMemo(() => {
     if (!activeProfile) return new Map();
@@ -131,8 +168,6 @@ export const ReportsManager: React.FC = () => {
     setCaretakerEmail(emailInput.trim());
   };
 
-
-
   const generateCSVData = (
     profile: any,
     meds: any[],
@@ -143,19 +178,19 @@ export const ReportsManager: React.FC = () => {
     endDate: Date,
     caretakerEmailAddress: string
   ): string => {
-    const avgGlucose = glucose.length > 0 
+    const avgGlucoseVal = glucose.length > 0 
       ? Math.round(glucose.reduce((acc, g) => acc + g.value, 0) / glucose.length) 
       : "N/A";
-    const avgSYS = bp.length > 0 ? Math.round(bp.reduce((acc, b) => acc + b.systolic, 0) / bp.length) : 0;
-    const avgDIA = bp.length > 0 ? Math.round(bp.reduce((acc, b) => acc + b.diastolic, 0) / bp.length) : 0;
-    const avgBPStr = avgSYS > 0 ? `${avgSYS}/${avgDIA} mmHg` : "N/A";
+    const avgSYSVal = bp.length > 0 ? Math.round(bp.reduce((acc, b) => acc + b.systolic, 0) / bp.length) : 0;
+    const avgDIAVal = bp.length > 0 ? Math.round(bp.reduce((acc, b) => acc + b.diastolic, 0) / bp.length) : 0;
+    const avgBPStr = avgSYSVal > 0 ? `${avgSYSVal}/${avgDIAVal} mmHg` : "N/A";
     
     const totalScheduled = meds.length;
     const totalTaken = logs.filter(l => l.status === "taken").length;
     
     const uniqueDays = new Set(logs.map(l => l.timestamp.split('T')[0]));
     const numDays = Math.max(1, uniqueDays.size);
-    const adherencePercent = totalScheduled > 0 ? Math.min(100, Math.round((totalTaken / (totalScheduled * numDays)) * 100)) : 100;
+    const adherence = totalScheduled > 0 ? Math.min(100, Math.round((totalTaken / (totalScheduled * numDays)) * 100)) : 100;
 
     const csvRows: string[] = [];
     csvRows.push(`========================================================`);
@@ -170,8 +205,8 @@ export const ReportsManager: React.FC = () => {
     csvRows.push(`📈 RANGE METRICS SUMMARY`);
     csvRows.push(`--------------------------------------------------------`);
     csvRows.push(`Total Prescriptions,${meds.length}`);
-    csvRows.push(`Range Adherence Rate,${adherencePercent}%`);
-    csvRows.push(`Average Blood Glucose,${avgGlucose === "N/A" ? "N/A" : avgGlucose + " mg/dL"}`);
+    csvRows.push(`Range Adherence Rate,${adherence}%`);
+    csvRows.push(`Average Blood Glucose,${avgGlucoseVal === "N/A" ? "N/A" : avgGlucoseVal + " mg/dL"}`);
     csvRows.push(`Average Blood Pressure,${avgBPStr}`);
     csvRows.push(``);
     
@@ -216,7 +251,7 @@ export const ReportsManager: React.FC = () => {
     return csvRows.join("\n");
   };
 
-  // Dispatch Tabular HTML Email Report with fancy CSV attachment via SMTP
+  // Dispatch Tabular HTML Email Report with fancy CSV attachment
   const handleSendTabularReport = async () => {
     if (!isValidEmail(emailInput)) {
       showToast("error", "Invalid Recipient Email", `Cannot send email. "${emailInput}" is invalid.`);
@@ -226,40 +261,36 @@ export const ReportsManager: React.FC = () => {
     setIsSending(true);
     const { start: limitStart, end: limitEnd } = getSelectedLimitDateRange();
 
-    // Filter range data strictly
-    const rangeGlucose = profileGlucose.filter(g => {
+    const currentRangeGlucose = profileGlucose.filter(g => {
       const d = new Date(g.timestamp);
       return d >= limitStart && d <= limitEnd;
     });
-    const rangeBP = profileBP.filter(b => {
+    const currentRangeBP = profileBP.filter(b => {
       const d = new Date(b.timestamp);
       return d >= limitStart && d <= limitEnd;
     });
-    const rangeLogs = profileLogs.filter(l => {
+    const currentRangeLogs = profileLogs.filter(l => {
       const d = new Date(l.timestamp);
       return d >= limitStart && d <= limitEnd;
     });
 
-    // Generate fancy CSV data
     const csvContent = generateCSVData(
       activeProfile,
       profileMeds,
-      rangeGlucose,
-      rangeBP,
-      rangeLogs,
+      currentRangeGlucose,
+      currentRangeBP,
+      currentRangeLogs,
       limitStart,
       limitEnd,
       caretakerEmail
     );
     const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)));
 
-    // Generate HTML report summary
     const rangeLabel = csvLimitType === "custom" 
       ? `${limitStart.toLocaleDateString()} to ${limitEnd.toLocaleDateString()}` 
       : (csvLimitType === "today" ? "Today" : "All Time");
     
-    const htmlContent = generateTabularReportHTML(activeProfile, profileMeds, rangeLogs, rangeGlucose, rangeBP, rangeLabel);
-
+    const htmlContent = generateTabularReportHTML(activeProfile, profileMeds, currentRangeLogs, currentRangeGlucose, currentRangeBP, rangeLabel);
     const filename = `vitalsguard_report_${activeProfile.name.replace(/\s+/g, "_")}_${csvLimitType === "custom" ? "custom_range" : csvLimitType}.csv`;
 
     const res = await sendEmailNotification({
@@ -280,6 +311,63 @@ export const ReportsManager: React.FC = () => {
 
     if (res.success) {
       showToast("success", "Email Dispatched!", res.message);
+    } else {
+      showToast("error", "Email Failed", res.message);
+    }
+  };
+
+  // Dispatch Email Report specifically for Searched Days / Query
+  const handleSendSearchedDaysReport = async () => {
+    if (!searchedLogs || searchedLogs.totalCount === 0) {
+      showToast("warning", "No Logs Found", "No log entries match your search query.");
+      return;
+    }
+    if (!isValidEmail(emailInput)) {
+      showToast("error", "Invalid Recipient Email", `"${emailInput}" is invalid.`);
+      return;
+    }
+
+    setIsSending(true);
+    const rangeLabel = `Searched Days ("${searchQuery}")`;
+
+    const htmlContent = generateTabularReportHTML(
+      activeProfile,
+      profileMeds,
+      searchedLogs.meds,
+      searchedLogs.glucose,
+      searchedLogs.bp,
+      rangeLabel
+    );
+
+    const csvContent = generateCSVData(
+      activeProfile,
+      profileMeds,
+      searchedLogs.glucose,
+      searchedLogs.bp,
+      searchedLogs.meds,
+      new Date(),
+      new Date(),
+      caretakerEmail
+    );
+    const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)));
+
+    const res = await sendEmailNotification({
+      to: emailInput.trim(),
+      subject: `📋 VitalsGuard Search Report (${searchQuery}): ${activeProfile.name}`,
+      htmlContent,
+      type: "tabular_report",
+      attachments: [
+        {
+          filename: `vitalsguard_search_report_${searchQuery.replace(/[^a-zA-Z0-9]/g, '_')}.csv`,
+          content: csvBase64,
+          contentType: "text/csv"
+        }
+      ]
+    });
+
+    setIsSending(false);
+    if (res.success) {
+      showToast("success", "Searched Days Email Sent!", res.message);
     } else {
       showToast("error", "Email Failed", res.message);
     }
@@ -318,15 +406,15 @@ export const ReportsManager: React.FC = () => {
   const handleExportCSV = () => {
     const { start: limitStart, end: limitEnd } = getSelectedLimitDateRange();
     
-    const rangeGlucose = profileGlucose.filter(g => {
+    const exportGlucose = searchedLogs ? searchedLogs.glucose : profileGlucose.filter(g => {
       const d = new Date(g.timestamp);
       return d >= limitStart && d <= limitEnd;
     });
-    const rangeBP = profileBP.filter(b => {
+    const exportBP = searchedLogs ? searchedLogs.bp : profileBP.filter(b => {
       const d = new Date(b.timestamp);
       return d >= limitStart && d <= limitEnd;
     });
-    const rangeLogs = profileLogs.filter(l => {
+    const exportLogs = searchedLogs ? searchedLogs.meds : profileLogs.filter(l => {
       const d = new Date(l.timestamp);
       return d >= limitStart && d <= limitEnd;
     });
@@ -334,9 +422,9 @@ export const ReportsManager: React.FC = () => {
     const csvContent = generateCSVData(
       activeProfile,
       profileMeds,
-      rangeGlucose,
-      rangeBP,
-      rangeLogs,
+      exportGlucose,
+      exportBP,
+      exportLogs,
       limitStart,
       limitEnd,
       caretakerEmail
@@ -346,7 +434,7 @@ export const ReportsManager: React.FC = () => {
     const link = document.createElement("a");
     link.setAttribute("href", url);
     const dateStr = limitEnd.toISOString().split("T")[0];
-    link.setAttribute("download", `vitalsguard_report_${activeProfile.name.replace(/\s+/g, "_")}_up_to_${dateStr}.csv`);
+    link.setAttribute("download", `vitalsguard_report_${activeProfile.name.replace(/\s+/g, "_")}_${searchQuery ? 'search' : dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -368,19 +456,19 @@ export const ReportsManager: React.FC = () => {
             <FileText size={22} color="var(--primary)" /> Caretaker Email & Tabular Reports
           </h2>
           <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-            Validated caretaker email dispatch, structured HTML tables, PDF & CSV export for {activeProfile.name}
+            Validated caretaker email dispatch, search specific days, HTML tables, PDF & CSV export for {activeProfile.name}
           </p>
         </div>
 
         {/* Quick Action Export Buttons */}
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <button onClick={() => setShowPreviewModal(true)} className="btn btn-secondary btn-sm" title="Preview formatted HTML email report">
+          <button id="preview-email-html-btn" onClick={() => setShowPreviewModal(true)} className="btn btn-secondary btn-sm" title="Preview formatted HTML email report">
             <Eye size={16} /> Preview Mail HTML
           </button>
-          <button onClick={handleExportCSV} className="btn btn-secondary btn-sm">
+          <button id="export-csv-btn" onClick={handleExportCSV} className="btn btn-secondary btn-sm">
             <Download size={16} /> Export CSV
           </button>
-          <button onClick={handlePrintPDF} className="btn btn-primary btn-sm">
+          <button id="print-pdf-btn" onClick={handlePrintPDF} className="btn btn-primary btn-sm">
             <Printer size={16} /> Print PDF Report
           </button>
         </div>
@@ -396,7 +484,7 @@ export const ReportsManager: React.FC = () => {
 
           <form onSubmit={handleSaveEmailConfig}>
             <div className="form-group">
-              <label className="form-label" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
+              <label className="form-label" htmlFor="caretaker-email-input" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
                 <span>Caretaker Email Address</span>
                 {isEmailValid ? (
                   <span style={{ color: "#10b981", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px" }}>
@@ -409,6 +497,7 @@ export const ReportsManager: React.FC = () => {
                 ) : null}
               </label>
               <input
+                id="caretaker-email-input"
                 type="email"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
@@ -420,6 +509,7 @@ export const ReportsManager: React.FC = () => {
             </div>
 
             <button 
+              id="save-caretaker-email-btn"
               type="submit" 
               className="btn btn-secondary btn-sm" 
               style={{ width: "100%", marginBottom: "16px" }}
@@ -431,12 +521,12 @@ export const ReportsManager: React.FC = () => {
 
           <hr style={{ borderColor: "var(--border-color)", margin: "16px 0" }} />
 
-          <h4 style={{ marginBottom: "10px" }}>Configure Report Range:</h4>
+          <h4 style={{ marginBottom: "10px" }}>Configure Standard Report Range:</h4>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
             
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ fontSize: "0.8rem", marginBottom: "4px" }}>Report Date Limit:</label>
+              <label className="form-label" style={{ fontSize: "0.8rem", marginBottom: "4px" }}>Report Scope:</label>
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "8px" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", cursor: "pointer", color: "var(--text-primary)" }}>
                   <input
@@ -446,7 +536,7 @@ export const ReportsManager: React.FC = () => {
                     checked={csvLimitType === "today"}
                     onChange={() => setCsvLimitType("today")}
                   />
-                  Today
+                  Daily (Today)
                 </label>
                 <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", cursor: "pointer", color: "var(--text-primary)" }}>
                   <input
@@ -474,8 +564,9 @@ export const ReportsManager: React.FC = () => {
             {csvLimitType === "custom" && (
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <div className="form-group" style={{ margin: 0, flex: "1 1 120px" }}>
-                  <label className="form-label" style={{ fontSize: "0.75rem", marginBottom: "2px" }}>Start Date</label>
+                  <label className="form-label" htmlFor="csv-start-date-input" style={{ fontSize: "0.75rem", marginBottom: "2px" }}>Start Date</label>
                   <input
+                    id="csv-start-date-input"
                     type="date"
                     value={csvStartDate}
                     onChange={(e) => setCsvStartDate(e.target.value)}
@@ -484,8 +575,9 @@ export const ReportsManager: React.FC = () => {
                   />
                 </div>
                 <div className="form-group" style={{ margin: 0, flex: "1 1 120px" }}>
-                  <label className="form-label" style={{ fontSize: "0.75rem", marginBottom: "2px" }}>End Date</label>
+                  <label className="form-label" htmlFor="csv-end-date-input" style={{ fontSize: "0.75rem", marginBottom: "2px" }}>End Date</label>
                   <input
+                    id="csv-end-date-input"
                     type="date"
                     value={csvEndDate}
                     onChange={(e) => setCsvEndDate(e.target.value)}
@@ -500,20 +592,19 @@ export const ReportsManager: React.FC = () => {
           <h4 style={{ marginBottom: "10px" }}>Email Dispatch Actions:</h4>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            
-            {/* Primary Direct Send Email Action */}
             <button
+              id="send-tabular-report-btn"
               onClick={handleSendTabularReport}
               className="btn btn-primary"
               style={{ width: "100%", justifyContent: "center" }}
               disabled={isSending || !isEmailValid}
               title="Directly send health report and document attachment via email"
             >
-              <Mail size={18} /> {isSending ? "Sending Email..." : "Send Email"}
+              <Mail size={18} /> {isSending ? "Sending Email..." : "Send Standard Email Report"}
             </button>
 
-            {/* Refill Alert Action */}
             <button
+              id="send-refill-alert-btn"
               onClick={handleSendRefillAlert}
               className="btn btn-secondary"
               style={{ width: "100%", justifyContent: "center" }}
@@ -521,62 +612,107 @@ export const ReportsManager: React.FC = () => {
             >
               <AlertTriangle size={16} color="var(--warning)" /> Send Refill Warning Email
             </button>
-
-          </div>
-
-          <div style={{ marginTop: "14px", padding: "10px", background: "var(--bg-card)", borderRadius: "var(--radius-sm)", fontSize: "0.775rem", color: "var(--text-muted)" }}>
-            💡 <strong>Email Note:</strong> Clicking "Send Email" forwards the HTML tabular report and the attached fancy CSV directly to target recipient <code>{emailInput}</code>.
           </div>
         </div>
 
-        {/* Live Summary Preview Card */}
-        <div style={{ background: "var(--bg-primary)", padding: "18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
-            <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <User size={18} color="var(--accent)" /> Summary for {activeProfile.name}
-            </h3>
-            
-            <span className="badge badge-primary" style={{ fontSize: "0.8rem", padding: "4px 8px" }}>
-              {csvLimitType === "custom" 
-                ? "Custom Range" 
-                : (csvLimitType === "today" ? "Today" : "All Time")}
-            </span>
+        {/* LOG SEARCH & SPECIFIC DAYS MAILING TOOL */}
+        <div style={{ background: "var(--bg-primary)", padding: "18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "14px" }}>
+          <h3 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+            <Search size={18} color="var(--primary)" /> Search & Mail Specific Days / Logs
+          </h3>
+          <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>
+            Search health records by date (e.g. <code>2026-08-06</code>), status (e.g. <code>Fasting</code>, <code>High</code>), or note keyword, then email a targeted report for those days.
+          </p>
+
+          <div className="form-group" style={{ margin: 0 }}>
+            <div style={{ position: "relative" }}>
+              <input
+                id="log-search-input"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search logs e.g. 2026-08-06, Fasting, High..."
+                className="form-input"
+                style={{ paddingRight: "36px" }}
+              />
+              <Search size={16} color="var(--text-muted)" style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)" }} />
+            </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            
-            <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Medication Adherence</span>
-              <span className={`badge ${adherencePercent >= 80 ? "badge-success" : "badge-danger"}`} style={{ fontSize: "0.95rem" }}>
-                {adherencePercent}% Adherence
-              </span>
+          {searchQuery.trim() ? (
+            <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <strong style={{ fontSize: "0.85rem" }}>Search Results Preview</strong>
+                <span className="badge badge-primary" style={{ fontSize: "0.75rem" }}>
+                  {searchedLogs?.totalCount || 0} Matches
+                </span>
+              </div>
+
+              {searchedLogs && searchedLogs.totalCount > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "160px", overflowY: "auto", fontSize: "0.8rem", marginBottom: "12px" }}>
+                  {searchedLogs.glucose.map(g => (
+                    <div key={g.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", background: "var(--bg-primary)", borderRadius: "4px" }}>
+                      <span>🩸 Glucose {g.value} mg/dL ({g.mealType})</span>
+                      <span style={{ color: "var(--text-secondary)" }}>{g.timestamp.split('T')[0]}</span>
+                    </div>
+                  ))}
+                  {searchedLogs.bp.map(b => (
+                    <div key={b.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", background: "var(--bg-primary)", borderRadius: "4px" }}>
+                      <span>❤️ BP {b.systolic}/{b.diastolic} mmHg</span>
+                      <span style={{ color: "var(--text-secondary)" }}>{b.timestamp.split('T')[0]}</span>
+                    </div>
+                  ))}
+                  {searchedLogs.meds.map(m => (
+                    <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", background: "var(--bg-primary)", borderRadius: "4px" }}>
+                      <span>💊 Med Adherence ({m.status})</span>
+                      <span style={{ color: "var(--text-secondary)" }}>{m.timestamp.split('T')[0]}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: 0, padding: "8px 0" }}>
+                  No matching log entries found for "{searchQuery}".
+                </p>
+              )}
+
+              <button
+                id="send-searched-days-email-btn"
+                onClick={handleSendSearchedDaysReport}
+                className="btn btn-primary btn-sm"
+                style={{ width: "100%", justifyContent: "center" }}
+                disabled={isSending || !isEmailValid || !searchedLogs || searchedLogs.totalCount === 0}
+              >
+                <Mail size={16} /> Send Email Report for Searched Days
+              </button>
             </div>
-
-            <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Average Fasting Glucose</span>
-              <span className="badge badge-primary" style={{ fontSize: "0.95rem" }}>
-                {avgGlucose > 0 ? `${avgGlucose} mg/dL` : "No data"}
-              </span>
+          ) : (
+            <div style={{ background: "var(--bg-card)", padding: "14px", borderRadius: "var(--radius-sm)", border: "1px dashed var(--border-color)", textAlign: "center" }}>
+              <Filter size={24} color="var(--primary)" style={{ marginBottom: "6px" }} />
+              <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>
+                Type a date or keyword above to filter and email specific days' logs to recipient <code>{emailInput}</code>.
+              </p>
             </div>
+          )}
 
-            <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Average Blood Pressure</span>
-              <span className="badge badge-primary" style={{ fontSize: "0.95rem" }}>
-                {avgSYS > 0 ? `${avgSYS}/${avgDIA} mmHg` : "No data"}
-              </span>
+          {/* Live Overall Summary Preview */}
+          <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "12px", marginTop: "4px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: "600" }}>Overall Range Stats ({csvLimitType})</span>
             </div>
-
-            <div style={{ background: "var(--bg-card)", padding: "12px", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Low Stock Prescriptions</span>
-              <span className="badge badge-warning" style={{ fontSize: "0.95rem" }}>
-                {profileMeds.filter(m => m.stockCount <= m.minStockAlert).length} Meds
-              </span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", fontSize: "0.8rem" }}>
+              <div style={{ background: "var(--bg-card)", padding: "8px 10px", borderRadius: "var(--radius-sm)" }}>
+                <span style={{ color: "var(--text-secondary)" }}>Adherence: </span>
+                <strong>{adherencePercent}%</strong>
+              </div>
+              <div style={{ background: "var(--bg-card)", padding: "8px 10px", borderRadius: "var(--radius-sm)" }}>
+                <span style={{ color: "var(--text-secondary)" }}>Avg Fasting: </span>
+                <strong>{avgGlucose > 0 ? `${avgGlucose} mg/dL` : "N/A"}</strong>
+              </div>
+              <div style={{ background: "var(--bg-card)", padding: "8px 10px", borderRadius: "var(--radius-sm)" }}>
+                <span style={{ color: "var(--text-secondary)" }}>Avg BP: </span>
+                <strong>{avgSYS > 0 ? `${avgSYS}/${avgDIA}` : "N/A"}</strong>
+              </div>
             </div>
-
-          </div>
-
-            <div style={{ marginTop: "16px", padding: "10px", background: "var(--bg-card-hover)", borderRadius: "var(--radius-sm)", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-            💡 Click <strong>"Preview Mail HTML"</strong> above to view the exact tabular HTML email before sending.
           </div>
 
         </div>
@@ -662,24 +798,22 @@ export const ReportsManager: React.FC = () => {
               srcDoc={generateTabularReportHTML(
                 activeProfile, 
                 profileMeds, 
-                profileLogs.filter(l => {
+                searchedLogs ? searchedLogs.meds : profileLogs.filter(l => {
                   const { start, end } = getSelectedLimitDateRange();
                   const d = new Date(l.timestamp);
                   return d >= start && d <= end;
                 }), 
-                profileGlucose.filter(g => {
+                searchedLogs ? searchedLogs.glucose : profileGlucose.filter(g => {
                   const { start, end } = getSelectedLimitDateRange();
                   const d = new Date(g.timestamp);
                   return d >= start && d <= end;
                 }), 
-                profileBP.filter(b => {
+                searchedLogs ? searchedLogs.bp : profileBP.filter(b => {
                   const { start, end } = getSelectedLimitDateRange();
                   const d = new Date(b.timestamp);
                   return d >= start && d <= end;
                 }), 
-                csvLimitType === "custom" 
-                  ? "Custom Range" 
-                  : (csvLimitType === "today" ? "Today" : "All Time")
+                searchQuery ? `Searched Days ("${searchQuery}")` : (csvLimitType === "custom" ? "Custom Range" : (csvLimitType === "today" ? "Today" : "All Time"))
               )}
               style={{ width: "100%", height: "500px", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)" }}
               title="HTML Email Tabular Preview"

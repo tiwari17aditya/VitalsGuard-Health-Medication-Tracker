@@ -8,7 +8,7 @@ import {
   fetchProfiles, saveProfileDB, deleteProfileDB,
   fetchMedications, saveMedicationDB, deleteMedicationDB,
   fetchMedicationLogs, logAdherenceDB, deleteMedicationLogDB,
-  fetchGlucoseLogs, saveGlucoseLogDB,
+  fetchGlucoseLogs, saveGlucoseLogDB, deleteGlucoseLogDB,
   fetchBPLogs, saveBPLogDB,
   fetchWaterLogs, saveWaterLogDB, deleteWaterLogDB,
   fetchWaterItems, saveWaterItemDB, deleteWaterItemDB,
@@ -39,7 +39,8 @@ interface AppContextType {
 
   // Vitals Logs
   glucoseLogs: GlucoseLog[];
-  addGlucoseLog: (val: number, mealType: MealType, notes?: string, customTimeStr?: string) => Promise<void>;
+  addGlucoseLog: (val: number, mealType: MealType, notes?: string, customTimeStr?: string, customDateStr?: string) => Promise<void>;
+  deleteGlucoseLog: (logId: string) => Promise<void>;
   bpLogs: BPLog[];
   addBPLog: (sys: number, dia: number, pulse: number, notes?: string, customTimeStr?: string) => Promise<void>;
 
@@ -731,7 +732,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // DIABETES GLUCOSE LOGGING
-  const addGlucoseLog = async (val: number, mealType: MealType, notes?: string, customTimeStr?: string) => {
+  const addGlucoseLog = async (val: number, mealType: MealType, notes?: string, customTimeStr?: string, customDateStr?: string) => {
     if (!activeProfile) {
       showToast("error", "No User Profile", "Please select or create a user profile first.");
       return;
@@ -742,15 +743,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       : APP_CONFIG.medicalStandards.bloodGlucose.ranges.postMeal;
     
     const statusMatch = ranges.find(r => val >= r.min && val <= r.max);
-    const status = statusMatch ? statusMatch.name : "High (Diabetes)";
+    const status = statusMatch ? statusMatch.name : (val < 70 ? "Low (Hypoglycemia)" : "High (Diabetes)");
 
     let timestampToLog = new Date().toISOString();
-    if (customTimeStr) {
-      const [hours, minutes] = customTimeStr.split(":").map(Number);
-      const customDate = new Date();
-      if (!isNaN(hours) && !isNaN(minutes)) {
-        customDate.setHours(hours, minutes, 0, 0);
-        timestampToLog = customDate.toISOString();
+    if (customDateStr || customTimeStr) {
+      const baseDate = customDateStr ? new Date(`${customDateStr}T00:00:00`) : new Date();
+      if (customTimeStr) {
+        const [hours, minutes] = customTimeStr.split(":").map(Number);
+        if (!isNaN(hours) && !isNaN(minutes)) {
+          baseDate.setHours(hours, minutes, 0, 0);
+        }
+      }
+      if (!isNaN(baseDate.getTime())) {
+        timestampToLog = baseDate.toISOString();
       }
     }
 
@@ -769,9 +774,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setGlucoseLogs(prev => [newLog, ...prev]);
       
       const formattedTime = new Date(timestampToLog).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      showToast("success", "Glucose Logged", `${val} mg/dL logged at ${formattedTime} (${mealType}).`);
+      const formattedDate = new Date(timestampToLog).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      
+      showToast("success", "Glucose Logged", `${val} mg/dL logged for ${formattedDate} at ${formattedTime} (${mealType.replace('_', ' ')}).`);
+      logUserAction("GLUCOSE_LOGGED", `Logged blood sugar ${val} mg/dL (${mealType})`, { val, mealType, status, timestamp: timestampToLog });
+
+      // Trigger critical warning alert toast if reading is out of safety range
+      if (val < 70) {
+        showToast("warning", "⚠️ Low Blood Sugar Warning", `Reading of ${val} mg/dL is low (Hypoglycemia). Consider consuming quick-acting carbs.`);
+      } else if (val > 250) {
+        showToast("warning", "⚠️ High Blood Sugar Warning", `Reading of ${val} mg/dL is severely elevated. Please monitor closely.`);
+      }
     } catch (err: any) {
       showToast("error", "Glucose Log Error", err.message || "Could not save blood glucose record.");
+    }
+  };
+
+  const deleteGlucoseLog = async (logId: string) => {
+    try {
+      await deleteGlucoseLogDB(logId);
+      setGlucoseLogs(prev => prev.filter(g => g.id !== logId));
+      showToast("info", "Log Deleted", "Glucose reading removed.");
+      logUserAction("GLUCOSE_LOG_DELETED", "Deleted blood glucose log entry");
+    } catch (err: any) {
+      showToast("error", "Delete Error", err.message || "Could not delete glucose log.");
     }
   };
 
@@ -1047,6 +1073,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         glucoseLogs,
         addGlucoseLog,
+        deleteGlucoseLog,
         bpLogs,
         addBPLog,
 
