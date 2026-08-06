@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { 
   Heart, Users, AlertTriangle, ShieldCheck, 
-  Phone, CheckCircle2, WifiOff, Wrench, Lock, Unlock
+  Phone, CheckCircle2, WifiOff, Wrench, Lock, Unlock, KeyRound
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
 import { AdminAuthModal } from "./AdminAuthModal";
 import { DeveloperModal } from "./DeveloperModal";
+import { ChangePinModal } from "./ChangePinModal";
 
 interface HeaderProps {
   onOpenProfileModal?: () => void;
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = () => {
     profiles, 
     activeProfile, 
     setActiveProfileId, 
+    addOrUpdateProfile,
     isOffline, 
     isSupabaseActive, 
     medications
@@ -24,6 +26,7 @@ export const Header: React.FC<HeaderProps> = () => {
 
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [showDevModal, setShowDevModal] = useState<boolean>(false);
+  const [showChangePinModal, setShowChangePinModal] = useState<boolean>(false);
   const [pendingLockProfileId, setPendingLockProfileId] = useState<string | null>(null);
 
   // Filter low stock meds ONLY for current active user profile
@@ -35,11 +38,21 @@ export const Header: React.FC<HeaderProps> = () => {
 
   const handleProfileSelectChange = (profileId: string) => {
     const targetProf = profiles.find(p => p.id === profileId);
-    if (targetProf?.isLocked && !isAdminAuthed()) {
+    const isProfileUnlockedSession = sessionStorage.getItem(`vitalsguard_unlocked_${profileId}`) === "true";
+    if (targetProf?.isLocked && !isAdminAuthed() && !isProfileUnlockedSession) {
       setPendingLockProfileId(profileId);
     } else {
       setActiveProfileId(profileId);
     }
+  };
+
+  const handleToggleActiveProfileLock = async () => {
+    if (!activeProfile) return;
+    const newLockState = !activeProfile.isLocked;
+    await addOrUpdateProfile({
+      ...activeProfile,
+      isLocked: newLockState
+    });
   };
 
   const handleDeveloperClick = () => {
@@ -54,6 +67,8 @@ export const Header: React.FC<HeaderProps> = () => {
     setShowAuthModal(false);
     setShowDevModal(true);
   };
+
+  const pendingProfileObj = profiles.find(p => p.id === pendingLockProfileId);
 
   return (
     <header className="glass-card" style={{ marginBottom: "16px", padding: "14px" }}>
@@ -92,6 +107,7 @@ export const Header: React.FC<HeaderProps> = () => {
           <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--bg-primary)", padding: "4px 8px", borderRadius: "var(--radius-full)", border: "1px solid var(--border-color)", flex: "1 1 auto" }}>
             <Users size={16} color="var(--primary)" />
             <select
+              id="header-profile-select"
               value={activeProfile?.id || ""}
               onChange={(e) => handleProfileSelectChange(e.target.value)}
               style={{
@@ -123,9 +139,42 @@ export const Header: React.FC<HeaderProps> = () => {
             )}
           </div>
 
+          {/* Quick Lock / Unlock Toggle Button */}
+          {activeProfile && (
+            <button
+              id="header-toggle-lock-btn"
+              onClick={handleToggleActiveProfileLock}
+              className="btn btn-secondary btn-sm"
+              style={{
+                padding: "4px 8px",
+                fontSize: "0.775rem",
+                minHeight: "32px",
+                color: activeProfile.isLocked ? "#f59e0b" : "#10b981",
+                borderColor: activeProfile.isLocked ? "rgba(245, 158, 11, 0.4)" : "rgba(16, 185, 129, 0.4)"
+              }}
+              title={activeProfile.isLocked ? "Click to Unlock Profile Data Visibility" : "Click to Lock Profile Data Privacy"}
+            >
+              {activeProfile.isLocked ? <><Lock size={13} /> Locked</> : <><Unlock size={13} /> Unlocked</>}
+            </button>
+          )}
+
+          {/* Change PIN Button */}
+          {activeProfile && (
+            <button
+              id="header-change-pin-btn"
+              onClick={() => setShowChangePinModal(true)}
+              className="btn btn-secondary btn-sm"
+              style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px" }}
+              title={`Change PIN / Password for ${activeProfile.name}`}
+            >
+              <KeyRound size={13} /> Change PIN
+            </button>
+          )}
+
           {/* Emergency Doctor Call Button */}
           {activeProfile?.emergencyContact && (
             <a
+              id="header-emergency-call-btn"
               href={`tel:${activeProfile.emergencyContact}`}
               className="badge badge-danger"
               style={{ textDecoration: "none", cursor: "pointer", padding: "6px 10px", fontSize: "0.775rem" }}
@@ -159,6 +208,7 @@ export const Header: React.FC<HeaderProps> = () => {
 
           {/* Developer Settings Button */}
           <button
+            id="header-dev-settings-btn"
             onClick={handleDeveloperClick}
             className="btn btn-secondary btn-sm"
             style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px" }}
@@ -171,15 +221,20 @@ export const Header: React.FC<HeaderProps> = () => {
 
       </div>
 
-      {/* Profile Lock Passcode Modal Gate */}
+      {/* Profile Switch Lock Verification Gate */}
       {pendingLockProfileId && (
         <AdminAuthModal
           onSuccess={() => {
-            setActiveProfileId(pendingLockProfileId);
+            if (pendingLockProfileId) {
+              sessionStorage.setItem(`vitalsguard_unlocked_${pendingLockProfileId}`, "true");
+              setActiveProfileId(pendingLockProfileId);
+            }
             setPendingLockProfileId(null);
           }}
           onClose={() => setPendingLockProfileId(null)}
-          title="Profile Locked — Enter Passcode to Switch"
+          title={`Unlock ${pendingProfileObj?.name || "Profile"}`}
+          expectedPin={pendingProfileObj?.pin || "1234"}
+          subtitle={`Enter ${pendingProfileObj?.name || "Profile"}'s PIN (default: 1234) or Admin Passcode to switch.`}
         />
       )}
 
@@ -197,6 +252,15 @@ export const Header: React.FC<HeaderProps> = () => {
         <DeveloperModal onClose={() => setShowDevModal(false)} />
       )}
 
+      {/* Change PIN Modal */}
+      {showChangePinModal && activeProfile && (
+        <ChangePinModal
+          profile={activeProfile}
+          onClose={() => setShowChangePinModal(false)}
+        />
+      )}
+
     </header>
   );
 };
+

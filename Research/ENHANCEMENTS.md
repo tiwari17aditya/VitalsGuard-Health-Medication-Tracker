@@ -40,6 +40,7 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Lock Indicators**: Lock (🔒) / Unlock (🔓) visual badges displayed beside profile options in dropdown selectors and profile cards.
   - **Passcode Gate**: Passcode authentication (`AdminAuthModal`) enforced when switching to a locked profile or toggling lock status.
   - **Aditya-Exclusive Admin Tab**: Dedicated `"admin"` navigation tab (`AdminView.tsx`) restricted exclusively to profile "Aditya" for centralized user management and security administration.
+  - **Per-Profile PIN & Password Change (v1.16.0)**: Individual PIN support (`profile.pin`, default `"1234"`), dedicated `ChangePinModal` for changing PINs, and dynamic lock/unlock visibility controls.
 
 ### 5. Water Tracking Database Persistence & Multi-Device Sync
 - **Goal**: Track, save, and synchronize all profile water intake entries, daily hydration targets, and container logs directly in the PostgreSQL database with zero data loss.

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, Plus, Trash2, Edit2, Lock, Unlock } from "lucide-react";
+import { Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
@@ -374,6 +374,35 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                 onChange={(e) => setEditingProfile({ ...editingProfile, doctorName: e.target.value })}
                 className="form-input"
               />
+            </div>
+
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <KeyRound size={14} /> Security PIN (Default: 1234)
+                </label>
+                <input
+                  type="password"
+                  placeholder="Enter 4-digit PIN (e.g. 1234)"
+                  value={editingProfile.pin || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, pin: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Lock size={14} /> Privacy Lock Status
+                </label>
+                <select
+                  value={editingProfile.isLocked ? "true" : "false"}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, isLocked: e.target.value === "true" })}
+                  className="form-input"
+                  style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
+                >
+                  <option value="false">🔓 Unlocked (Public to Family)</option>
+                  <option value="true">🔒 Locked (PIN Protected)</option>
+                </select>
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>

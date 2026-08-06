@@ -21,6 +21,7 @@ export interface UserProfile {
   notes?: string;
   avatarColor?: string;
   isLocked?: boolean;
+  pin?: string;
   created_at?: string;
 }
 

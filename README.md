@@ -25,6 +25,7 @@ Detailed release notes and developer changelogs are maintained in [**`CHANGELOG.
 
 | Version | Release Date | Key Highlights |
 | :--- | :--- | :--- |
+| **`v1.16.0`** | 2026-08-06 | Per-Profile Security PIN Management (`ChangePinModal.tsx`), Header Lock/Unlock Toggle, and Resilient Dual-Storage PIN Sync |
 | **`v1.15.0`** | 2026-08-06 | Profile Privacy Lock Screen Gate (`PrivacyLockGate.tsx`), Supabase Admin Role & Lock Sync, and Instant Cache-First Refresh Optimization (< 50ms) |
 | **`v1.14.0`** | 2026-08-06 | Profile-Level Locking Mechanism (🔒/🔓 icons, passcode gate) & "Aditya"-Exclusive "Admin" Navigation Tab |
 | **`v1.13.0`** | 2026-08-06 | Hierarchical User Water Storage (`water_items` table), Custom Date & Time Backdating, and Single Dynamic Filled Water Glass Container UI for past days |

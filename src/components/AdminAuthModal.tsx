@@ -6,9 +6,17 @@ interface AdminAuthModalProps {
   onSuccess: () => void;
   onClose: () => void;
   title?: string;
+  expectedPin?: string;
+  subtitle?: string;
 }
 
-export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClose, title = "Admin Passcode Required" }) => {
+export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
+  onSuccess,
+  onClose,
+  title = "Passcode Verification Required",
+  expectedPin,
+  subtitle
+}) => {
   const [pinInput, setPinInput] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
 
@@ -16,11 +24,15 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput.trim() === savedPin) {
+    const input = pinInput.trim();
+    const isMasterValid = input === savedPin;
+    const isProfileValid = expectedPin ? input === expectedPin : false;
+
+    if (isMasterValid || isProfileValid) {
       sessionStorage.setItem("vitalsguard_admin_authed", "true");
       onSuccess();
     } else {
-      setErrorMsg("Incorrect Passcode! Please try again.");
+      setErrorMsg("Incorrect PIN or Passcode! Please try again.");
     }
   };
 
@@ -44,22 +56,23 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({ onSuccess, onClo
           </div>
           <h2>{title}</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Restricted Action: Enter your Admin Passcode to proceed.
+            {subtitle || "Restricted Action: Enter profile PIN or Admin Passcode to proceed."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Key size={14} /> Admin Passcode
+              <Key size={14} /> Profile PIN / Admin Passcode
             </label>
             <input
               type="password"
-              placeholder="Enter admin passcode"
+              placeholder="Enter PIN or passcode"
               value={pinInput}
               onChange={(e) => { setPinInput(e.target.value); setErrorMsg(""); }}
               className="form-input"
               autoFocus
+              id="admin-auth-pin-input"
               required
             />
           </div>

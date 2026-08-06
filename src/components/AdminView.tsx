@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, Wrench 
+  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, Wrench, KeyRound 
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
@@ -224,7 +224,7 @@ export const AdminView: React.FC = () => {
               />
             </div>
 
-            <div className="grid-2">
+            <div className="grid-3" style={{ gap: "12px" }}>
               <div className="form-group">
                 <label className="form-label">Role / Relationship</label>
                 <input
@@ -238,6 +238,19 @@ export const AdminView: React.FC = () => {
               </div>
 
               <div className="form-group">
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <KeyRound size={14} /> Security PIN
+                </label>
+                <input
+                  type="password"
+                  placeholder="e.g. 1234"
+                  value={editingProfile.pin || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, pin: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
                 <label className="form-label">Profile Privacy Lock</label>
                 <select
                   value={editingProfile.isLocked ? "true" : "false"}
@@ -246,7 +259,7 @@ export const AdminView: React.FC = () => {
                   style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
                 >
                   <option value="false">🔓 Unlocked (Free Access)</option>
-                  <option value="true">🔒 Locked (Requires Passcode to Switch)</option>
+                  <option value="true">🔒 Locked (PIN Protected)</option>
                 </select>
               </div>
             </div>

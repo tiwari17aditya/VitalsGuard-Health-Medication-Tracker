@@ -86,6 +86,8 @@ export const PrivacyLockGate: React.FC<PrivacyLockGateProps> = ({ profile, child
           onSuccess={handleAuthSuccess}
           onClose={() => setShowAuthModal(false)}
           title={`Unlock Health Records for ${profile.name}`}
+          expectedPin={profile.pin || "1234"}
+          subtitle={`Enter ${profile.name}'s PIN or Admin Passcode.`}
         />
       )}
     </div>

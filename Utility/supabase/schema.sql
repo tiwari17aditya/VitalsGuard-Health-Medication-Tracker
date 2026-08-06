@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     notes TEXT,
     avatar_color TEXT DEFAULT '#3b82f6',
     is_locked BOOLEAN DEFAULT FALSE,
+    pin TEXT DEFAULT '1234',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

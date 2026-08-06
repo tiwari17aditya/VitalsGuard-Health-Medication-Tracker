@@ -79,11 +79,32 @@ export function saveLockedProfilesMap(map: Record<string, boolean>): void {
   }
 }
 
+// Helper for profile PIN persistence
+const PROFILE_PINS_KEY = "vitalsguard_profile_pins_map";
+
+export function getProfilePinsMap(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(PROFILE_PINS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveProfilePinsMap(map: Record<string, string>): void {
+  try {
+    localStorage.setItem(PROFILE_PINS_KEY, JSON.stringify(map));
+  } catch (err) {
+    console.warn("Error saving profile pins map:", err);
+  }
+}
+
 // DATABASE ADAPTER IMPLEMENTATION
 
 // --- PROFILES ---
 export async function fetchProfiles(): Promise<UserProfile[]> {
   const lockedMap = getLockedProfilesMap();
+  const pinsMap = getProfilePinsMap();
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -97,9 +118,13 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
               ? Boolean(item.is_locked)
               : (item.isLocked !== undefined ? Boolean(item.isLocked) : Boolean(lockedMap[item.id]));
 
-            // Keep local map synchronized
+            const pinVal = item.pin || pinsMap[item.id] || "1234";
+
+            // Keep local maps synchronized
             lockedMap[item.id] = isLockedVal;
             saveLockedProfilesMap(lockedMap);
+            pinsMap[item.id] = pinVal;
+            saveProfilePinsMap(pinsMap);
 
             return {
               id: item.id,
@@ -117,7 +142,8 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
               doctorName: item.doctor_name || item.doctorName,
               notes: item.notes,
               avatarColor: item.avatar_color || item.avatarColor || "#3b82f6",
-              isLocked: isLockedVal
+              isLocked: isLockedVal,
+              pin: pinVal
             };
           }) as UserProfile[];
         } else {
@@ -136,15 +162,22 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
   const localProfiles = loadFromStorage<UserProfile[]>(STORAGE_KEYS.PROFILES, APP_CONFIG.defaultProfiles as UserProfile[]);
   return localProfiles.map(p => ({
     ...p,
-    isLocked: p.isLocked !== undefined ? p.isLocked : Boolean(lockedMap[p.id])
+    isLocked: p.isLocked !== undefined ? p.isLocked : Boolean(lockedMap[p.id]),
+    pin: p.pin || pinsMap[p.id] || "1234"
   }));
 }
 
 export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> {
-  // Update local lock map
+  // Update local lock and pin maps
   const lockedMap = getLockedProfilesMap();
   lockedMap[profile.id] = Boolean(profile.isLocked);
   saveLockedProfilesMap(lockedMap);
+
+  const pinsMap = getProfilePinsMap();
+  if (profile.pin) {
+    pinsMap[profile.id] = profile.pin;
+    saveProfilePinsMap(pinsMap);
+  }
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -161,7 +194,8 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
         doctor_name: profile.doctorName,
         notes: profile.notes,
         avatar_color: profile.avatarColor,
-        is_locked: Boolean(profile.isLocked)
+        is_locked: Boolean(profile.isLocked),
+        pin: profile.pin || pinsMap[profile.id] || "1234"
       };
       if (profile.gender) payload.gender = profile.gender;
       if (profile.weight) payload.weight = profile.weight;

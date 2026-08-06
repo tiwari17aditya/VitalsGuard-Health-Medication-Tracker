@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] - 2026-08-06
+
+### Added & Enhanced
+- **Per-Profile PIN Management (`ChangePinModal.tsx`)**: Enabled each user profile (e.g. "Jyoti", "Aditya", etc.) to maintain a custom PIN (defaulting to `"1234"`). Created a sleek glassmorphic modal and quick action button (`🔑 Change PIN`) in the top navigation header for users to update their PIN cleanly with instant verification and feedback.
+- **Dynamic Profile Lock (🔒) / Unlock (🔓) Toggle**: Added a single-click quick toggle button (`header-toggle-lock-btn`) and selector in profile managers allowing users to lock or unlock their profile privacy status anytime.
+- **Privacy Lock Gate & PIN Auth Upgrade (`PrivacyLockGate.tsx` / `AdminAuthModal.tsx`)**: Updated authentication gates to accept either the specific user's PIN or the master Admin passcode.
+- **Resilient Dual-Storage PIN Sync (`src/lib/supabase.ts`)**: Integrated 3-layer hybrid PIN map (`vitalsguard_profile_pins_map`) ensuring PIN configurations persist seamlessly across LocalStorage and Supabase PostgreSQL `profiles` table.
+
 ## [1.15.1] - 2026-08-06
 
 ### Fixed & Enhanced (RCA Resolution)
