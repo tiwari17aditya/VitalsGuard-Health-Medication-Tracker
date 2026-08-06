@@ -29,7 +29,6 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
   };
 
   const handleLockSession = () => {
-    sessionStorage.removeItem("vitalsguard_admin_authed");
     showToast("info", "Developer Mode Locked", "Developer settings locked.");
     onClose();
   };

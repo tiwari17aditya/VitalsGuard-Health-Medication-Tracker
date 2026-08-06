@@ -23,16 +23,15 @@ export const PrivacyLockGate: React.FC<PrivacyLockGateProps> = ({ profile, child
       return;
     }
 
-    // Check if session is already unlocked for this profile or admin is authed
-    const adminAuthed = sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+    // Check if session is unlocked specifically for this profile
     const profileUnlocked = sessionStorage.getItem(`vitalsguard_unlocked_${profile.id}`) === "true";
 
-    if (adminAuthed || profileUnlocked) {
+    if (profileUnlocked) {
       setIsUnlocked(true);
     } else {
       setIsUnlocked(false);
     }
-  }, [profile?.id, profile?.isLocked]);
+  }, [profile]);
 
   const handleAuthSuccess = () => {
     if (profile) {

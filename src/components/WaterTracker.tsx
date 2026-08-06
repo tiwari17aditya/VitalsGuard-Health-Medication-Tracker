@@ -606,9 +606,8 @@ export const WaterTracker: React.FC = () => {
             const pAverage = pDates.length ? Math.round(pTotalWater / pDates.length) : 0;
 
             const isSelf = prof.id === currentProfile.id;
-            const adminAuthed = sessionStorage.getItem("vitalsguard_admin_authed") === "true";
             const profUnlocked = sessionStorage.getItem(`vitalsguard_unlocked_${prof.id}`) === "true";
-            const isUnlocked = !prof.isLocked || adminAuthed || (isSelf && profUnlocked);
+            const isUnlocked = !prof.isLocked || (isSelf && profUnlocked);
 
             return (
               <div 

@@ -8,6 +8,7 @@ interface AdminAuthModalProps {
   title?: string;
   expectedPin?: string;
   subtitle?: string;
+  isMasterOnly?: boolean;
 }
 
 export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
@@ -15,7 +16,8 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   onClose,
   title = "Passcode Verification Required",
   expectedPin,
-  subtitle
+  subtitle,
+  isMasterOnly = false
 }) => {
   const [pinInput, setPinInput] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -28,11 +30,12 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     const isMasterValid = input === savedPin;
     const isProfileValid = expectedPin ? input === expectedPin : false;
 
-    if (isMasterValid || isProfileValid) {
-      sessionStorage.setItem("vitalsguard_admin_authed", "true");
+    const isValid = isMasterOnly ? isMasterValid : (isMasterValid || isProfileValid);
+
+    if (isValid) {
       onSuccess();
     } else {
-      setErrorMsg("Incorrect PIN or Passcode! Please try again.");
+      setErrorMsg(isMasterOnly ? "Incorrect Admin Passcode! Please try again." : "Incorrect PIN or Passcode! Please try again.");
     }
   };
 

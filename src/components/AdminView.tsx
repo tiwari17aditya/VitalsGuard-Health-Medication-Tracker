@@ -17,14 +17,12 @@ export const AdminView: React.FC = () => {
   } = useApp();
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile" | "dev_settings"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
   const [showDevModal, setShowDevModal] = useState<boolean>(false);
-
-  const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
 
   const handleSelectProfileClick = (p: UserProfile) => {
     if (p.id === activeProfile?.id) return;
-    if (p.isLocked && !isAdminAuthed()) {
+    if (p.isLocked) {
       setPendingAction({ type: "select_profile", targetProfile: p });
     } else {
       setActiveProfileId(p.id);
@@ -32,11 +30,7 @@ export const AdminView: React.FC = () => {
   };
 
   const handleCreateNewClick = () => {
-    if (isAdminAuthed()) {
-      startCreatingProfile();
-    } else {
-      setPendingAction({ type: "add" });
-    }
+    setPendingAction({ type: "add" });
   };
 
   const handleDeleteClick = (id: string) => {
@@ -44,11 +38,11 @@ export const AdminView: React.FC = () => {
   };
 
   const handleToggleLockClick = (p: UserProfile) => {
-    if (isAdminAuthed()) {
-      addOrUpdateProfile({ ...p, isLocked: !p.isLocked });
-    } else {
-      setPendingAction({ type: "toggle_lock", targetProfile: p });
-    }
+    setPendingAction({ type: "toggle_lock", targetProfile: p });
+  };
+
+  const handleDeveloperClick = () => {
+    setPendingAction({ type: "dev_settings" });
   };
 
   const startCreatingProfile = () => {
@@ -78,12 +72,13 @@ export const AdminView: React.FC = () => {
       startCreatingProfile();
     } else if (act?.type === "delete" && act.deleteId) {
       deleteProfile(act.deleteId);
-      sessionStorage.removeItem("vitalsguard_admin_authed");
     } else if (act?.type === "toggle_lock" && act.targetProfile) {
       addOrUpdateProfile({ ...act.targetProfile, isLocked: !act.targetProfile.isLocked });
     } else if (act?.type === "select_profile" && act.targetProfile) {
       sessionStorage.setItem(`vitalsguard_unlocked_${act.targetProfile.id}`, "true");
       setActiveProfileId(act.targetProfile.id);
+    } else if (act?.type === "dev_settings") {
+      setShowDevModal(true);
     }
   };
 
@@ -110,10 +105,7 @@ export const AdminView: React.FC = () => {
           </div>
 
           <button
-            onClick={() => {
-              if (isAdminAuthed()) setShowDevModal(true);
-              else setPendingAction({ type: "add" });
-            }}
+            onClick={handleDeveloperClick}
             className="btn btn-secondary"
             style={{ display: "flex", alignItems: "center", gap: "6px" }}
           >
@@ -342,6 +334,8 @@ export const AdminView: React.FC = () => {
           title={
             pendingAction.type === "select_profile"
               ? `Unlock Profile: ${pendingAction.targetProfile?.name}`
+              : pendingAction.type === "dev_settings"
+              ? "Developer Passcode Required"
               : "Admin Passcode Verification Required"
           }
           expectedPin={
@@ -349,9 +343,12 @@ export const AdminView: React.FC = () => {
               ? (pendingAction.targetProfile?.pin || "1234")
               : undefined
           }
+          isMasterOnly={pendingAction.type === "dev_settings"}
           subtitle={
             pendingAction.type === "select_profile"
               ? `Enter ${pendingAction.targetProfile?.name}'s PIN (default: 1234) or Admin Passcode to switch.`
+              : pendingAction.type === "dev_settings"
+              ? "Enter Admin Passcode to launch Developer Settings Hub."
               : undefined
           }
         />

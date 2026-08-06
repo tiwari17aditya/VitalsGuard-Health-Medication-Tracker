@@ -27,7 +27,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   };
 
   const handleLockAdmin = () => {
-    sessionStorage.removeItem("vitalsguard_admin_authed");
     showToast("info", "Admin Session Locked", "Admin settings are now locked behind passcode.");
     onClose();
   };

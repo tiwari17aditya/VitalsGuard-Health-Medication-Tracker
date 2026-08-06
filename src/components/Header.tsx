@@ -34,12 +34,10 @@ export const Header: React.FC<HeaderProps> = () => {
     m => m.profileId === activeProfile?.id && m.stockCount <= m.minStockAlert
   );
 
-  const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
-
   const handleProfileSelectChange = (profileId: string) => {
     if (profileId === activeProfile?.id) return;
     const targetProf = profiles.find(p => p.id === profileId);
-    if (targetProf?.isLocked && !isAdminAuthed()) {
+    if (targetProf?.isLocked) {
       setPendingLockProfileId(profileId);
     } else {
       setActiveProfileId(profileId);
@@ -59,11 +57,7 @@ export const Header: React.FC<HeaderProps> = () => {
   };
 
   const handleDeveloperClick = () => {
-    if (isAdminAuthed()) {
-      setShowDevModal(true);
-    } else {
-      setShowAuthModal(true);
-    }
+    setShowAuthModal(true);
   };
 
   const handleAuthSuccess = () => {
@@ -247,6 +241,8 @@ export const Header: React.FC<HeaderProps> = () => {
           onSuccess={handleAuthSuccess}
           onClose={() => setShowAuthModal(false)}
           title="Developer Passcode Required"
+          isMasterOnly={true}
+          subtitle="Enter Admin Passcode to launch Developer Settings Hub."
         />
       )}
 

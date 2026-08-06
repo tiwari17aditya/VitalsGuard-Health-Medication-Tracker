@@ -69,14 +69,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
     }
   }, [editingProfile?.id]);
 
-  const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
-
   const handleSelectProfileClick = (p: UserProfile) => {
     if (p.id === activeProfile?.id) {
       onClose();
       return;
     }
-    if (p.isLocked && !isAdminAuthed()) {
+    if (p.isLocked) {
       setPendingAction({ type: "select_profile", targetProfile: p });
     } else {
       setActiveProfileId(p.id);
@@ -85,11 +83,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   };
 
   const handleCreateNewClick = () => {
-    if (isAdminAuthed()) {
-      startCreatingProfile();
-    } else {
-      setPendingAction({ type: "add" });
-    }
+    setPendingAction({ type: "add" });
   };
 
   const handleDeleteClick = (id: string) => {
@@ -97,11 +91,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   };
 
   const handleToggleLockClick = (p: UserProfile) => {
-    if (isAdminAuthed()) {
-      addOrUpdateProfile({ ...p, isLocked: !p.isLocked });
-    } else {
-      setPendingAction({ type: "toggle_lock", targetProfile: p });
-    }
+    setPendingAction({ type: "toggle_lock", targetProfile: p });
   };
 
   const startCreatingProfile = () => {
@@ -228,7 +218,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
             </div>
 
             <button onClick={handleCreateNewClick} className="btn btn-success" style={{ width: "100%" }}>
-              <Plus size={18} /> Add New Family User {isAdminAuthed() ? '' : <Lock size={14} style={{ opacity: 0.8 }} />}
+              <Plus size={18} /> Add New Family User <Lock size={14} style={{ opacity: 0.8 }} />
             </button>
           </div>
         ) : (

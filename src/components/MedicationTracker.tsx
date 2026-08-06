@@ -825,6 +825,8 @@ export const MedicationTracker: React.FC = () => {
           onClose={() => setPendingDeleteAction(null)}
           onSuccess={handleAuthDeleteSuccess}
           title="Admin Passcode Required to Delete"
+          isMasterOnly={true}
+          subtitle="Enter Admin Passcode to delete prescription record."
         />
       )}
 

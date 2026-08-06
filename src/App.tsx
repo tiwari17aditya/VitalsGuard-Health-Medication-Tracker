@@ -32,9 +32,7 @@ const DashboardContent: React.FC = () => {
   // Check if current active profile session is unlocked
   const isUnlocked = () => {
     if (!currentProfile || !currentProfile.isLocked) return true;
-    const adminAuthed = sessionStorage.getItem("vitalsguard_admin_authed") === "true";
-    const profUnlocked = sessionStorage.getItem(`vitalsguard_unlocked_${currentProfile.id}`) === "true";
-    return adminAuthed || profUnlocked;
+    return sessionStorage.getItem(`vitalsguard_unlocked_${currentProfile.id}`) === "true";
   };
 
   const unlocked = isUnlocked();
