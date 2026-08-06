@@ -1,0 +1,7 @@
+# VitalsGuard Virtual Environment Tooling Dependencies
+# Installed within local .venv to isolate helper scripts and testing utilities
+
+python-dotenv>=1.0.0
+requests>=2.31.0
+pytest>=8.0.0
+flake8>=7.0.0

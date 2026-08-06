@@ -16,6 +16,7 @@ This document details every technology, framework, database tier, email provider
 | **Styling & UI** | Vanilla CSS + Design Tokens | Free | Glassmorphism, accessible tap targets for elderly parents |
 | **Icons & Visuals** | `lucide-react` | Free | Accessible vector icons for health & medical metrics |
 | **Email Engine** | Nodemailer / SMTP | Free (No direct API limit) | Refill alert emails & end-of-day compliance check digests via secure SMTP |
+| **Virtual Environment** | Python `.venv` + `requirements.txt` | Free | Tooling isolation (`python-dotenv`, `requests`, `pytest`, `flake8`) preventing personal system module pollution |
 | **Hosting** | Vercel | 100% Lifetime Free | Global CDN & serverless hosting |
 | **CI/CD Pipeline** | Vercel Git Integration | 100% Lifetime Free | Auto build & deploy on git push |
 
