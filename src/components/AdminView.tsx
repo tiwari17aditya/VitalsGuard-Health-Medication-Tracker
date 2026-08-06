@@ -17,10 +17,19 @@ export const AdminView: React.FC = () => {
   } = useApp();
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
   const [showDevModal, setShowDevModal] = useState<boolean>(false);
 
   const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+
+  const handleSelectProfileClick = (p: UserProfile) => {
+    if (p.id === activeProfile?.id) return;
+    if (p.isLocked && !isAdminAuthed()) {
+      setPendingAction({ type: "select_profile", targetProfile: p });
+    } else {
+      setActiveProfileId(p.id);
+    }
+  };
 
   const handleCreateNewClick = () => {
     if (isAdminAuthed()) {
@@ -72,6 +81,9 @@ export const AdminView: React.FC = () => {
       sessionStorage.removeItem("vitalsguard_admin_authed");
     } else if (act?.type === "toggle_lock" && act.targetProfile) {
       addOrUpdateProfile({ ...act.targetProfile, isLocked: !act.targetProfile.isLocked });
+    } else if (act?.type === "select_profile" && act.targetProfile) {
+      sessionStorage.setItem(`vitalsguard_unlocked_${act.targetProfile.id}`, "true");
+      setActiveProfileId(act.targetProfile.id);
     }
   };
 
@@ -163,7 +175,7 @@ export const AdminView: React.FC = () => {
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     {!isCurrent && (
                       <button
-                        onClick={() => setActiveProfileId(p.id)}
+                        onClick={() => handleSelectProfileClick(p)}
                         className="btn btn-primary btn-sm"
                       >
                         Switch Profile
@@ -327,7 +339,21 @@ export const AdminView: React.FC = () => {
         <AdminAuthModal
           onSuccess={handleAuthSuccess}
           onClose={() => setPendingAction(null)}
-          title="Admin Passcode Verification Required"
+          title={
+            pendingAction.type === "select_profile"
+              ? `Unlock Profile: ${pendingAction.targetProfile?.name}`
+              : "Admin Passcode Verification Required"
+          }
+          expectedPin={
+            pendingAction.type === "select_profile"
+              ? (pendingAction.targetProfile?.pin || "1234")
+              : undefined
+          }
+          subtitle={
+            pendingAction.type === "select_profile"
+              ? `Enter ${pendingAction.targetProfile?.name}'s PIN (default: 1234) or Admin Passcode to switch.`
+              : undefined
+          }
         />
       )}
 

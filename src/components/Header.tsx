@@ -37,9 +37,9 @@ export const Header: React.FC<HeaderProps> = () => {
   const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
 
   const handleProfileSelectChange = (profileId: string) => {
+    if (profileId === activeProfile?.id) return;
     const targetProf = profiles.find(p => p.id === profileId);
-    const isProfileUnlockedSession = sessionStorage.getItem(`vitalsguard_unlocked_${profileId}`) === "true";
-    if (targetProf?.isLocked && !isAdminAuthed() && !isProfileUnlockedSession) {
+    if (targetProf?.isLocked && !isAdminAuthed()) {
       setPendingLockProfileId(profileId);
     } else {
       setActiveProfileId(profileId);
@@ -49,6 +49,9 @@ export const Header: React.FC<HeaderProps> = () => {
   const handleToggleActiveProfileLock = async () => {
     if (!activeProfile) return;
     const newLockState = !activeProfile.isLocked;
+    if (newLockState) {
+      sessionStorage.removeItem(`vitalsguard_unlocked_${activeProfile.id}`);
+    }
     await addOrUpdateProfile({
       ...activeProfile,
       isLocked: newLockState

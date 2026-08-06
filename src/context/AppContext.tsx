@@ -497,9 +497,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setActiveProfileId = async (id: string) => {
     setActiveProfileIdState(id);
     localStorage.setItem("vitalsguard_active_profile", id);
+
+    // Instant Lock Enforcer: Revoke unlock tokens for all non-active locked profiles
+    try {
+      profiles.forEach(p => {
+        if (p.id !== id && p.isLocked) {
+          sessionStorage.removeItem(`vitalsguard_unlocked_${p.id}`);
+        }
+      });
+    } catch (e) {
+      console.warn("Error revoking inactive profile unlock tokens:", e);
+    }
+
     await checkSupabaseConnection();
     await refreshAllData();
   };
+
+  // Instant Lock Enforcer Effect: Automatically lock any non-active locked profiles
+  useEffect(() => {
+    if (!activeProfileId || !profiles.length) return;
+    profiles.forEach(p => {
+      if (p.id !== activeProfileId && p.isLocked) {
+        sessionStorage.removeItem(`vitalsguard_unlocked_${p.id}`);
+      }
+    });
+  }, [activeProfileId, profiles]);
 
   const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || APP_CONFIG.defaultProfiles[0];
 
@@ -511,6 +533,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // PROFILES CRUD
   const addOrUpdateProfile = async (profile: UserProfile) => {
     try {
+      // Instantly revoke session unlock token if profile lock is toggled or saved as locked
+      if (profile.isLocked) {
+        if (profile.id !== activeProfileId) {
+          sessionStorage.removeItem(`vitalsguard_unlocked_${profile.id}`);
+        }
+      }
       const saved = await saveProfileDB(profile);
       setProfiles(prev => {
         const idx = prev.findIndex(p => p.id === saved.id);

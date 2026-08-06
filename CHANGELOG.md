@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.17.0] - 2026-08-06
+
+### Added & Enhanced
+- **Instant Inactive Profile Privacy Lock (`AppContext.tsx`)**: Implemented automatic revocation of session unlock tokens (`vitalsguard_unlocked_${profileId}`) for all non-active user profiles whenever the active profile changes or is initialized. Any profile with privacy lock enabled (`isLocked: true`) instantly locks the moment it is no longer active.
+- **Mandatory PIN Switch Interception (`Header.tsx` / `ProfileModal.tsx` / `AdminView.tsx`)**: Enforced mandatory PIN authentication whenever switching to a locked profile from the header dropdown, multi-user management modal (`ProfileModal`), or admin security hub (`AdminView`).
+- **Family Hydration Board Strict Confidentiality (`WaterTracker.tsx`)**: Ensured non-active locked profiles strictly display `🔒` status on family boards and conceal private intake metrics unless master Admin authentication is active.
+
 ## [1.16.0] - 2026-08-06
 
 ### Added & Enhanced

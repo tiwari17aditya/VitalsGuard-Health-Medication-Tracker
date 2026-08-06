@@ -31,7 +31,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   const { profiles, activeProfile, addOrUpdateProfile, deleteProfile, setActiveProfileId } = useApp();
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
   const [useAutoWater, setUseAutoWater] = useState<boolean>(true);
 
   useEffect(() => {
@@ -70,6 +70,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   }, [editingProfile?.id]);
 
   const isAdminAuthed = () => sessionStorage.getItem("vitalsguard_admin_authed") === "true";
+
+  const handleSelectProfileClick = (p: UserProfile) => {
+    if (p.id === activeProfile?.id) {
+      onClose();
+      return;
+    }
+    if (p.isLocked && !isAdminAuthed()) {
+      setPendingAction({ type: "select_profile", targetProfile: p });
+    } else {
+      setActiveProfileId(p.id);
+      onClose();
+    }
+  };
 
   const handleCreateNewClick = () => {
     if (isAdminAuthed()) {
@@ -121,6 +134,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       sessionStorage.removeItem("vitalsguard_admin_authed");
     } else if (act?.type === "toggle_lock" && act.targetProfile) {
       addOrUpdateProfile({ ...act.targetProfile, isLocked: !act.targetProfile.isLocked });
+    } else if (act?.type === "select_profile" && act.targetProfile) {
+      sessionStorage.setItem(`vitalsguard_unlocked_${act.targetProfile.id}`, "true");
+      setActiveProfileId(act.targetProfile.id);
+      onClose();
     }
   };
 
@@ -175,7 +192,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
 
                   <div style={{ display: "flex", gap: "6px" }}>
                     <button
-                      onClick={() => { setActiveProfileId(p.id); onClose(); }}
+                      onClick={() => handleSelectProfileClick(p)}
                       className="btn btn-primary btn-sm"
                     >
                       Select Profile
@@ -421,7 +438,21 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
           <AdminAuthModal
             onSuccess={handleAuthSuccess}
             onClose={() => setPendingAction(null)}
-            title={`Passcode Required to ${pendingAction.type === "add" ? "Add New User" : "Delete User"}`}
+            title={
+              pendingAction.type === "select_profile"
+                ? `Unlock Profile: ${pendingAction.targetProfile?.name}`
+                : `Passcode Required to ${pendingAction.type === "add" ? "Add New User" : pendingAction.type === "delete" ? "Delete User" : "Toggle Profile Lock"}`
+            }
+            expectedPin={
+              pendingAction.type === "select_profile"
+                ? (pendingAction.targetProfile?.pin || "1234")
+                : undefined
+            }
+            subtitle={
+              pendingAction.type === "select_profile"
+                ? `Enter ${pendingAction.targetProfile?.name}'s PIN (default: 1234) or Admin Passcode to switch.`
+                : undefined
+            }
           />
         )}
 
