@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { KeyRound, ShieldCheck, AlertCircle, CheckCircle2, Lock } from "lucide-react";
+import { KeyRound, ShieldCheck, AlertCircle, CheckCircle2, Lock, RotateCcw } from "lucide-react";
 import type { UserProfile } from "../types";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
@@ -72,6 +72,28 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
     } catch (err) {
       console.error("Error updating profile PIN:", err);
       setErrorMsg("Failed to update PIN. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetToDefaultPin = async () => {
+    setIsSubmitting(true);
+    try {
+      const defaultEncryptedPin = encryptPII("1234");
+      const updatedProfile: UserProfile = {
+        ...profile,
+        pin: defaultEncryptedPin
+      };
+      await addOrUpdateProfile(updatedProfile);
+      sessionStorage.setItem(`vitalsguard_unlocked_${profile.id}`, "true");
+      logUserAction("PROFILE_UPDATED", `Reset security PIN to default (1234) for profile: ${profile.name}`);
+      showToast("success", "PIN Reset to Default", `Security PIN for ${profile.name} has been reset to 1234.`);
+      if (onSuccess) onSuccess();
+      onClose();
+    } catch (err) {
+      console.error("Error resetting PIN:", err);
+      setErrorMsg("Failed to reset PIN to default.");
     } finally {
       setIsSubmitting(false);
     }
@@ -192,6 +214,17 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
               Cancel
             </button>
           </div>
+
+          <button
+            id="change-pin-reset-default-btn"
+            type="button"
+            onClick={handleResetToDefaultPin}
+            className="btn btn-secondary btn-sm"
+            disabled={isSubmitting}
+            style={{ width: "100%", justifyContent: "center", marginTop: "10px", color: "#f59e0b", borderColor: "rgba(245, 158, 11, 0.4)" }}
+          >
+            <RotateCcw size={14} /> Reset PIN to Default (1234)
+          </button>
         </form>
 
         <div style={{ textAlign: "center", marginTop: "16px", fontSize: "0.775rem", color: "var(--text-muted)" }}>

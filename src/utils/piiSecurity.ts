@@ -60,7 +60,7 @@ export function maskPII(text: string): string {
 }
 
 /**
- * Verifies entered input against stored PII PIN or master passcode
+ * Verifies entered input against stored PII PIN payload
  */
 export function verifyPIIPin(
   enteredInput: string,
@@ -70,11 +70,19 @@ export function verifyPIIPin(
   const input = enteredInput.trim();
   if (!input) return false;
 
-  // Master admin passcode override
-  const savedAdminPin = localStorage.getItem("vitalsguard_admin_pin") || masterPasscode;
-  if (input === savedAdminPin || input === masterPasscode) return true;
-
-  // Decrypt stored PII payload if needed
+  // Decrypt stored PII payload to obtain actual cleartext PIN
   const actualPin = decryptPII(storedCipherOrPlain, masterPasscode);
-  return input === actualPin || input === storedCipherOrPlain;
+
+  // 1. Direct match against target profile PIN
+  if (input === actualPin || input === storedCipherOrPlain) {
+    return true;
+  }
+
+  // 2. Custom Master Admin Passcode override (ONLY if custom admin passcode was explicitly set in localStorage)
+  const customAdminPin = localStorage.getItem("vitalsguard_admin_pin");
+  if (customAdminPin && customAdminPin !== "1234" && input === customAdminPin) {
+    return true;
+  }
+
+  return false;
 }

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, Wrench, KeyRound, Eye, EyeOff, Database 
+  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, Wrench, KeyRound, Eye, EyeOff, Database, RotateCcw
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
@@ -48,6 +48,16 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
 
   const handleToggleLockClick = (p: UserProfile) => {
     addOrUpdateProfile({ ...p, isLocked: !p.isLocked });
+  };
+
+  const handleResetProfilePinToDefault = async (p: UserProfile) => {
+    try {
+      const defaultEncryptedPin = encryptPII("1234");
+      await addOrUpdateProfile({ ...p, pin: defaultEncryptedPin });
+      showToast("success", "PIN Reset to 1234", `Reset security PIN for ${p.name} back to default 1234.`);
+    } catch (err: any) {
+      showToast("error", "Reset Failed", err.message || "Failed to reset PIN.");
+    }
   };
 
   const handleEncryptAllDatabasePins = async () => {
@@ -269,6 +279,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
                       title="Edit Profile Details & PIN"
                     >
                       <Edit2 size={14} /> Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleResetProfilePinToDefault(p)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ color: "#f59e0b" }}
+                      title="Reset profile PIN back to default 1234"
+                    >
+                      <RotateCcw size={14} /> Reset PIN (1234)
                     </button>
 
                     {profiles.length > 1 && (

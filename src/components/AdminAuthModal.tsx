@@ -31,12 +31,14 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     const isMasterValid = input === savedPin;
     const isProfileValid = expectedPin ? verifyPIIPin(input, expectedPin) : false;
 
-    const isValid = isMasterOnly ? isMasterValid : (isMasterValid || isProfileValid);
+    // For Master-only calls (Developer settings/Admin hub launch), verify master passcode.
+    // For profile switching/unlocking, verify target profile's active PIN strictly.
+    const isValid = isMasterOnly ? isMasterValid : isProfileValid;
 
     if (isValid) {
       onSuccess();
     } else {
-      setErrorMsg(isMasterOnly ? "Incorrect Admin Passcode! Please try again." : "Incorrect PIN or Passcode! Please try again.");
+      setErrorMsg(isMasterOnly ? "Incorrect Admin Passcode! Please try again." : "Incorrect Security PIN! Please enter the correct PIN for this profile.");
     }
   };
 
