@@ -25,15 +25,13 @@ This document records feature requests, UI/UX enhancements, and technical propos
     - **Caretaker Email Dispatch**: Trigger email alerts via `api/send-email.js` (Nodemailer/Vercel serverless) when a dose remains unconfirmed past a configurable grace period (e.g., 30 minutes).
   - **Snooze & Adherence State**: Enable profile-level dose snoozing (15 min, 30 min, 1 hour) and automatic logging of missed doses to `MedicationLog` with action audit entries (`MEDICATION_SKIPPED` / `ACTION_AUDIT`).
 
-### 3. Enhanced Profile-Level Water Logging System
-- **Goal**: Upgrade the hydration tracker into an advanced, profile-isolated logging and management system with customizable container presets, dynamic intake suggestions, detailed timeline history, and hydration trends.
-- **Rationale**: Water consumption needs vary significantly across family profiles based on age, weight, and seasonal weather. Profile-level water logging ensures separate target tracking, custom cup/bottle sizes per profile, and historical logging without profile data overlap.
-- **Proposed Implementation**:
-  - **Customizable Quick-Log Containers**: Allow each profile to define and customize quick-add preset container volumes (e.g., 150ml Tea Cup, 250ml Glass, 500ml Water Bottle, 750ml Sports Flask) saved per profile.
-  - **Granular Intake Timeline & History**: Enhance `WaterLog` storage to support timestamps, container icons, notes (e.g., "Post-workout hydration"), and log edit/delete capabilities per profile.
-  - **Smart Hydration Calculations & Nudges**: Integrate the scientific hydration algorithm (weight, season, age, gender) into profile-specific periodic intake nudges if intake falls below hourly target thresholds during waking hours.
-  - **Profile Progress & Trend Analytics**: Provide day-by-day and weekly hydration progress charts per profile in the Family Hydration Board, highlighting hydration streaks and target achievement rates.
-  - **Audit & Database Sync**: Record all profile water operations (`WATER_LOGGED`, `WATER_LOG_DELETED`, `WATER_TARGET_UPDATED`) to `ActionAuditLog` and sync seamlessly with PostgreSQL (`water_logs` table).
+### 3. Enhanced Profile-Level Water Logging System (Released in v1.13.0)
+- **Status**: ✅ **Released in v1.13.0**
+- **Highlights**:
+  - **Hierarchical User Storage**: User-level `WaterItem` hydration containers (`UserProfile` → `WaterItem` → `WaterLog`) stored in `public.water_items` table and LocalStorage (`vitalsguard_water_items_v1`).
+  - **Custom Water Containers Manager**: Interactive container builder in `WaterTracker.tsx` allowing each profile to manage custom container sizes (*Hydro Flask 600ml*, *Glass 250ml*, *Water Bottle 500ml*).
+  - **Custom Date & Time Backdating**: Date picker (`YYYY-MM-DD`) and time picker (`HH:MM`) in `WaterTracker.tsx` and `AppContext.tsx` allowing users to accurately log past hydration records for any date.
+  - **Single Dynamic Filled Glass Container UI**: Past days rendered as a single SVG glass container dynamically filled with liquid level percentage (`0%` to `100%+`) matching daily goal progress, with an expandable log breakdown.
 
 ### 4. Profile Privacy Lock & Admin Security Management
 - **Goal**: Introduce profile-level PIN/password protection for sensitive health profiles, centralized database credential storage, admin master override vault, and restricted visibility for diagnostic test profiles (`test_user`).

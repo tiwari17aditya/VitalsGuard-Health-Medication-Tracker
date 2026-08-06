@@ -12,6 +12,7 @@ Applies when working on `src/lib/supabase.ts`, `Utility/supabase/schema.sql`, da
 - **CRITICAL DATA SAFETY**: NEVER delete user data directly from the database or local storage under any circumstances. Always preserve user profiles, logs, and vitals records.
 - **Type Safety**: Enforce explicit TypeScript interfaces when querying Supabase tables.
 - **Schema Alignment**: Any SQL changes must be reflected in `Utility/supabase/schema.sql` and mirrored in client type declarations.
+- **Hierarchical Relational Integrity**: All user child items (`medications`, `water_items`) and log records (`medication_logs`, `glucose_logs`, `bp_logs`, `water_logs`) must explicitly reference `profile_id TEXT REFERENCES public.profiles(id) ON DELETE CASCADE`.
 - **Offline Resiliency**: Maintain local storage fallback wrappers so the application remains functional even when disconnected from Supabase.
 
 ## Verification Checklist
