@@ -66,3 +66,11 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Serverless Bug Fixes & Resilience**:
     - Resolve bugs in `api/send-email.js` handling missing environment variables (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`), timeout retries, and invalid recipient email syntax.
     - Add structured JSON logger output for all Nodemailer transaction events and failure diagnostic tracebacks.
+
+### 7. Automatic Developer & Admin Settings Project Version Synchronization
+- **Goal**: Automatically synchronize project version numbers across `package.json`, `APP_CONFIG.meta.version` (`app.config.ts`), `DeveloperModal.tsx` version history, `README.md`, and `CHANGELOG.md` as development releases progress.
+- **Rationale**: Ensures that whenever new feature additions or version bumps occur during development, Developer Settings and Admin Hub dynamically reflect live version identifiers, build metadata, and changelog releases without manual hardcoded discrepancy risks.
+- **Proposed Implementation**:
+  - Centralize `APP_CONFIG.meta.version` in `src/config/app.config.ts` and bind it directly to `package.json`.
+  - Maintain synchronized `versionHistory` entries in `DeveloperModal.tsx` matching `CHANGELOG.md` and release commits.
+  - Enforce version check verification as part of the `release-git-docs` task packup protocol.

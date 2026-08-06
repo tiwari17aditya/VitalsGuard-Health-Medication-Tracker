@@ -77,6 +77,36 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
 
   const versionHistory = [
     {
+      version: "v1.17.0",
+      date: "2026-08-06",
+      title: "Instant Profile Re-Locking, Database Schema Sync & Profile Header Admin Hub",
+      highlights: "Strict profile re-locking on switch, Developer settings isolation, full PostgreSQL profiles schema sync, Aditya-exclusive Admin controls, and relocation of Admin Hub to header profile bar."
+    },
+    {
+      version: "v1.16.0",
+      date: "2026-08-06",
+      title: "Per-Profile PIN Security & Change PIN Modal",
+      highlights: "Introduces per-profile security PINs (default 1234), ChangePinModal for PIN updating, dynamic header lock/unlock toggle, and 3-layer persistent PIN maps."
+    },
+    {
+      version: "v1.15.0",
+      date: "2026-08-06",
+      title: "Privacy Lock Screen Shield & Instant DB Refresh",
+      highlights: "Implements PrivacyLockGate shield, masks locked health stats on family boards & cards, updates Supabase role/lock sync, and optimizes load speed to < 50ms via parallel caching."
+    },
+    {
+      version: "v1.14.0",
+      date: "2026-08-06",
+      title: "Profile-Level Privacy Locking & Passcode Security",
+      highlights: "Adds isLocked state to UserProfile, 🔒/🔓 lock visual badges, passcode gate authorization, and dedicated Admin security view."
+    },
+    {
+      version: "v1.13.0",
+      date: "2026-08-06",
+      title: "Hierarchical Water Items Storage & Dynamic Glass UI",
+      highlights: "Adds public.water_items PostgreSQL table, custom water container builder, YYYY-MM-DD backdated water logging, and dynamic liquid-filled glass container SVG."
+    },
+    {
       version: "v1.11.2",
       date: "2026-07-31",
       title: "Resilient DB Retries, Sample Cleanup & Safety Rules",
