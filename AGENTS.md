@@ -16,3 +16,7 @@
 ## Development & Deployment Protocol
 - All feature additions, bug fixes, and schema/code modifications must be made and verified in the local environment first.
 - Perform complete end-to-end testing locally before committing, staging, or promoting changes to the main production environment to avoid live feature conflicts and disruption for active users.
+
+## Environment Isolation & Resource Cleanup Protocol
+- Always run commands, node scripts, and dependencies strictly isolated within the local project workspace (or virtual environment) to prevent polluting personal system module versions.
+- Automatically clean up temporary scratch files, local download caches, and intermediate build output artifacts after task verification to preserve user storage and system resources.
