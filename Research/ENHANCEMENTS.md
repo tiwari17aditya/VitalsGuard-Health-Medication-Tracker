@@ -94,3 +94,18 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - Centralize `APP_CONFIG.meta.version` in `src/config/app.config.ts` and bind it directly to `package.json`.
   - Maintain synchronized `versionHistory` entries in `DeveloperModal.tsx` matching `CHANGELOG.md` and release commits.
   - Enforce version check verification as part of the `release-git-docs` task packup protocol.
+
+### 10. Advanced Vitals Analytics, Trend Insights & HbA1c Projections
+- **Goal**: Enable active profiles to view health trend analytics, moving averages, and estimated HbA1c values calculated dynamically from glucose logs.
+- **Rationale**: Providing patients and caretakers with actionable trends and warnings (e.g. rising BP trends, HbA1c projections) helps manage chronic conditions proactively.
+- **Proposed Implementation**:
+  - Add trend summary graphics using native responsive SVG charts.
+  - Implement formulas for estimating HbA1c: `HbA1c (%) = (Average Glucose + 46.7) / 28.7` based on past 30/90 days logs.
+  - Show warning alerts if systolic or diastolic pressures show sustained upward trends.
+
+### 11. Real-time Supabase Data Subscriptions & Live Sync
+- **Goal**: Enable instant synchronization of vitals, medications, and logs across multiple loaded devices (e.g. laptop and mobile phone) using live Supabase subscriptions.
+- **Rationale**: Eliminates the need for manual page refreshes when a caretaker logs data from a different device.
+- **Proposed Implementation**:
+  - Use `supabase.channel('public:medication_logs').on('postgres_changes', ...)` to listen for realtime database modifications.
+  - Dispatch corresponding updates to the React state context dynamically.
