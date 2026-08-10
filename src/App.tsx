@@ -66,7 +66,7 @@ const DashboardContent: React.FC = () => {
   return (
     <div className="app-container">
       {/* Header */}
-      <Header onOpenProfileModal={() => setShowProfileModal(true)} />
+      <Header onOpenProfileModal={() => setShowProfileModal(true)} activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Top Overview KPI Quick Cards */}
       <div className="grid-4" style={{ marginBottom: "20px" }}>

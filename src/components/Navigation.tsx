@@ -1,6 +1,5 @@
 import React from "react";
-import { Activity, Pill, Calendar, FileText, Droplet, Shield, Wrench } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { Activity, Pill, Calendar, FileText, Droplet } from "lucide-react";
 
 export type NavTab = "vitals" | "medications" | "water" | "calendar" | "reports" | "admin" | "developer";
 
@@ -10,9 +9,6 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
-  const { activeProfile } = useApp();
-  const isAdmin = activeProfile?.id === "admin" && sessionStorage.getItem("vitalsguard_unlocked_admin") === "true";
-
   return (
     <>
       {/* Desktop & Tablet Top Navigation Tabs (Hidden on mobile via CSS) */}
@@ -66,26 +62,6 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
         >
           <FileText size={18} /> Caretaker Email & Reports
         </button>
-
-        {isAdmin && (
-          <>
-            <button
-              onClick={() => setActiveTab("admin")}
-              className={`btn ${activeTab === "admin" ? "btn-primary" : "btn-secondary"}`}
-              style={{ flex: 1, minWidth: "140px" }}
-            >
-              <Shield size={18} /> Admin Panel
-            </button>
-
-            <button
-              onClick={() => setActiveTab("developer")}
-              className={`btn ${activeTab === "developer" ? "btn-primary" : "btn-secondary"}`}
-              style={{ flex: 1, minWidth: "140px" }}
-            >
-              <Wrench size={18} /> Developer Settings
-            </button>
-          </>
-        )}
       </div>
 
       {/* Mobile Fixed Bottom Navigation Bar (Hidden on desktop via CSS) */}
@@ -129,26 +105,6 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab 
           <FileText />
           <span>Reports</span>
         </button>
-
-        {isAdmin && (
-          <>
-            <button 
-              onClick={() => setActiveTab("admin")}
-              className={`nav-item ${activeTab === "admin" ? "active" : ""}`}
-            >
-              <Shield />
-              <span>Admin</span>
-            </button>
-
-            <button 
-              onClick={() => setActiveTab("developer")}
-              className={`nav-item ${activeTab === "developer" ? "active" : ""}`}
-            >
-              <Wrench />
-              <span>Developer</span>
-            </button>
-          </>
-        )}
       </div>
     </>
   );

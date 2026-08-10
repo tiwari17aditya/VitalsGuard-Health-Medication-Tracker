@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.1] - 2026-08-10
+
+### Fixed & Enhanced
+- **Admin Tab Relocation & Header Branding Integration**: Moved the "Admin Panel" and "Developer Settings" tabs from the main bottom/top navigation bar to the top header bar, directly beside the application title logo.
+- **Admin Styling & Visibility Accentures**: Introduced glowing red-borders, a custom gold-orange admin logo gradient, and a highlighted profile switcher frame that dynamically activate when logged in as the `"ADMIN"` profile, ensuring high-visibility administrative cues.
+
 ## [1.19.0] - 2026-08-10
 
 ### Added & Enhanced
