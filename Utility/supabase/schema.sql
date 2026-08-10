@@ -135,5 +135,3 @@ CREATE POLICY "Allow public read/write bp" ON public.bp_logs FOR ALL USING (true
 CREATE POLICY "Allow public read/write reports" ON public.health_reports FOR ALL USING (true);
 CREATE POLICY "Allow public read/write water_items" ON public.water_items FOR ALL USING (true);
 CREATE POLICY "Allow public read/write water" ON public.water_logs FOR ALL USING (true);
-
-

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.0] - 2026-08-10
+
+### Added & Enhanced
+- **Monthly Adherence Calendar Grid (`MedicationCalendar.tsx`)**: Replaced the horizontal 14-day ribbon calendar with a fully featured, responsive monthly grid calendar (7 columns Sun-Sat with 42 cells total).
+- **Interactive Month Navigation & Jump-to-Date**: Added Chevron navigation buttons to switch months, a Today reset button, and synchronized the native Jump-to-Date picker.
+- **Glassmorphic Calendar styling**: Created premium CSS class rules in `index.css` supporting hover transitions, selected indicators, dashed today outlines, dimmed padded cells, and responsive viewport sizing.
+
 ## [1.19.1] - 2026-08-10
 
 ### Fixed & Enhanced

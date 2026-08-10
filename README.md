@@ -25,6 +25,9 @@ Detailed release notes and developer changelogs are maintained in [**`CHANGELOG.
 
 | Version | Release Date | Key Highlights |
 | :--- | :--- | :--- |
+| **`v1.20.0`** | 2026-08-10 | Full Month Grid Adherence Calendar, Chevron Month Switching Carets, Today Reset button, Responsive Grid Styling |
+| **`v1.19.1`** | 2026-08-10 | Admin Panel Header Relocation, Admin Visual Accentures |
+| **`v1.19.0`** | 2026-08-10 | Seeded Dedicated `ADMIN` User, Password & PIN Terminology Unification, RBAC Role Isolation Controls |
 | **`v1.18.1`** | 2026-08-06 | Post-Reset 1234 Password Verification & Change Flow Fix, Multi-Cipher Fallbacks, Auto-Fill 1234 on Reset |
 | **`v1.18.0`** | 2026-08-06 | Glucose Custom Date Selection, Unified Calendar Vitals Timeline, Flexible Email Scopes, Log Search & Emailing, PII Encryption (`PII_ENC:`), In-App User Guide, and Strict Single-PIN Enforcement with Reset to 1234 |
 | **`v1.17.0`** | 2026-08-06 | Instant Profile Re-Locking on Switch, Database Schema Sync (`public.profiles`), Aditya-Exclusive Developer & Database Controls, Top Header Profile Bar Admin Hub |

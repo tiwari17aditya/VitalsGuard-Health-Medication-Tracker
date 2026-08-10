@@ -65,6 +65,13 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Admin UI Visibility Accents**: Integrated custom glowing red top borders, a gold-orange admin logo gradient, and an active red switcher outline that trigger dynamically when the active profile is `"admin"`.
   - **Password Terminology**: Cleaned up and unified all credential terminology to strictly **User Password** and **Admin Password**.
 
+### 12. Full Month Grid Adherence Calendar (Released in v1.20.0)
+- **Status**: ✅ **Released in v1.20.0**
+- **Highlights**:
+  - **Full Monthly Grid View**: Replaced the 14-day ribbon with a 7-column Sunday-to-Saturday layout of 42 cells, representing the target month padded with leading and trailing adjacent-month days.
+  - **Month Navigation & Reset**: Integrated Previous/Next Month arrow navigation buttons, a "Today" quick action button, and synchronized the Jump-to-Date picker.
+  - **Premium Styling & Responsiveness**: Appended grid styling, hover states, dashed outline for today, dimmed padded cells, and mobile breakpoints to `src/index.css`.
+
 ### 5. Water Tracking Database Persistence & Multi-Device Sync
 - **Goal**: Track, save, and synchronize all profile water intake entries, daily hydration targets, and container logs directly in the PostgreSQL database with zero data loss.
 - **Rationale**: Ensures hydration records are permanently stored in PostgreSQL (`water_logs` table in Supabase) rather than remaining localized to a single browser storage instance. Enables seamless hydration tracking sync across mobile phones, tablets, and desktop computers.

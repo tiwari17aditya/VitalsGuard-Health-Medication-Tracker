@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Calendar, CheckCircle2, XCircle, Clock, Activity, Heart, Pill } from "lucide-react";
+import { Calendar, CheckCircle2, XCircle, Clock, Activity, Heart, Pill, ChevronLeft, ChevronRight } from "lucide-react";
 import { useApp } from "../context/AppContext";
 
 export const MedicationCalendar: React.FC = () => {
@@ -9,6 +9,10 @@ export const MedicationCalendar: React.FC = () => {
     new Date().toISOString().split("T")[0]
   );
 
+  const [displayDate, setDisplayDate] = useState<Date>(() => {
+    return new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  });
+
   if (!activeProfile) return null;
 
   const profileMeds = medications.filter(m => m.profileId === activeProfile.id);
@@ -16,18 +20,13 @@ export const MedicationCalendar: React.FC = () => {
   const profileGlucose = glucoseLogs.filter(g => g.profileId === activeProfile.id);
   const profileBP = bpLogs.filter(b => b.profileId === activeProfile.id);
 
-  // Generate 14 days dates array
-  const datesList: { dateStr: string; dayName: string; dayNum: number }[] = [];
-  const today = new Date();
-  for (let i = 6; i >= -7; i--) {
-    const d = new Date();
-    d.setDate(today.getDate() - i);
-    datesList.push({
-      dateStr: d.toISOString().split("T")[0],
-      dayName: d.toLocaleDateString("en-US", { weekday: "short" }),
-      dayNum: d.getDate()
-    });
-  }
+  // Helper to format Date objects as local YYYY-MM-DD
+  const getLocalDateString = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
 
   // Helper to check if medication is scheduled on a given date
   const isMedScheduledOnDate = (m: any, dateStr: string) => {
@@ -46,11 +45,96 @@ export const MedicationCalendar: React.FC = () => {
     return true;
   };
 
+  // Helper to construct the monthly calendar grid cells (42 cells to prevent layout shifting)
+  const generateMonthGrid = (viewDate: Date) => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+
+    const firstDay = new Date(year, month, 1);
+    const startDayOfWeek = firstDay.getDay();
+
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const prevMonthTotalDays = new Date(year, month, 0).getDate();
+
+    const cells: { dateStr: string; dayNum: number; isCurrentMonth: boolean; date: Date }[] = [];
+
+    // Previous month leading padding days
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const d = prevMonthTotalDays - i;
+      const prevDate = new Date(year, month - 1, d);
+      cells.push({
+        dateStr: getLocalDateString(prevDate),
+        dayNum: d,
+        isCurrentMonth: false,
+        date: prevDate
+      });
+    }
+
+    // Target month days
+    for (let d = 1; d <= totalDays; d++) {
+      const currDate = new Date(year, month, d);
+      cells.push({
+        dateStr: getLocalDateString(currDate),
+        dayNum: d,
+        isCurrentMonth: true,
+        date: currDate
+      });
+    }
+
+    // Next month trailing padding days
+    const totalCells = 42;
+    const nextDaysNeeded = totalCells - cells.length;
+    for (let d = 1; d <= nextDaysNeeded; d++) {
+      const nextDate = new Date(year, month + 1, d);
+      cells.push({
+        dateStr: getLocalDateString(nextDate),
+        dayNum: d,
+        isCurrentMonth: false,
+        date: nextDate
+      });
+    }
+
+    return cells;
+  };
+
+  const gridCells = generateMonthGrid(displayDate);
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const handlePrevMonth = () => {
+    setDisplayDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setDisplayDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const handleGoToday = () => {
+    const today = new Date();
+    const todayStr = getLocalDateString(today);
+    setSelectedDateStr(todayStr);
+    setDisplayDate(new Date(today.getFullYear(), today.getMonth(), 1));
+  };
+
+  const handleDateSelect = (dateStr: string) => {
+    setSelectedDateStr(dateStr);
+    const d = new Date(dateStr + "T12:00:00");
+    setDisplayDate(new Date(d.getFullYear(), d.getMonth(), 1));
+  };
+
+  const handleJumpToDate = (dateStr: string) => {
+    setSelectedDateStr(dateStr);
+    const d = new Date(dateStr + "T12:00:00");
+    setDisplayDate(new Date(d.getFullYear(), d.getMonth(), 1));
+  };
+
   // Selected date logs and scheduled meds
   const selectedDateMedLogs = profileLogs.filter(l => l.timestamp.startsWith(selectedDateStr));
   const scheduledMedsForSelectedDate = profileMeds.filter(m => isMedScheduledOnDate(m, selectedDateStr));
   const selectedDateGlucoseLogs = profileGlucose.filter(g => g.timestamp.startsWith(selectedDateStr));
   const selectedDateBPLogs = profileBP.filter(b => b.timestamp.startsWith(selectedDateStr));
+
+  const todayStr = getLocalDateString(new Date());
+  const monthName = displayDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
     <div className="glass-card">
@@ -72,61 +156,105 @@ export const MedicationCalendar: React.FC = () => {
             id="calendar-date-picker-input"
             type="date"
             value={selectedDateStr}
-            onChange={(e) => setSelectedDateStr(e.target.value)}
+            onChange={(e) => {
+              if (e.target.value) {
+                handleJumpToDate(e.target.value);
+              }
+            }}
             className="form-input"
             style={{ width: "auto", padding: "4px 8px", fontSize: "0.9rem" }}
           />
         </div>
       </div>
 
-      {/* Date Picker Ribbon */}
-      <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "12px", marginBottom: "20px" }}>
-        {datesList.map(item => {
-          const isSelected = item.dateStr === selectedDateStr;
-          const dayMeds = profileMeds.filter(m => isMedScheduledOnDate(m, item.dateStr));
-          const dayMedLogs = profileLogs.filter(l => l.timestamp.startsWith(item.dateStr));
-          const dayGlucoseCount = profileGlucose.filter(g => g.timestamp.startsWith(item.dateStr)).length;
-          const dayBPCount = profileBP.filter(b => b.timestamp.startsWith(item.dateStr)).length;
-
-          const takenCount = dayMedLogs.filter(l => l.status === "taken").length;
-          const isComplete = dayMeds.length > 0 && takenCount >= dayMeds.length;
-
-          return (
+      {/* Month Navigation and Grid */}
+      <div className="calendar-container" style={{ marginBottom: "24px" }}>
+        <div className="calendar-header">
+          <div className="calendar-nav">
             <button
-              key={item.dateStr}
-              id={`calendar-ribbon-day-${item.dateStr}`}
-              onClick={() => setSelectedDateStr(item.dateStr)}
-              style={{
-                flex: "0 0 76px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "10px 6px",
-                borderRadius: "var(--radius-md)",
-                background: isSelected ? "var(--primary)" : "var(--bg-primary)",
-                color: isSelected ? "#ffffff" : "var(--text-primary)",
-                border: isSelected ? "2px solid var(--primary)" : "1px solid var(--border-color)",
-                cursor: "pointer",
-                transition: "all 0.2s ease"
-              }}
+              id="calendar-prev-month-btn"
+              type="button"
+              className="calendar-nav-btn"
+              onClick={handlePrevMonth}
+              title="Previous Month"
             >
-              <span style={{ fontSize: "0.75rem", opacity: 0.8, textTransform: "uppercase" }}>{item.dayName}</span>
-              <span style={{ fontSize: "1.2rem", fontWeight: "bold", margin: "2px 0" }}>{item.dayNum}</span>
-              
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", marginTop: "4px" }}>
-                <span style={{ fontSize: "0.68rem" }}>
-                  {isComplete ? "✅ All" : takenCount > 0 ? `💊 ${takenCount}` : "—"}
-                </span>
-                {(dayGlucoseCount > 0 || dayBPCount > 0) && (
-                  <span style={{ fontSize: "0.65rem", opacity: 0.9 }}>
-                    {dayGlucoseCount > 0 ? `🩸${dayGlucoseCount} ` : ""}{dayBPCount > 0 ? `❤️${dayBPCount}` : ""}
-                  </span>
-                )}
-              </div>
+              <ChevronLeft size={20} />
             </button>
-          );
-        })}
+            <span className="calendar-month-title">{monthName}</span>
+            <button
+              id="calendar-next-month-btn"
+              type="button"
+              className="calendar-nav-btn"
+              onClick={handleNextMonth}
+              title="Next Month"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          <button
+            id="calendar-today-btn"
+            type="button"
+            className="btn btn-primary"
+            style={{ padding: "6px 12px", minHeight: "36px", fontSize: "0.85rem" }}
+            onClick={handleGoToday}
+          >
+            Today
+          </button>
+        </div>
+
+        <div className="calendar-grid">
+          {/* Weekday headers */}
+          {weekdays.map(day => (
+            <div key={day} className="calendar-weekday">
+              {day}
+            </div>
+          ))}
+
+          {/* Grid cells */}
+          {gridCells.map(cell => {
+            const isSelected = cell.dateStr === selectedDateStr;
+            const isToday = cell.dateStr === todayStr;
+            
+            const dayMeds = profileMeds.filter(m => isMedScheduledOnDate(m, cell.dateStr));
+            const dayMedLogs = profileLogs.filter(l => l.timestamp.startsWith(cell.dateStr));
+            const dayGlucoseCount = profileGlucose.filter(g => g.timestamp.startsWith(cell.dateStr)).length;
+            const dayBPCount = profileBP.filter(b => b.timestamp.startsWith(cell.dateStr)).length;
+
+            const takenCount = dayMedLogs.filter(l => l.status === "taken").length;
+            const isComplete = dayMeds.length > 0 && takenCount >= dayMeds.length;
+
+            let cellClass = "calendar-cell";
+            if (isSelected) cellClass += " selected";
+            if (!cell.isCurrentMonth) cellClass += " padded";
+            if (isToday) cellClass += " today";
+
+            return (
+              <button
+                key={cell.dateStr}
+                id={`calendar-grid-cell-${cell.dateStr}`}
+                type="button"
+                className={cellClass}
+                onClick={() => handleDateSelect(cell.dateStr)}
+              >
+                <span className="calendar-day-num">{cell.dayNum}</span>
+                
+                <div className="calendar-cell-indicators">
+                  <span className="calendar-badge-text">
+                    {isComplete ? "✅ All" : takenCount > 0 ? `💊 ${takenCount}` : "—"}
+                  </span>
+                  {(dayGlucoseCount > 0 || dayBPCount > 0) && (
+                    <span className="calendar-vitals-text">
+                      {dayGlucoseCount > 0 ? `🩸${dayGlucoseCount} ` : ""}{dayBPCount > 0 ? `❤️${dayBPCount}` : ""}
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
 
       {/* Detailed Log Timeline for Selected Date */}
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
