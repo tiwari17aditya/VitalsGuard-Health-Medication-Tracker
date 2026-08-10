@@ -55,6 +55,15 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Customizable Email Report Ranges & Log Search Dispatch**: Added report range radio options (Daily / Custom Date Range / All Time) and a search mechanism allowing users to search logs by date or keyword and email targeted reports specifically for those searched days.
   - **In-App User Guide & Documentation**: Created `UserGuideModal.tsx` categorized help guide and added a top header bar button (`📖 User Guide`) for instant access.
 
+### 9. Dedicated ADMIN User Profile & RBAC Policy (Released in v1.19.0)
+- **Status**: ✅ **Released in v1.19.0**
+- **Highlights**:
+  - **ADMIN User Seeding**: Automated seeding of a dedicated `"ADMIN"` user profile with ID `"admin"` and role `"Admin"` locked by default.
+  - **RBAC Policy**: Enforced Role-Based Access Control, strictly limiting admin features (user management, adding/deleting users, developer settings) to the `"ADMIN"` user.
+  - **Safety Safeguards**: Demoted any non-seeded users (such as "Aditya") having the `"Admin"` role to `"Member"` automatically. Prevented deleting or modifying the name/role of the `"ADMIN"` user.
+  - **Inline Tab Navigation**: Integrated User Management and Developer Settings as tabs inside the main navigation menu when logged in as `"ADMIN"`.
+  - **Password Terminology**: Cleaned up and unified all credential terminology to strictly **User Password** and **Admin Password**.
+
 ### 5. Water Tracking Database Persistence & Multi-Device Sync
 - **Goal**: Track, save, and synchronize all profile water intake entries, daily hydration targets, and container logs directly in the PostgreSQL database with zero data loss.
 - **Rationale**: Ensures hydration records are permanently stored in PostgreSQL (`water_logs` table in Supabase) rather than remaining localized to a single browser storage instance. Enables seamless hydration tracking sync across mobile phones, tablets, and desktop computers.

@@ -6,7 +6,7 @@ import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
 
 interface DeveloperModalProps {
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
@@ -14,23 +14,23 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
 
   const [activeTab, setActiveTab] = useState<"techstack" | "config" | "changelog" | "passcode">("techstack");
 
-  // Passcode Management
+  // Password Management
   const [newPin, setNewPin] = useState("");
 
   const handleUpdatePin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPin.trim() || newPin.length < 4) {
-      showToast("error", "Invalid Passcode", "Developer passcode must be at least 4 characters.");
+      showToast("error", "Invalid Password", "Admin password must be at least 4 characters.");
       return;
     }
     await updateAdminPasscode(newPin.trim());
-    showToast("success", "Passcode Updated", "Developer passcode updated successfully.");
+    showToast("success", "Password Updated", "Admin password updated successfully.");
     setNewPin("");
   };
 
   const handleLockSession = () => {
-    showToast("info", "Developer Mode Locked", "Developer settings locked.");
-    onClose();
+    showToast("info", "Admin Session Locked", "Admin settings locked.");
+    if (onClose) onClose();
   };
 
   // Mask passcode config display
@@ -198,135 +198,153 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
     }
   ];
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: "760px", width: "95%" }} onClick={e => e.stopPropagation()}>
-        
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
-          <h2 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "1.1rem" }}>
-            <Terminal color="var(--primary)" size={20} /> Developer Hub (v{APP_CONFIG.meta.version})
-          </h2>
+  const viewContent = (
+    <>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
+        <h2 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "1.1rem" }}>
+          <Terminal color="var(--primary)" size={20} /> Developer Hub (v{APP_CONFIG.meta.version})
+        </h2>
+        {onClose && (
           <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ minHeight: "32px", padding: "4px 10px" }}>✕</button>
-        </div>
+        )}
+      </div>
 
-        {/* Responsive Scrollable Tab Navigation */}
-        <div className="modal-tabs-scroll">
-          <button
-            onClick={() => setActiveTab("techstack")}
-            className={`btn btn-sm ${activeTab === "techstack" ? "btn-primary" : "btn-secondary"}`}
-          >
-            <Code size={15} /> Tech Stack
-          </button>
-          <button
-            onClick={() => setActiveTab("changelog")}
-            className={`btn btn-sm ${activeTab === "changelog" ? "btn-primary" : "btn-secondary"}`}
-          >
-            <History size={15} /> Version History
-          </button>
-          {/* Database keys tab button removed for UI security */}
-          <button
-            onClick={() => setActiveTab("config")}
-            className={`btn btn-sm ${activeTab === "config" ? "btn-primary" : "btn-secondary"}`}
-          >
-            <FileCode size={15} /> Config
-          </button>
-          <button
-            onClick={() => setActiveTab("passcode")}
-            className={`btn btn-sm ${activeTab === "passcode" ? "btn-primary" : "btn-secondary"}`}
-          >
-            <Lock size={15} /> Security
-          </button>
-        </div>
+      {/* Responsive Scrollable Tab Navigation */}
+      <div className="modal-tabs-scroll">
+        <button
+          onClick={() => setActiveTab("techstack")}
+          className={`btn btn-sm ${activeTab === "techstack" ? "btn-primary" : "btn-secondary"}`}
+        >
+          <Code size={15} /> Tech Stack
+        </button>
+        <button
+          onClick={() => setActiveTab("changelog")}
+          className={`btn btn-sm ${activeTab === "changelog" ? "btn-primary" : "btn-secondary"}`}
+        >
+          <History size={15} /> Version History
+        </button>
+        {/* Database keys tab button removed for UI security */}
+        <button
+          onClick={() => setActiveTab("config")}
+          className={`btn btn-sm ${activeTab === "config" ? "btn-primary" : "btn-secondary"}`}
+        >
+          <FileCode size={15} /> Config
+        </button>
+        <button
+          onClick={() => setActiveTab("passcode")}
+          className={`btn btn-sm ${activeTab === "passcode" ? "btn-primary" : "btn-secondary"}`}
+        >
+          <Lock size={15} /> Admin Password
+        </button>
+      </div>
 
-        {/* TAB 1: TECH STACK */}
-        {activeTab === "techstack" && (
-          <div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "12px", fontSize: "0.85rem" }}>
-              Comprehensive breakdown of open-source tools powering VitalsGuard:
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "360px", overflowY: "auto" }}>
-              {techItems.map(item => (
-                <div key={item.tech} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: "bold", color: "var(--primary)", textTransform: "uppercase" }}>{item.category}</span>
-                    <span className="badge badge-success" style={{ fontSize: "0.7rem", padding: "2px 8px" }}>{item.cost}</span>
-                  </div>
-                  <h4 style={{ fontSize: "0.95rem", margin: "4px 0" }}>{item.tech}</h4>
-                  <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{item.description}</p>
+      {/* TAB 1: TECH STACK */}
+      {activeTab === "techstack" && (
+        <div>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "12px", fontSize: "0.85rem" }}>
+            Comprehensive breakdown of open-source tools powering VitalsGuard:
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "360px", overflowY: "auto" }}>
+            {techItems.map(item => (
+              <div key={item.tech} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: "bold", color: "var(--primary)", textTransform: "uppercase" }}>{item.category}</span>
+                  <span className="badge badge-success" style={{ fontSize: "0.7rem", padding: "2px 8px" }}>{item.cost}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: VERSION HISTORY & CHANGELOG */}
-        {activeTab === "changelog" && (
-          <div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "12px", fontSize: "0.85rem" }}>
-              Full release version history and changelog (See <code>CHANGELOG.md</code>):
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "350px", overflowY: "auto" }}>
-              {versionHistory.map(v => (
-                <div key={v.version} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
-                    <span className="badge badge-primary" style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{v.version}</span>
-                    <span style={{ fontSize: "0.725rem", color: "var(--text-muted)" }}>Released: {v.date}</span>
-                  </div>
-                  <h4 style={{ fontSize: "0.9rem", margin: "4px 0", color: "var(--text-primary)" }}>{v.title}</h4>
-                  <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{v.highlights}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: CENTRAL CONFIG */}
-        {activeTab === "config" && (
-          <div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "10px", fontSize: "0.85rem" }}>
-              Live contents of central config <code>src/config/app.config.ts</code>:
-            </p>
-            <div style={{ background: "var(--bg-primary)", padding: "12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", maxHeight: "320px", overflowY: "auto" }}>
-              <pre style={{ fontSize: "0.75rem", color: "#38bdf8", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                {JSON.stringify(safeConfig, null, 2)}
-              </pre>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: PASSCODE & SECURITY */}
-        {activeTab === "passcode" && (
-          <div>
-            <form onSubmit={handleUpdatePin} style={{ background: "var(--bg-primary)", padding: "14px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "14px" }}>
-              <h3 style={{ marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px", fontSize: "0.95rem" }}>
-                <Key size={16} color="var(--primary)" /> Change Developer Passcode
-              </h3>
-              <div className="form-group">
-                <label className="form-label">New Passcode</label>
-                <input
-                  type="password"
-                  placeholder="Enter new passcode (e.g. 5678)"
-                  value={newPin}
-                  onChange={(e) => setNewPin(e.target.value)}
-                  className="form-input"
-                  required
-                />
+                <h4 style={{ fontSize: "0.95rem", margin: "4px 0" }}>{item.tech}</h4>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{item.description}</p>
               </div>
-              <button type="submit" className="btn btn-primary btn-sm" style={{ width: "100%" }}>Save New Passcode</button>
-            </form>
+            ))}
+          </div>
+        </div>
+      )}
 
+      {/* TAB 2: VERSION HISTORY & CHANGELOG */}
+      {activeTab === "changelog" && (
+        <div>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "12px", fontSize: "0.85rem" }}>
+            Full release version history and changelog (See <code>CHANGELOG.md</code>):
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "350px", overflowY: "auto" }}>
+            {versionHistory.map(v => (
+              <div key={v.version} style={{ background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
+                  <span className="badge badge-primary" style={{ fontSize: "0.75rem", fontWeight: "bold" }}>{v.version}</span>
+                  <span style={{ fontSize: "0.725rem", color: "var(--text-muted)" }}>Released: {v.date}</span>
+                </div>
+                <h4 style={{ fontSize: "0.9rem", margin: "4px 0", color: "var(--text-primary)" }}>{v.title}</h4>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{v.highlights}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: CENTRAL CONFIG */}
+      {activeTab === "config" && (
+        <div>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "10px", fontSize: "0.85rem" }}>
+            Live contents of central config <code>src/config/app.config.ts</code>:
+          </p>
+          <div style={{ background: "var(--bg-primary)", padding: "12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", maxHeight: "320px", overflowY: "auto" }}>
+            <pre style={{ fontSize: "0.75rem", color: "#38bdf8", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+              {JSON.stringify(safeConfig, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: PASSCODE & SECURITY */}
+      {activeTab === "passcode" && (
+        <div>
+          <form onSubmit={handleUpdatePin} style={{ background: "var(--bg-primary)", padding: "14px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "14px" }}>
+            <h3 style={{ marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px", fontSize: "0.95rem" }}>
+              <Key size={16} color="var(--primary)" /> Change Admin Password
+            </h3>
+            <div className="form-group">
+              <label className="form-label">New Admin Password</label>
+              <input
+                type="password"
+                placeholder="Enter new admin password (e.g. 5678)"
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+            <button type="submit" className="btn btn-primary btn-sm" style={{ width: "100%" }}>Save New Password</button>
+          </form>
+
+          {onClose && (
             <button onClick={handleLockSession} className="btn btn-danger btn-sm" style={{ width: "100%" }}>
               <Lock size={15} /> Lock Developer Session Now
             </button>
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
+      {onClose && (
         <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
           <button onClick={onClose} className="btn btn-secondary btn-sm">Close Hub</button>
         </div>
+      )}
+    </>
+  );
 
+  if (onClose) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" style={{ maxWidth: "760px", width: "95%" }} onClick={e => e.stopPropagation()}>
+          {viewContent}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="glass-card" style={{ padding: "20px" }}>
+      {viewContent}
     </div>
   );
 };

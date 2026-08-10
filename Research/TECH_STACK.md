@@ -8,8 +8,8 @@ This document details every technology, framework, database tier, email provider
 
 | Component Layer | Technology | Pricing Tier | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Frontend Core** | React 18 + TypeScript | Free | SPA architecture, modular components, strict type safety |
-| **Build Tooling** | Vite 5 | Free | Next-gen hot reload, optimized production bundle |
+| **Frontend Core** | React 19 + TypeScript | Free | SPA architecture, modular components, strict type safety |
+| **Build Tooling** | Vite 8 | Free | Next-gen hot reload, optimized production bundle |
 | **Mobile PWA** | `vite-plugin-pwa` | Free | Web Manifest & Service Worker for downloadable iOS/Android app |
 | **Database** | Supabase (PostgreSQL) | Lifetime Free Tier (500MB DB) | Multi-user relational storage (`profiles` with `is_locked` column, `medications`, `medication_logs`, `glucose_logs`, `bp_logs`, `water_items`, `water_logs`), RLS policies |
 | **Offline Storage** | HTML5 LocalStorage API | Built-in Browser Standard | Zero-config offline fallback (`vitalsguard_profiles_v1`, `vitalsguard_water_items_v1`, `vitalsguard_water_logs_v1`) |

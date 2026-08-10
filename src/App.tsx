@@ -11,6 +11,9 @@ import { WaterTracker } from "./components/WaterTracker";
 import { ProfileModal } from "./components/ProfileModal";
 import { PrivacyLockGate } from "./components/PrivacyLockGate";
 import { ToastContainer } from "./components/ToastContainer";
+import { AdminView } from "./components/AdminView";
+import { DeveloperModal } from "./components/DeveloperModal";
+
 
 const DashboardContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("vitals");
@@ -19,6 +22,15 @@ const DashboardContent: React.FC = () => {
   const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications, waterLogs, waterTargets } = useApp();
 
   const currentProfile = activeProfile || null;
+
+  // Auto-fallback redirect if current profile is not ADMIN
+  React.useEffect(() => {
+    const isProfileAdmin = activeProfile?.id === "admin" && sessionStorage.getItem("vitalsguard_unlocked_admin") === "true";
+    if (!isProfileAdmin && (activeTab === "admin" || activeTab === "developer")) {
+      setActiveTab("vitals");
+    }
+  }, [activeProfile, activeTab]);
+
 
   // Check if current active profile session is unlocked
   const isUnlocked = () => {
@@ -138,6 +150,8 @@ const DashboardContent: React.FC = () => {
         {activeTab === "water" && <WaterTracker />}
         {activeTab === "calendar" && <MedicationCalendar />}
         {activeTab === "reports" && <ReportsManager />}
+        {activeTab === "admin" && <AdminView />}
+        {activeTab === "developer" && <DeveloperModal />}
       </PrivacyLockGate>
 
       {/* Modals */}

@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { 
-  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, Wrench, KeyRound, Eye, EyeOff, Database, RotateCcw
+  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound, Eye, EyeOff, Database, RotateCcw
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
-import { DeveloperModal } from "./DeveloperModal";
 import { decryptPII, encryptPII, maskPII } from "../utils/piiSecurity";
 
 interface AdminViewProps {
@@ -19,12 +18,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
     addOrUpdateProfile, 
     deleteProfile, 
     setActiveProfileId,
-    showToast
+    showToast,
+    updateAdminPasscode
   } = useApp();
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile" | "dev_settings"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
-  const [showDevModal, setShowDevModal] = useState<boolean>(false);
+  const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
   const [showPinMap, setShowPinMap] = useState<Record<string, boolean>>({});
 
   const togglePinVisibility = (profileId: string) => {
@@ -43,6 +42,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
   };
 
   const handleDeleteClick = (id: string) => {
+    if (id === "admin") {
+      showToast("error", "Delete Restricted", "The ADMIN user cannot be deleted.");
+      return;
+    }
     deleteProfile(id);
   };
 
@@ -54,9 +57,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
     try {
       const defaultEncryptedPin = encryptPII("1234");
       await addOrUpdateProfile({ ...p, pin: defaultEncryptedPin });
-      showToast("success", "PIN Reset to 1234", `Reset security PIN for ${p.name} back to default 1234.`);
+      if (p.id === "admin") {
+        await updateAdminPasscode("1234");
+      }
+      showToast("success", "Password Reset to 1234", `Reset password for ${p.name} back to default 1234.`);
     } catch (err: any) {
-      showToast("error", "Reset Failed", err.message || "Failed to reset PIN.");
+      showToast("error", "Reset Failed", err.message || "Failed to reset password.");
     }
   };
 
@@ -66,9 +72,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
         const encrypted = encryptPII(p.pin || "1234");
         await addOrUpdateProfile({ ...p, pin: encrypted });
       }
-      showToast("success", "Database PINs Encrypted!", `All ${profiles.length} profile PINs in database are now encrypted PII ciphertext (PII_ENC:...).`);
+      showToast("success", "Database Passwords Encrypted!", `All ${profiles.length} profile passwords in database are now encrypted.`);
     } catch (err: any) {
-      showToast("error", "Encryption Failed", err.message || "Failed to encrypt database PINs.");
+      showToast("error", "Encryption Failed", err.message || "Failed to encrypt database passwords.");
     }
   };
 
@@ -77,14 +83,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
       for (const p of profiles) {
         await addOrUpdateProfile(p);
       }
-      showToast("success", "DB Schema Sync", `Successfully synced ${profiles.length} profiles to database schema.`);
+      showToast("success", "DB Schema Sync", `Successfully synced ${profiles.length} profiles to database.`);
     } catch (err: any) {
-      showToast("error", "Sync Failed", err.message || "Failed to sync profiles to DB.");
+      showToast("error", "Sync Failed", err.message || "Failed to sync profiles.");
     }
-  };
-
-  const handleDeveloperClick = () => {
-    setPendingAction({ type: "dev_settings" });
   };
 
   const startCreatingProfile = () => {
@@ -119,16 +121,28 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
     } else if (act?.type === "select_profile" && act.targetProfile) {
       sessionStorage.setItem(`vitalsguard_unlocked_${act.targetProfile.id}`, "true");
       setActiveProfileId(act.targetProfile.id);
-    } else if (act?.type === "dev_settings") {
-      setShowDevModal(true);
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProfile || !editingProfile.name) return;
-    const encryptedPin = encryptPII(editingProfile.pin || "1234");
-    await addOrUpdateProfile({ ...editingProfile, pin: encryptedPin } as UserProfile);
+
+    let updatedProfile = { ...editingProfile };
+    if (editingProfile.id === "admin") {
+      updatedProfile.name = "ADMIN";
+      updatedProfile.role = "Admin";
+      if (editingProfile.pin) {
+        await updateAdminPasscode(editingProfile.pin);
+      }
+    } else {
+      if (updatedProfile.role?.toLowerCase() === "admin") {
+        updatedProfile.role = "Member";
+      }
+    }
+
+    const encryptedPin = encryptPII(updatedProfile.pin || "1234");
+    await addOrUpdateProfile({ ...updatedProfile, pin: encryptedPin } as UserProfile);
     setEditingProfile(null);
   };
 
@@ -148,13 +162,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
           </div>
 
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <button
-              onClick={handleDeveloperClick}
-              className="btn btn-secondary btn-sm"
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <Wrench size={15} /> Open Developer Vault
-            </button>
             {onClose && (
               <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ padding: "6px 12px", minHeight: "34px" }}>✕</button>
             )}
@@ -175,14 +182,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
                 onClick={handleEncryptAllDatabasePins} 
                 className="btn btn-secondary btn-sm"
                 style={{ color: "#10b981" }}
-                title="Encrypt and mask all database PINs with PII security cipher"
+                title="Encrypt and mask all database passwords"
               >
-                <Lock size={14} /> Encrypt DB PINs
+                <Lock size={14} /> Encrypt DB Passwords
               </button>
               <button 
                 onClick={handleSyncAllProfilesToDB} 
                 className="btn btn-secondary btn-sm"
-                title="Sync all profile records to Supabase PostgreSQL database schema"
+                title="Sync all profile records to Supabase PostgreSQL database"
               >
                 <Database size={15} /> Sync Schema to DB
               </button>
@@ -237,7 +244,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
                             title="Click to toggle PIN visibility (Protected PII Sensitive)"
                           >
                             <KeyRound size={12} color="var(--primary)" />
-                            <span>PIN: {isPinVisible ? <strong>{clearPin}</strong> : <code>{maskPII(clearPin)}</code>}</span>
+                            <span>Password: {isPinVisible ? <strong>{clearPin}</strong> : <code>{maskPII(clearPin)}</code>}</span>
                             <span style={{ fontSize: "0.65rem", background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", padding: "1px 4px", borderRadius: "4px", fontWeight: "bold" }}>
                               🔒 PII Sensitive
                             </span>
@@ -276,21 +283,21 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
                     <button
                       onClick={() => setEditingProfile(p)}
                       className="btn btn-secondary btn-sm"
-                      title="Edit Profile Details & PIN"
+                      title="Edit Profile Details & Password"
                     >
                       <Edit2 size={14} /> Edit
                     </button>
-
+ 
                     <button
                       onClick={() => handleResetProfilePinToDefault(p)}
                       className="btn btn-secondary btn-sm"
                       style={{ color: "#f59e0b" }}
-                      title="Reset profile PIN back to default 1234"
+                      title="Reset profile password back to default 1234"
                     >
-                      <RotateCcw size={14} /> Reset PIN (1234)
+                      <RotateCcw size={14} /> Reset Password (1234)
                     </button>
-
-                    {profiles.length > 1 && (
+ 
+                    {p.id !== "admin" && profiles.length > 1 && (
                       <button
                         onClick={() => handleDeleteClick(p.id)}
                         className="btn btn-secondary btn-sm"
@@ -314,43 +321,45 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
           </h3>
 
           <form onSubmit={handleSave}>
-            <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <input
-                type="text"
-                placeholder="e.g. Aditya, Mom, Dad"
-                value={editingProfile.name || ""}
-                onChange={(e) => setEditingProfile({ ...editingProfile, name: e.target.value })}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <div className="grid-3" style={{ gap: "12px" }}>
-              <div className="form-group">
-                <label className="form-label">Role / Relationship</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Admin, Self, Parent"
-                  value={editingProfile.role || ""}
-                  onChange={(e) => setEditingProfile({ ...editingProfile, role: e.target.value })}
-                  className="form-input"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <KeyRound size={14} /> Security PIN
-                </label>
-                <input
-                  type="password"
-                  placeholder="e.g. 1234"
-                  value={editingProfile.pin || ""}
-                  onChange={(e) => setEditingProfile({ ...editingProfile, pin: e.target.value })}
-                  className="form-input"
-                />
-              </div>
+             <div className="form-group">
+               <label className="form-label">Full Name</label>
+               <input
+                 type="text"
+                 placeholder="e.g. Aditya, Mom, Dad"
+                 value={editingProfile.name || ""}
+                 onChange={(e) => setEditingProfile({ ...editingProfile, name: e.target.value })}
+                 className="form-input"
+                 required
+                 disabled={editingProfile.id === "admin"}
+               />
+             </div>
+ 
+             <div className="grid-3" style={{ gap: "12px" }}>
+               <div className="form-group">
+                 <label className="form-label">Role / Relationship</label>
+                 <input
+                   type="text"
+                   placeholder="e.g. Admin, Self, Parent"
+                   value={editingProfile.role || ""}
+                   onChange={(e) => setEditingProfile({ ...editingProfile, role: e.target.value })}
+                   className="form-input"
+                   required
+                   disabled={editingProfile.id === "admin"}
+                 />
+               </div>
+ 
+               <div className="form-group">
+                 <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                   <KeyRound size={14} /> Security Password
+                 </label>
+                 <input
+                   type="password"
+                   placeholder="e.g. 1234"
+                   value={editingProfile.pin || ""}
+                   onChange={(e) => setEditingProfile({ ...editingProfile, pin: e.target.value })}
+                   className="form-input"
+                 />
+               </div>
 
               <div className="form-group">
                 <label className="form-label">Profile Privacy Lock</label>
@@ -432,29 +441,19 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
           title={
             pendingAction.type === "select_profile"
               ? `Unlock Profile: ${pendingAction.targetProfile?.name}`
-              : pendingAction.type === "dev_settings"
-              ? "Developer Passcode Required"
-              : "Admin Passcode Verification Required"
+              : "Admin Password Verification Required"
           }
           expectedPin={
             pendingAction.type === "select_profile"
               ? (pendingAction.targetProfile?.pin || "1234")
               : undefined
           }
-          isMasterOnly={pendingAction.type === "dev_settings"}
           subtitle={
             pendingAction.type === "select_profile"
-              ? `Enter ${pendingAction.targetProfile?.name}'s PIN (default: 1234) or Admin Passcode to switch.`
-              : pendingAction.type === "dev_settings"
-              ? "Enter Admin Passcode to launch Developer Settings Hub."
+              ? `Enter ${pendingAction.targetProfile?.name}'s Password (default: 1234) or Admin Password to switch.`
               : undefined
           }
         />
-      )}
-
-      {/* Developer Vault Modal */}
-      {showDevModal && (
-        <DeveloperModal onClose={() => setShowDevModal(false)} />
       )}
 
     </div>

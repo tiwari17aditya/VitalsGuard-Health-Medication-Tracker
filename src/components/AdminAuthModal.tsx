@@ -29,7 +29,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     e.preventDefault();
     const input = pinInput.trim();
     const isMasterValid = input === savedPin;
-    const isProfileValid = expectedPin ? verifyPIIPin(input, expectedPin) : false;
+    const isProfileValid = expectedPin ? verifyPIIPin(input, expectedPin, savedPin) : false;
 
     // For Master-only calls (Developer settings/Admin hub launch), verify master passcode.
     // For profile switching/unlocking, verify target profile's active PIN strictly.
@@ -38,7 +38,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     if (isValid) {
       onSuccess();
     } else {
-      setErrorMsg(isMasterOnly ? "Incorrect Admin Passcode! Please try again." : "Incorrect Security PIN! Please enter the correct PIN for this profile.");
+      setErrorMsg(isMasterOnly ? "Incorrect Admin Password! Please try again." : "Incorrect Password! Please enter the correct User Password or Admin Password.");
     }
   };
 
@@ -62,18 +62,18 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
           </div>
           <h2>{title}</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>
-            {subtitle || "Restricted Action: Enter profile PIN or Admin Passcode to proceed."}
+            {subtitle || "Restricted Action: Enter User Password or Admin Password to proceed."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Key size={14} /> Profile PIN / Admin Passcode
+              <Key size={14} /> Password
             </label>
             <input
               type="password"
-              placeholder="Enter PIN or passcode"
+              placeholder="Enter User or Admin Password"
               value={pinInput}
               onChange={(e) => { setPinInput(e.target.value); setErrorMsg(""); }}
               className="form-input"
@@ -100,7 +100,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
         </form>
 
         <div style={{ textAlign: "center", marginTop: "16px", fontSize: "0.775rem", color: "var(--text-muted)" }}>
-          💡 Passcode is configured in <code>src/config/app.config.ts</code>.
+          💡 Set and manage passwords in the settings panel.
         </div>
 
       </div>

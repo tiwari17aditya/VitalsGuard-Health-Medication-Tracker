@@ -17,6 +17,8 @@ import {
   supabase
 } from "../lib/supabase";
 import { sendEmailNotification, generateRefillAlertHTML, generateDailyCheckHTML } from "../services/emailService";
+import { encryptPII } from "../utils/piiSecurity";
+
 
 
 interface AppContextType {
@@ -377,6 +379,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         loadedProfiles = loadedProfiles.filter(p => p.id !== "system-settings");
 
+        // Force all profiles other than "admin" to have a non-admin role to prevent privilege escalation
+        loadedProfiles = loadedProfiles.map(p => {
+          if (p.id !== "admin" && p.role === "Admin") {
+            p.role = "Member";
+            saveProfileDB(p).then();
+          }
+          return p;
+        });
+
+        const currentAdminPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
+        const adminIndex = loadedProfiles.findIndex(p => p.id === "admin");
+
+        if (adminIndex === -1) {
+          const adminProfile: UserProfile = {
+            id: "admin",
+            name: "ADMIN",
+            role: "Admin",
+            age: 30,
+            gender: "Male",
+            weight: 70,
+            season: "Spring/Autumn",
+            targetGlucoseFasting: "70-110 mg/dL",
+            targetGlucosePostMeal: "< 140 mg/dL",
+            targetBP: "120/80 mmHg",
+            targetWater: 2500,
+            avatarColor: "#dc2626", // Admin red
+            isLocked: true,
+            pin: encryptPII(currentAdminPin)
+          };
+          saveProfileDB(adminProfile).then();
+          loadedProfiles = [adminProfile, ...loadedProfiles];
+        } else {
+          const existingAdmin = loadedProfiles[adminIndex];
+          if (existingAdmin.role !== "Admin" || existingAdmin.name !== "ADMIN" || existingAdmin.pin !== encryptPII(currentAdminPin)) {
+            const updatedAdmin = {
+              ...existingAdmin,
+              name: "ADMIN",
+              role: "Admin",
+              pin: encryptPII(currentAdminPin)
+            };
+            saveProfileDB(updatedAdmin).then();
+            loadedProfiles = loadedProfiles.map(p => p.id === "admin" ? updatedAdmin : p);
+          }
+        }
+
         if (loadedProfiles.length > 0) {
           setProfiles(loadedProfiles);
           const targets: Record<string, number> = {};
@@ -387,7 +434,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           
           const savedId = localStorage.getItem("vitalsguard_active_profile");
           const match = loadedProfiles.find(p => p.id === savedId);
-          if (match) setActiveProfileIdState(match.id);
+          if (match) {
+            setActiveProfileIdState(match.id);
+          } else {
+            const adminMatch = loadedProfiles.find(p => p.id === "admin");
+            if (adminMatch) {
+              setActiveProfileIdState(adminMatch.id);
+              localStorage.setItem("vitalsguard_active_profile", adminMatch.id);
+            } else {
+              setActiveProfileIdState(loadedProfiles[0].id);
+              localStorage.setItem("vitalsguard_active_profile", loadedProfiles[0].id);
+            }
+          }
         }
       }
 
@@ -1047,6 +1105,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         role: "System",
         notes: newPin
       } as UserProfile);
+
+      // Keep ADMIN profile PIN in sync
+      const adminPinEnc = encryptPII(newPin);
+      const existingAdmin = profiles.find(p => p.id === "admin");
+      if (existingAdmin) {
+        const updatedAdmin = { ...existingAdmin, pin: adminPinEnc };
+        await saveProfileDB(updatedAdmin);
+        setProfiles(prev => prev.map(p => p.id === "admin" ? updatedAdmin : p));
+      }
     } catch (err) {
       console.warn("Error saving passcode profile:", err);
     }

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.0] - 2026-08-10
+
+### Added & Enhanced
+- **Dedicated `ADMIN` User Seeding & Isolation**: Added auto-seeding for a permanent profile with ID `"admin"`, name `"ADMIN"`, and role `"Admin"` locked by default. Added initialization checks to automatically demote any non-seeded users (like `"Aditya"`) having the `"Admin"` role to `"Member"`. Added restrictions in `AdminView` to prevent modifying `"ADMIN"` details or roles of other profiles.
+- **Admin Password & Terminology Unification**: Unified passcode, PIN, and credential labels in all UI views to strictly refer to **User Password** and **Admin Password**. Configured complete synchronization between the `"ADMIN"` profile's password and the global Admin Password.
+- **Admin & Developer Settings Navigation Tabs**: Added `"Admin Panel"` and `"Developer Settings"` tabs to the main navigation menu, conditionally rendered only when the `"ADMIN"` profile is active and unlocked. Integrated `AdminView` and `DeveloperModal` inline under these tabs and removed redundant triggers from the header.
+
 ## [1.18.1] - 2026-08-06
 
 ### Fixed & Enhanced

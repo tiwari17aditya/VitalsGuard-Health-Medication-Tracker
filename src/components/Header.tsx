@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 import { BookOpen, Heart, Users, AlertTriangle, ShieldCheck, 
-  Phone, CheckCircle2, WifiOff, Wrench, Lock, Unlock, KeyRound, Shield
+  Phone, CheckCircle2, WifiOff, Lock, Unlock, KeyRound
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
 import { AdminAuthModal } from "./AdminAuthModal";
-import { DeveloperModal } from "./DeveloperModal";
 import { ChangePinModal } from "./ChangePinModal";
-import { AdminView } from "./AdminView";
 import { UserGuideModal } from "./UserGuideModal";
 
 interface HeaderProps {
@@ -25,14 +23,11 @@ export const Header: React.FC<HeaderProps> = () => {
     medications
   } = useApp();
 
-  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
-  const [showDevModal, setShowDevModal] = useState<boolean>(false);
-  const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [showChangePinModal, setShowChangePinModal] = useState<boolean>(false);
   const [showUserGuideModal, setShowUserGuideModal] = useState<boolean>(false);
   const [pendingLockProfileId, setPendingLockProfileId] = useState<string | null>(null);
 
-  const isAdminProfile = activeProfile?.name.toLowerCase() === "aditya" || activeProfile?.role === "Admin";
+  const isAdminProfile = activeProfile?.id === "admin" && sessionStorage.getItem("vitalsguard_unlocked_admin") === "true";
 
   // Filter low stock meds ONLY for current active user profile
   const profileLowStockMeds = medications.filter(
@@ -59,15 +54,6 @@ export const Header: React.FC<HeaderProps> = () => {
       ...activeProfile,
       isLocked: newLockState
     });
-  };
-
-  const handleDeveloperClick = () => {
-    setShowAuthModal(true);
-  };
-
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    setShowDevModal(true);
   };
 
   const pendingProfileObj = profiles.find(p => p.id === pendingLockProfileId);
@@ -167,9 +153,9 @@ export const Header: React.FC<HeaderProps> = () => {
               onClick={() => setShowChangePinModal(true)}
               className="btn btn-secondary btn-sm"
               style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px" }}
-              title={`Change PIN / Password for ${activeProfile.name}`}
+              title={`Change Password for ${activeProfile.name}`}
             >
-              <KeyRound size={13} /> Change PIN
+              <KeyRound size={13} /> Change Password
             </button>
           )}
 
@@ -221,40 +207,9 @@ export const Header: React.FC<HeaderProps> = () => {
             )
           )}
 
-          {/* Admin Control Hub Button (Visible ONLY to Aditya / Admin) */}
-          {isAdminProfile && (
-            <button
-              id="header-admin-hub-btn"
-              onClick={() => setShowAdminModal(true)}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px", borderColor: "rgba(245, 158, 11, 0.4)", color: "#f59e0b" }}
-              title="Admin Security & User Profiles Hub"
-            >
-              <Shield size={13} color="#f59e0b" /> Admin Hub
-            </button>
-          )}
-
-          {/* Developer Settings Button (Visible ONLY to Aditya / Admin) */}
-          {isAdminProfile && (
-            <button
-              id="header-dev-settings-btn"
-              onClick={handleDeveloperClick}
-              className="btn btn-secondary btn-sm"
-              style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px" }}
-              title="Developer Settings Hub"
-            >
-              <Wrench size={13} /> Developer Settings
-            </button>
-          )}
-
         </div>
 
       </div>
-
-      {/* Admin Security & User Profiles Hub Modal */}
-      {showAdminModal && (
-        <AdminView onClose={() => setShowAdminModal(false)} />
-      )}
 
       {/* Profile Switch Lock Verification Gate */}
       {pendingLockProfileId && (
@@ -269,24 +224,8 @@ export const Header: React.FC<HeaderProps> = () => {
           onClose={() => setPendingLockProfileId(null)}
           title={`Unlock ${pendingProfileObj?.name || "Profile"}`}
           expectedPin={pendingProfileObj?.pin || "1234"}
-          subtitle={`Enter ${pendingProfileObj?.name || "Profile"}'s PIN (default: 1234) or Admin Passcode to switch.`}
+          subtitle={`Enter ${pendingProfileObj?.name || "Profile"}'s Password (default: 1234) or the Admin Password to switch.`}
         />
-      )}
-
-      {/* Developer Passcode Authentication Modal */}
-      {showAuthModal && (
-        <AdminAuthModal
-          onSuccess={handleAuthSuccess}
-          onClose={() => setShowAuthModal(false)}
-          title="Developer Passcode Required"
-          isMasterOnly={true}
-          subtitle="Enter Admin Passcode to launch Developer Settings Hub."
-        />
-      )}
-
-      {/* Developer Settings Hub Modal */}
-      {showDevModal && (
-        <DeveloperModal onClose={() => setShowDevModal(false)} />
       )}
 
       {/* Change PIN Modal */}

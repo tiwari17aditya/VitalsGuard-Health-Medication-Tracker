@@ -12,7 +12,7 @@ interface ChangePinModalProps {
 }
 
 export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose, onSuccess }) => {
-  const { addOrUpdateProfile, showToast, logUserAction } = useApp();
+  const { addOrUpdateProfile, showToast, logUserAction, updateAdminPasscode } = useApp();
 
   const [currentPin, setCurrentPin] = useState<string>("");
   const [newPin, setNewPin] = useState<string>("");
@@ -34,19 +34,19 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
     // 1. Verify Current PIN or Master Admin PIN using PII verification
     const isCurrentValid = verifyPIIPin(currInput, existingProfilePin, masterAdminPin);
     if (!isCurrentValid) {
-      setErrorMsg("Current PIN is incorrect! Please enter your existing profile PIN or Admin Passcode.");
+      setErrorMsg("Current Password is incorrect! Please enter your existing User Password or the Admin Password.");
       return;
     }
 
     // 2. Validate New PIN format (minimum 4 chars/digits)
     if (newPinInput.length < 4) {
-      setErrorMsg("New PIN must be at least 4 characters/digits long.");
+      setErrorMsg("New Password must be at least 4 characters long.");
       return;
     }
 
     // 3. Validate PIN Confirmation Match
     if (newPinInput !== confirmInput) {
-      setErrorMsg("New PIN and Confirm PIN do not match! Please check and try again.");
+      setErrorMsg("New Password and Confirm Password do not match! Please check and try again.");
       return;
     }
 
@@ -61,17 +61,22 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
 
       await addOrUpdateProfile(updatedProfile);
 
+      // Synchronize with admin passcode if this is the ADMIN profile
+      if (profile.id === "admin") {
+        await updateAdminPasscode(newPinInput);
+      }
+
       // Keep current profile session authenticated
       sessionStorage.setItem(`vitalsguard_unlocked_${profile.id}`, "true");
 
-      logUserAction("PROFILE_UPDATED", `Updated security PIN for profile: ${profile.name}`);
-      showToast("success", "PIN Changed Successfully", `Security PIN for ${profile.name} has been updated.`);
+      logUserAction("PROFILE_UPDATED", `Updated password for profile: ${profile.name}`);
+      showToast("success", "Password Changed Successfully", `Password for ${profile.name} has been updated.`);
 
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
-      console.error("Error updating profile PIN:", err);
-      setErrorMsg("Failed to update PIN. Please try again.");
+      console.error("Error updating profile password:", err);
+      setErrorMsg("Failed to update password. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -86,15 +91,21 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
         pin: defaultEncryptedPin
       };
       await addOrUpdateProfile(updatedProfile);
+
+      // Synchronize with admin passcode if this is the ADMIN profile
+      if (profile.id === "admin") {
+        await updateAdminPasscode("1234");
+      }
+
       sessionStorage.setItem(`vitalsguard_unlocked_${profile.id}`, "true");
-      logUserAction("PROFILE_UPDATED", `Reset security PIN to default (1234) for profile: ${profile.name}`);
-      showToast("success", "PIN Reset to Default (1234)", `Security PIN for ${profile.name} has been reset to 1234. Current PIN set to 1234.`);
+      logUserAction("PROFILE_UPDATED", `Reset password to default (1234) for profile: ${profile.name}`);
+      showToast("success", "Password Reset to Default (1234)", `Password for ${profile.name} has been reset to 1234. Current password set to 1234.`);
       setCurrentPin("1234");
       setErrorMsg("");
       if (onSuccess) onSuccess();
     } catch (err) {
-      console.error("Error resetting PIN:", err);
-      setErrorMsg("Failed to reset PIN to default.");
+      console.error("Error resetting password:", err);
+      setErrorMsg("Failed to reset password to default.");
     } finally {
       setIsSubmitting(false);
     }
@@ -119,9 +130,9 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
           }}>
             <KeyRound size={28} />
           </div>
-          <h2 style={{ fontSize: "1.3rem" }}>Change Security PIN ({profile.name})</h2>
+          <h2 style={{ fontSize: "1.3rem" }}>Change Password ({profile.name})</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Set a new PIN to lock and secure access to <strong>{profile.name}</strong>'s health records.
+            Set a new password to lock and secure access to <strong>{profile.name}</strong>'s health records.
           </p>
         </div>
 
@@ -129,12 +140,12 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
           {/* Current PIN Input */}
           <div className="form-group">
             <label className="form-label" htmlFor="change-pin-current" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Lock size={14} /> Current PIN / Admin Passcode
+              <Lock size={14} /> Current Password / Admin Password
             </label>
             <input
               id="change-pin-current"
               type="password"
-              placeholder="Enter current PIN (If resetted/default, use: 1234)"
+              placeholder="Enter current password (default: 1234)"
               value={currentPin}
               onChange={(e) => { setCurrentPin(e.target.value); setErrorMsg(""); }}
               className="form-input"
@@ -146,12 +157,12 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
           {/* New PIN Input */}
           <div className="form-group">
             <label className="form-label" htmlFor="change-pin-new" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <KeyRound size={14} /> New Security PIN
+              <KeyRound size={14} /> New Password
             </label>
             <input
               id="change-pin-new"
               type="password"
-              placeholder="Enter new 4-digit PIN (e.g. 5678)"
+              placeholder="Enter new password (e.g. 5678)"
               value={newPin}
               onChange={(e) => { setNewPin(e.target.value); setErrorMsg(""); }}
               className="form-input"
@@ -162,12 +173,12 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
           {/* Confirm New PIN Input */}
           <div className="form-group">
             <label className="form-label" htmlFor="change-pin-confirm" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <CheckCircle2 size={14} /> Confirm New PIN
+              <CheckCircle2 size={14} /> Confirm New Password
             </label>
             <input
               id="change-pin-confirm"
               type="password"
-              placeholder="Re-enter new PIN to confirm"
+              placeholder="Re-enter new password to confirm"
               value={confirmPin}
               onChange={(e) => { setConfirmPin(e.target.value); setErrorMsg(""); }}
               className="form-input"
@@ -203,7 +214,7 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
               disabled={isSubmitting}
               style={{ flex: 1 }}
             >
-              <ShieldCheck size={18} /> {isSubmitting ? "Updating PIN..." : "Save New PIN"}
+              <ShieldCheck size={18} /> {isSubmitting ? "Updating Password..." : "Save New Password"}
             </button>
             <button
               id="change-pin-cancel-btn"
@@ -224,12 +235,12 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
             disabled={isSubmitting}
             style={{ width: "100%", justifyContent: "center", marginTop: "10px", color: "#f59e0b", borderColor: "rgba(245, 158, 11, 0.4)" }}
           >
-            <RotateCcw size={14} /> Reset PIN to Default (1234)
+            <RotateCcw size={14} /> Reset Password to Default (1234)
           </button>
         </form>
 
         <div style={{ textAlign: "center", marginTop: "16px", fontSize: "0.775rem", color: "var(--text-muted)" }}>
-          💡 Default PIN is <code>1234</code>. You can also use the Master Admin Passcode if forgotten.
+          💡 Default password is <code>1234</code>. You can also use the Admin Password if forgotten.
         </div>
 
       </div>
