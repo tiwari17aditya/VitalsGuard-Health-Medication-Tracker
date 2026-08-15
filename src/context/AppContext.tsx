@@ -9,7 +9,7 @@ import {
   fetchMedications, saveMedicationDB, deleteMedicationDB,
   fetchMedicationLogs, logAdherenceDB, deleteMedicationLogDB,
   fetchGlucoseLogs, saveGlucoseLogDB, deleteGlucoseLogDB,
-  fetchBPLogs, saveBPLogDB,
+  fetchBPLogs, saveBPLogDB, deleteBPLogDB,
   fetchWaterLogs, saveWaterLogDB, deleteWaterLogDB,
   fetchWaterItems, saveWaterItemDB, deleteWaterItemDB,
   loadFromStorage, STORAGE_KEYS,
@@ -45,6 +45,7 @@ interface AppContextType {
   deleteGlucoseLog: (logId: string) => Promise<void>;
   bpLogs: BPLog[];
   addBPLog: (sys: number, dia: number, pulse: number, notes?: string, customTimeStr?: string) => Promise<void>;
+  deleteBPLog: (logId: string) => Promise<void>;
 
   // Water Intake Tracking
   waterItems: WaterItem[];
@@ -906,6 +907,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteBPLog = async (logId: string) => {
+    try {
+      await deleteBPLogDB(logId);
+      setBpLogs(prev => prev.filter(b => b.id !== logId));
+      showToast("info", "Log Deleted", "Blood pressure reading removed.");
+      logUserAction("BP_LOG_DELETED", "Deleted blood pressure log entry");
+    } catch (err: any) {
+      showToast("error", "Delete Error", err.message || "Could not delete BP log.");
+    }
+  };
+
   // WATER CONTAINER & ITEM MANAGEMENT
   const addWaterItem = async (itemData: Omit<WaterItem, "id">) => {
     if (!activeProfile) return;
@@ -1145,6 +1157,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteGlucoseLog,
         bpLogs,
         addBPLog,
+        deleteBPLog,
 
         waterItems,
         waterLogs,

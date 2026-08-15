@@ -5,7 +5,7 @@ import type { MealType } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
 
 export const VitalsTracker: React.FC = () => {
-  const { activeProfile, glucoseLogs, addGlucoseLog, deleteGlucoseLog, bpLogs, addBPLog } = useApp();
+  const { activeProfile, glucoseLogs, bpLogs, addGlucoseLog, deleteGlucoseLog, addBPLog, deleteBPLog } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState<"glucose" | "bp">("glucose");
 
@@ -26,8 +26,8 @@ export const VitalsTracker: React.FC = () => {
   const [glucoseDate, setGlucoseDate] = useState<string>(getTodayYMD());
   const [glucoseFilter, setGlucoseFilter] = useState<string>("all");
 
-  // Admin Auth state for deleting glucose logs
-  const [pendingDeleteLogId, setPendingDeleteLogId] = useState<string | null>(null);
+  // Admin Auth state for deleting logs (Glucose or BP)
+  const [pendingDeleteTarget, setPendingDeleteTarget] = useState<{ id: string; type: "glucose" | "bp" } | null>(null);
 
   // Form states for Blood Pressure
   const [systolic, setSystolic] = useState<number>(120);
@@ -77,18 +77,22 @@ export const VitalsTracker: React.FC = () => {
     setGlucoseNotes("");
   };
 
-  const handleDeleteGlucoseClick = (logId: string) => {
-    if (activeProfile.isLocked && sessionStorage.getItem(`vitalsguard_unlocked_${activeProfile.id}`) !== "true") {
-      setPendingDeleteLogId(logId);
-    } else {
-      deleteGlucoseLog(logId);
-    }
+  const handleDeleteGlucoseClick = (id: string) => {
+    setPendingDeleteTarget({ id, type: "glucose" });
+  };
+
+  const handleDeleteBPClick = (id: string) => {
+    setPendingDeleteTarget({ id, type: "bp" });
   };
 
   const handleAuthDeleteSuccess = () => {
-    if (pendingDeleteLogId) {
-      deleteGlucoseLog(pendingDeleteLogId);
-      setPendingDeleteLogId(null);
+    if (pendingDeleteTarget) {
+      if (pendingDeleteTarget.type === "glucose") {
+        deleteGlucoseLog(pendingDeleteTarget.id);
+      } else {
+        deleteBPLog(pendingDeleteTarget.id);
+      }
+      setPendingDeleteTarget(null);
     }
   };
 
@@ -480,6 +484,7 @@ export const VitalsTracker: React.FC = () => {
                       <th>Reading</th>
                       <th>Pulse</th>
                       <th>Category</th>
+                      <th style={{ textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -495,6 +500,17 @@ export const VitalsTracker: React.FC = () => {
                             {b.category}
                           </span>
                         </td>
+                        <td style={{ textAlign: "center" }}>
+                          <button
+                            id={`delete-bp-log-${b.id}`}
+                            title="Delete Blood Pressure Log"
+                            onClick={() => handleDeleteBPClick(b.id)}
+                            className="btn btn-icon btn-danger"
+                            style={{ padding: "4px 8px" }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -507,13 +523,13 @@ export const VitalsTracker: React.FC = () => {
       )}
 
       {/* Admin PIN Authentication Modal for Log Deletion */}
-      {pendingDeleteLogId && (
+      {pendingDeleteTarget && (
         <AdminAuthModal
-          title="Confirm Glucose Log Deletion"
-          subtitle="Enter User Password or Admin Password to delete this glucose reading record."
+          title={`Confirm ${pendingDeleteTarget.type === "glucose" ? "Glucose" : "Blood Pressure"} Log Deletion`}
+          subtitle={`Enter User Password or Admin Password to delete this ${pendingDeleteTarget.type === "glucose" ? "glucose reading" : "blood pressure"} record.`}
           authMode="delete_log"
           expectedPin={activeProfile?.pin}
-          onClose={() => setPendingDeleteLogId(null)}
+          onClose={() => setPendingDeleteTarget(null)}
           onSuccess={handleAuthDeleteSuccess}
         />
       )}

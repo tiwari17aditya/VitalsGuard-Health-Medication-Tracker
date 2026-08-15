@@ -656,6 +656,20 @@ export async function saveBPLogDB(log: BPLog): Promise<BPLog> {
   return log;
 }
 
+export async function deleteBPLogDB(id: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from(APP_CONFIG.supabaseTables.bpLogs).delete().eq("id", id);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase deleteBPLog error:", err);
+    }
+  }
+  const logs = loadFromStorage<BPLog[]>(STORAGE_KEYS.BP_LOGS, []);
+  saveToStorage(STORAGE_KEYS.BP_LOGS, logs.filter(l => l.id !== id));
+  return true;
+}
+
 // --- WATER CONTAINERS & ITEMS ---
 export async function fetchWaterItems(profileId?: string): Promise<WaterItem[]> {
   if (isSupabaseConfigured && supabase) {

@@ -35,8 +35,6 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   // Determine effective mode
   const mode = authMode || (isMasterOnly ? "admin" : (expectedPin ? "user" : "either"));
 
-  const savedAdminPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
-
   // Custom UI content based on mode
   let defaultTitle = "Passcode Verification Required";
   let defaultSubtitle = "Authorization Required: Enter password to proceed.";
@@ -70,22 +68,27 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     e.preventDefault();
     const input = pinInput.trim();
 
-    const isMasterValid =
+    const adminProfile = profiles.find(p => p.id === "admin");
+    const savedAdminPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
+
+    // Check if input matches ANY valid Admin Password (plaintext, default 1234, or encrypted admin profile PIN)
+    const isAdminValid =
       input === savedAdminPin ||
       input === APP_CONFIG.security.adminPasscode ||
-      (savedAdminPin ? input === savedAdminPin : false);
+      (adminProfile?.pin ? verifyPIIPin(input, adminProfile.pin, savedAdminPin) : false) ||
+      verifyPIIPin(input, savedAdminPin, savedAdminPin);
 
     const targetPin = expectedPin || activeProfile?.pin || "1234";
     const isUserValid = verifyPIIPin(input, targetPin, savedAdminPin);
 
     let isValid = false;
     if (mode === "admin") {
-      isValid = isMasterValid;
+      isValid = isAdminValid;
     } else if (mode === "user") {
-      isValid = isUserValid;
+      isValid = isUserValid || isAdminValid;
     } else {
       // delete_log or either: accepts EITHER Admin password OR User password!
-      isValid = isMasterValid || isUserValid;
+      isValid = isAdminValid || isUserValid;
     }
 
     if (isValid) {
