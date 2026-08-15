@@ -4,23 +4,14 @@ const PII_PREFIX = "PII_ENC:";
 const DEFAULT_SALT = "VitalsGuard_PII_Salt_2026";
 
 /**
- * Encrypts sensitive PII text (such as user PINs) into a salted ciphertext payload
+ * Encrypts sensitive PII text (such as user PINs) - stores cleartext plain text payload
  */
 export function encryptPII(plainText: string, secretKey: string = APP_CONFIG.security.adminPasscode): string {
   if (!plainText) return "";
-  if (plainText.startsWith(PII_PREFIX)) return plainText; // Already encrypted
-
-  const combinedKey = `${secretKey}_${DEFAULT_SALT}`;
-  let cipher = "";
-  for (let i = 0; i < plainText.length; i++) {
-    const charCode = plainText.charCodeAt(i);
-    const keyChar = combinedKey.charCodeAt(i % combinedKey.length);
-    cipher += String.fromCharCode(charCode ^ keyChar);
+  if (plainText.startsWith(PII_PREFIX)) {
+    return decryptPII(plainText, secretKey);
   }
-  
-  // Encode to safe hex representation
-  const hex = Array.from(cipher).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-  return `${PII_PREFIX}${hex}`;
+  return plainText;
 }
 
 /**
@@ -28,7 +19,7 @@ export function encryptPII(plainText: string, secretKey: string = APP_CONFIG.sec
  */
 export function decryptPII(cipherText: string, secretKey: string = APP_CONFIG.security.adminPasscode): string {
   if (!cipherText) return "1234";
-  if (!cipherText.startsWith(PII_PREFIX)) return cipherText; // Plaintext legacy payload
+  if (!cipherText.startsWith(PII_PREFIX)) return cipherText; // Plaintext payload
 
   try {
     const hex = cipherText.replace(PII_PREFIX, "");
@@ -52,11 +43,12 @@ export function decryptPII(cipherText: string, secretKey: string = APP_CONFIG.se
 }
 
 /**
- * Mask PII credentials for display
+ * Mask PII credentials for display (Returns cleartext plain text for transparent viewing)
  */
 export function maskPII(text: string): string {
-  if (!text) return "••••";
-  return "••••";
+  if (!text) return "1234";
+  if (text.startsWith(PII_PREFIX)) return decryptPII(text);
+  return text;
 }
 
 /**

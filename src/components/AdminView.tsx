@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { 
-  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound, Eye, EyeOff, Database, RotateCcw
+  Shield, Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound, Database, RotateCcw
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
-import { decryptPII, encryptPII, maskPII } from "../utils/piiSecurity";
+import { decryptPII, encryptPII } from "../utils/piiSecurity";
 
 interface AdminViewProps {
   onClose?: () => void;
@@ -24,11 +24,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
   const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
-  const [showPinMap, setShowPinMap] = useState<Record<string, boolean>>({});
-
-  const togglePinVisibility = (profileId: string) => {
-    setShowPinMap(prev => ({ ...prev, [profileId]: !prev[profileId] }));
-  };
 
   const handleSelectProfileClick = (p: UserProfile) => {
     if (p.id === activeProfile?.id) return;
@@ -202,7 +197,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {profiles.map(p => {
               const isCurrent = p.id === activeProfile?.id;
-              const isPinVisible = Boolean(showPinMap[p.id]);
 
               return (
                 <div
@@ -239,16 +233,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
                         return (
                           <span 
                             className="badge badge-secondary" 
-                            style={{ fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer" }}
-                            onClick={() => togglePinVisibility(p.id)}
-                            title="Click to toggle PIN visibility (Protected PII Sensitive)"
+                            style={{ fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                            title="Profile Password"
                           >
                             <KeyRound size={12} color="var(--primary)" />
-                            <span>Password: {isPinVisible ? <strong>{clearPin}</strong> : <code>{maskPII(clearPin)}</code>}</span>
-                            <span style={{ fontSize: "0.65rem", background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", padding: "1px 4px", borderRadius: "4px", fontWeight: "bold" }}>
-                              🔒 PII Sensitive
-                            </span>
-                            {isPinVisible ? <EyeOff size={12} /> : <Eye size={12} />}
+                            <span>Password: <strong style={{ letterSpacing: "1px" }}>{clearPin || "1234"}</strong></span>
                           </span>
                         );
                       })()}
