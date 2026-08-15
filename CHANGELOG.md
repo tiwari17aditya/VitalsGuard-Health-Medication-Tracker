@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.0] - 2026-08-15
+
+### Added & Enhanced
+- **Explicit Role-Based Password Lock Prompts (`AdminAuthModal.tsx`)**: Refactored password verification prompts to explicitly request either **Admin Password** (for administrative/system actions) or **User Password** (for unlocking user profile data), eliminating ambiguous combined prompt wording.
+- **Log Record Deletion Authorization (`WaterTracker.tsx` / `VitalsTracker.tsx` / `MedicationTracker.tsx`)**: Fixed log deletion authorization across Water, Glucose, Blood Pressure, and Medication trackers so entering EITHER the Admin Password or the User Password successfully authorizes deletion.
+- **Integrated Default Password Reset to 1234 (`AdminAuthModal.tsx` / `AdminView.tsx` / `ProfileModal.tsx` / `ChangePinModal.tsx`)**: Standardized default password for admin and users to `1234`. Built 1-click **Reset Password to Default (1234)** buttons into the alert prompt modal (`AdminAuthModal`), Admin Hub (`AdminView`), User Profile Manager (`ProfileModal`), and Change Password modal (`ChangePinModal`).
+- **Water Tracker SVG Wave Animations & Unique ID Scoping (`WaterTracker.tsx`)**: Refactored `DynamicWaterGlass` to use React `useId()` for instance-scoped SVG `linearGradient` and `clipPath` IDs, eliminating DOM ID collision bugs across past days. Added `@keyframes mini-wave` SVG surface wave animations and smooth liquid level transitions.
+- **Data Refresh Loading Indicator & Manual Sync Button (`AppContext.tsx` / `App.tsx` / `Header.tsx`)**: Exported `refreshAllData` and set `setIsLoading(true)` at start of Supabase database refreshes. Added a glowing glassmorphism loading banner in `App.tsx` and a **Refresh Data** button in `Header.tsx` with animated spin indicators.
+
 ## [1.20.0] - 2026-08-10
 
 ### Added & Enhanced

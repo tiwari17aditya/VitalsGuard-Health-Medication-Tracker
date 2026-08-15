@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound } from "lucide-react";
+import { Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound, RotateCcw } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
@@ -29,11 +29,24 @@ interface ProfileModalProps {
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
-  const { profiles, activeProfile, addOrUpdateProfile, deleteProfile, setActiveProfileId } = useApp();
+  const { profiles, activeProfile, addOrUpdateProfile, deleteProfile, setActiveProfileId, showToast, updateAdminPasscode } = useApp();
 
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile> | null>(null);
   const [pendingAction, setPendingAction] = useState<{ type: "add" | "delete" | "toggle_lock" | "select_profile"; deleteId?: string; targetProfile?: UserProfile } | null>(null);
   const [useAutoWater, setUseAutoWater] = useState<boolean>(true);
+
+  const handleResetProfilePinToDefault = async (p: UserProfile) => {
+    try {
+      const defaultEncryptedPin = encryptPII("1234");
+      await addOrUpdateProfile({ ...p, pin: defaultEncryptedPin });
+      if (p.id === "admin") {
+        await updateAdminPasscode("1234");
+      }
+      showToast("success", "Password Reset to 1234", `Reset password for ${p.name} back to default 1234.`);
+    } catch (err: any) {
+      showToast("error", "Reset Failed", err.message || "Failed to reset password.");
+    }
+  };
 
   useEffect(() => {
     if (!editingProfile || !useAutoWater) return;
@@ -203,6 +216,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                       title="Edit Profile"
                     >
                       <Edit2 size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleResetProfilePinToDefault(p)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ color: "#f59e0b" }}
+                      title="Reset password back to default 1234"
+                    >
+                      <RotateCcw size={14} />
                     </button>
                     {profiles.length > 1 && (
                       <button
@@ -430,6 +451,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
           <AdminAuthModal
             onSuccess={handleAuthSuccess}
             onClose={() => setPendingAction(null)}
+            authMode={pendingAction.type === "select_profile" ? "user" : "admin"}
+            targetProfileName={pendingAction.targetProfile?.name}
+            targetProfileId={pendingAction.targetProfile?.id}
             title={
               pendingAction.type === "select_profile"
                 ? `Unlock Profile: ${pendingAction.targetProfile?.name}`
@@ -442,8 +466,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
             }
             subtitle={
               pendingAction.type === "select_profile"
-                ? `Enter ${pendingAction.targetProfile?.name}'s PIN (default: 1234) or Admin Passcode to switch.`
-                : undefined
+                ? `Enter ${pendingAction.targetProfile?.name}'s User Password to switch control.`
+                : "Restricted Admin Action: Enter Admin Password to proceed."
             }
           />
         )}

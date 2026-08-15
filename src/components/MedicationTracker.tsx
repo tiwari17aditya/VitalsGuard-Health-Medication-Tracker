@@ -824,9 +824,10 @@ export const MedicationTracker: React.FC = () => {
         <AdminAuthModal
           onClose={() => setPendingDeleteAction(null)}
           onSuccess={handleAuthDeleteSuccess}
-          title="Admin Passcode Required to Delete"
-          isMasterOnly={true}
-          subtitle="Enter Admin Passcode to delete prescription record."
+          title={`Confirm ${pendingDeleteAction.type === "medication" ? "Prescription" : "Intake Log"} Deletion`}
+          authMode="delete_log"
+          expectedPin={activeProfile?.pin}
+          subtitle={`Enter User Password or Admin Password to delete this ${pendingDeleteAction.type === "medication" ? "prescription" : "intake log"}.`}
         />
       )}
 

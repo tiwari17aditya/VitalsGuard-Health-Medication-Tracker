@@ -509,6 +509,10 @@ export const VitalsTracker: React.FC = () => {
       {/* Admin PIN Authentication Modal for Log Deletion */}
       {pendingDeleteLogId && (
         <AdminAuthModal
+          title="Confirm Glucose Log Deletion"
+          subtitle="Enter User Password or Admin Password to delete this glucose reading record."
+          authMode="delete_log"
+          expectedPin={activeProfile?.pin}
           onClose={() => setPendingDeleteLogId(null)}
           onSuccess={handleAuthDeleteSuccess}
         />

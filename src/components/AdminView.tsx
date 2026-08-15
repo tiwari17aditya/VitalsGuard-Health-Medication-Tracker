@@ -438,6 +438,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
         <AdminAuthModal
           onSuccess={handleAuthSuccess}
           onClose={() => setPendingAction(null)}
+          authMode={pendingAction.type === "select_profile" ? "user" : "admin"}
+          targetProfileName={pendingAction.targetProfile?.name}
+          targetProfileId={pendingAction.targetProfile?.id}
           title={
             pendingAction.type === "select_profile"
               ? `Unlock Profile: ${pendingAction.targetProfile?.name}`
@@ -450,8 +453,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
           }
           subtitle={
             pendingAction.type === "select_profile"
-              ? `Enter ${pendingAction.targetProfile?.name}'s Password (default: 1234) or Admin Password to switch.`
-              : undefined
+              ? `Enter ${pendingAction.targetProfile?.name}'s User Password to switch control.`
+              : "Restricted Admin Action: Enter Admin Password to proceed."
           }
         />
       )}

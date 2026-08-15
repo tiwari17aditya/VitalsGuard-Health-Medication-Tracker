@@ -14,19 +14,23 @@ const DynamicWaterGlass: React.FC<{ percentage: number; size?: number }> = ({
   percentage,
   size = 48
 }) => {
+  const instanceId = React.useId().replace(/:/g, "_");
   const fillPct = Math.min(100, Math.max(0, percentage));
   // Y coordinates in 0-60 SVG space: 48 (empty) down to 8 (100% full)
   const waterY = 48 - (fillPct * 0.40);
 
+  const gradId = `glassGrad_${instanceId}`;
+  const clipId = `glassClip_${instanceId}`;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: `${size}px` }}>
-      <svg width={size} height={size * 1.25} viewBox="0 0 50 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width={size} height={size * 1.25} viewBox="0 0 50 62" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: "drop-shadow(0 2px 6px rgba(59, 130, 246, 0.2))" }}>
         <defs>
-          <linearGradient id={`glassGrad_${fillPct}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={fillPct >= 100 ? "#34d399" : "#60a5fa"} stopOpacity="0.95" />
             <stop offset="100%" stopColor={fillPct >= 100 ? "#059669" : "#2563eb"} stopOpacity="0.95" />
           </linearGradient>
-          <clipPath id={`glassClip_${fillPct}`}>
+          <clipPath id={clipId}>
             <path d="M10 8 L14 52 C14 54 16 56 18 56 L32 56 C34 56 36 54 36 52 L40 8 Z" />
           </clipPath>
         </defs>
@@ -36,10 +40,16 @@ const DynamicWaterGlass: React.FC<{ percentage: number; size?: number }> = ({
         <path d="M10 8 L14 52 C14 54 16 56 18 56 L32 56 C34 56 36 54 36 52 L40 8 Z" fill="rgba(255, 255, 255, 0.08)" stroke="#93c5fd" strokeWidth="1.5" strokeLinejoin="round" />
 
         {/* Liquid Water Fill Level */}
-        <g clipPath={`glassClip_${fillPct}`}>
-          <rect x="0" y={waterY} width="50" height="60" fill={`url(#glassGrad_${fillPct})`} />
-          {/* Subtle liquid surface wave line */}
-          <path d={`M 0 ${waterY} Q 12.5 ${waterY - 2}, 25 ${waterY} T 50 ${waterY} V 60 H 0 Z`} fill="rgba(255, 255, 255, 0.3)" />
+        <g clipPath={`url(#${clipId})`}>
+          <rect x="0" y={waterY} width="50" height="60" fill={`url(#${gradId})`} style={{ transition: "y 0.5s ease" }} />
+          {/* Animated liquid surface wave line */}
+          {fillPct > 0 && fillPct < 100 && (
+            <path
+              className="mini-wave-path"
+              d={`M -25 ${waterY} Q -12.5 ${waterY - 2} 0 ${waterY} T 25 ${waterY} T 50 ${waterY} T 75 ${waterY} V 60 H -25 Z`}
+              fill="rgba(255, 255, 255, 0.35)"
+            />
+          )}
         </g>
 
         {/* Glass Highlight Reflection */}
@@ -210,6 +220,13 @@ export const WaterTracker: React.FC = () => {
         @keyframes wave-move {
           0% { transform: translateX(0); }
           100% { transform: translateX(-100px); }
+        }
+        @keyframes mini-wave {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-25px); }
+        }
+        .mini-wave-path {
+          animation: mini-wave 2.5s linear infinite;
         }
         .preset-grid {
           display: grid;
@@ -834,6 +851,9 @@ export const WaterTracker: React.FC = () => {
       {pendingDeleteId && (
         <AdminAuthModal
           title="Confirm Water Record Deletion"
+          subtitle="Enter User Password or Admin Password to delete this water intake record."
+          authMode="delete_log"
+          expectedPin={activeProfile?.pin}
           onSuccess={() => {
             deleteWaterLog(pendingDeleteId);
             setPendingDeleteId(null);

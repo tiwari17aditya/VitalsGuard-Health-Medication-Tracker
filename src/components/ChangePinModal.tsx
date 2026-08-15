@@ -140,12 +140,12 @@ export const ChangePinModal: React.FC<ChangePinModalProps> = ({ profile, onClose
           {/* Current PIN Input */}
           <div className="form-group">
             <label className="form-label" htmlFor="change-pin-current" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Lock size={14} /> Current Password / Admin Password
+              <Lock size={14} /> {profile.id === "admin" ? "Current Admin Password" : "Current User Password (or Admin Password)"}
             </label>
             <input
               id="change-pin-current"
               type="password"
-              placeholder="Enter current password (default: 1234)"
+              placeholder={profile.id === "admin" ? "Enter current Admin password (default: 1234)" : "Enter current User password (default: 1234)"}
               value={currentPin}
               onChange={(e) => { setCurrentPin(e.target.value); setErrorMsg(""); }}
               className="form-input"

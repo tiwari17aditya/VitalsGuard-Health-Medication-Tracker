@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BookOpen, Heart, Users, AlertTriangle, ShieldCheck, 
-  Phone, CheckCircle2, WifiOff, Lock, Unlock, KeyRound, Shield, Wrench
+  Phone, CheckCircle2, WifiOff, Lock, Unlock, KeyRound, Shield, Wrench, RotateCcw
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { APP_CONFIG } from "../config/app.config";
@@ -23,7 +23,9 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     addOrUpdateProfile,
     isOffline, 
     isSupabaseActive, 
-    medications
+    medications,
+    isLoading,
+    refreshAllData
   } = useApp();
 
   const [showChangePinModal, setShowChangePinModal] = useState<boolean>(false);
@@ -229,6 +231,18 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             </button>
           )}
 
+          {/* Manual Refresh Data Button with Spinner */}
+          <button
+            id="header-refresh-data-btn"
+            onClick={refreshAllData}
+            disabled={isLoading}
+            className="btn btn-secondary btn-sm"
+            style={{ padding: "4px 10px", fontSize: "0.775rem", minHeight: "32px", borderColor: "rgba(59, 130, 246, 0.4)", color: "var(--primary)" }}
+            title="Refresh & Sync latest data from database"
+          >
+            <RotateCcw size={13} className={isLoading ? "spin" : ""} /> {isLoading ? "Syncing..." : "Refresh Data"}
+          </button>
+
           {/* User Guide & Help Documentation Button */}
           <button
             id="header-user-guide-btn"
@@ -292,9 +306,12 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             setPendingLockProfileId(null);
           }}
           onClose={() => setPendingLockProfileId(null)}
+          authMode="user"
+          targetProfileName={pendingProfileObj?.name}
+          targetProfileId={pendingProfileObj?.id}
           title={`Unlock ${pendingProfileObj?.name || "Profile"}`}
           expectedPin={pendingProfileObj?.pin || "1234"}
-          subtitle={`Enter ${pendingProfileObj?.name || "Profile"}'s Password (default: 1234) or the Admin Password to switch.`}
+          subtitle={`Enter ${pendingProfileObj?.name || "Profile"}'s User Password to switch.`}
         />
       )}
 

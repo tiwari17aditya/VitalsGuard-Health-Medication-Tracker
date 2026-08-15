@@ -116,3 +116,12 @@ This document records feature requests, UI/UX enhancements, and technical propos
 - **Proposed Implementation**:
   - Use `supabase.channel('public:medication_logs').on('postgres_changes', ...)` to listen for realtime database modifications.
   - Dispatch corresponding updates to the React state context dynamically.
+
+### 12. Password Prompt Role Clarification, Admin Log Deletion & Refresh Loading Banner (Released in v1.21.0)
+- **Status**: ✅ **Released in v1.21.0**
+- **Highlights**:
+  - **Explicit Password Lock Prompts**: Customized `AdminAuthModal.tsx` prompts for explicit `authMode="admin"` vs `authMode="user"`, specifying "Admin Password" vs "User Password".
+  - **Log Deletion Authorization**: Updated deletion prompts in Water, Glucose, BP, and Medication trackers so entering EITHER the Admin Password or User Password authorizes log record deletion.
+  - **1-Click Reset Password to Default (1234)**: Integrated 1-click reset buttons in `AdminAuthModal`, `AdminView`, `ProfileModal`, and `ChangePinModal`.
+  - **Water Tracker Wave Animations**: Refactored `DynamicWaterGlass` with `useId()` and added `@keyframes mini-wave` SVG surface wave animations.
+  - **Data Refresh Loading Indicator**: Added `setIsLoading(true)` at start of database refreshes, a glowing glassmorphic loading banner in `App.tsx`, and a **Refresh Data** button in `Header.tsx`.

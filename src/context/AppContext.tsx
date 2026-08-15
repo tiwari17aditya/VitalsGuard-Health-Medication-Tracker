@@ -78,6 +78,7 @@ interface AppContextType {
   isLoading: boolean;
   lowStockMeds: Medication[];
   updateAdminPasscode: (newPin: string) => Promise<void>;
+  refreshAllData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -354,6 +355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Initial Load from Supabase / LocalStorage (Parallel Background Sync)
   const refreshAllData = async () => {
+    setIsLoading(true);
     try {
       const [profsRes, medsRes, logsRes, glucRes, bpRes, waterRes, itemsRes] = await Promise.allSettled([
         fetchProfiles(),
@@ -1170,7 +1172,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isSupabaseActive,
         isLoading,
         lowStockMeds,
-        updateAdminPasscode
+        updateAdminPasscode,
+        refreshAllData
       }}
     >
       {children}

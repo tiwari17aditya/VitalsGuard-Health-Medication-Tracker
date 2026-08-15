@@ -19,7 +19,7 @@ const DashboardContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("vitals");
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
 
-  const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications, waterLogs, waterTargets } = useApp();
+  const { activeProfile, glucoseLogs, bpLogs, medicationLogs, medications, waterLogs, waterTargets, isLoading } = useApp();
 
   const currentProfile = activeProfile || null;
 
@@ -67,6 +67,46 @@ const DashboardContent: React.FC = () => {
     <div className="app-container">
       {/* Header */}
       <Header onOpenProfileModal={() => setShowProfileModal(true)} activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* Dynamic Data Loading Banner */}
+      {isLoading && (
+        <div 
+          className="glass-card" 
+          style={{ 
+            background: "rgba(59, 130, 246, 0.12)", 
+            border: "1px solid rgba(59, 130, 246, 0.35)", 
+            backdropFilter: "blur(12px)", 
+            borderRadius: "var(--radius-md)", 
+            padding: "10px 16px", 
+            marginBottom: "16px", 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "space-between", 
+            gap: "12px", 
+            boxShadow: "0 4px 16px rgba(59, 130, 246, 0.15)",
+            animation: "fadeIn 0.2s ease"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div 
+              style={{ 
+                width: "20px", 
+                height: "20px", 
+                border: "3px solid rgba(59, 130, 246, 0.25)", 
+                borderTop: "3px solid #3b82f6", 
+                borderRadius: "50%" 
+              }} 
+              className="spin"
+            />
+            <span style={{ fontSize: "0.875rem", fontWeight: "600", color: "var(--text-primary)" }}>
+              Syncing Health Records with Database... Please wait while latest data loads.
+            </span>
+          </div>
+          <span className="badge badge-primary" style={{ fontSize: "0.75rem" }}>
+            ⚡ Database Sync
+          </span>
+        </div>
+      )}
 
       {/* Top Overview KPI Quick Cards */}
       <div className="grid-4" style={{ marginBottom: "20px" }}>

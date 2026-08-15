@@ -328,6 +328,15 @@ h3 { font-size: 1.1rem; }
   to { transform: translateX(0); opacity: 1; }
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
 /* Tables */
 .table-wrapper {
   width: 100%;
