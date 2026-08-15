@@ -415,12 +415,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           loadedProfiles = [adminProfile, ...loadedProfiles];
         } else {
           const existingAdmin = loadedProfiles[adminIndex];
-          if (existingAdmin.role !== "Admin" || existingAdmin.name !== "ADMIN" || existingAdmin.pin !== encryptPII(currentAdminPin)) {
+          const effectiveAdminPin = existingAdmin.pin || encryptPII(currentAdminPin);
+          
+          // Ensure role and name are strictly ADMIN without overwriting stored custom PIN
+          if (existingAdmin.role !== "Admin" || existingAdmin.name !== "ADMIN" || !existingAdmin.pin) {
             const updatedAdmin = {
               ...existingAdmin,
               name: "ADMIN",
               role: "Admin",
-              pin: encryptPII(currentAdminPin)
+              pin: effectiveAdminPin
             };
             saveProfileDB(updatedAdmin).then();
             loadedProfiles = loadedProfiles.map(p => p.id === "admin" ? updatedAdmin : p);

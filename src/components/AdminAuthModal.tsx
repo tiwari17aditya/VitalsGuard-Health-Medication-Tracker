@@ -71,10 +71,9 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     const adminProfile = profiles.find(p => p.id === "admin");
     const savedAdminPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
 
-    // Check if input matches ANY valid Admin Password (plaintext, default 1234, or encrypted admin profile PIN)
+    // Check if input matches the active Admin Password
     const isAdminValid =
       input === savedAdminPin ||
-      input === APP_CONFIG.security.adminPasscode ||
       (adminProfile?.pin ? verifyPIIPin(input, adminProfile.pin, savedAdminPin) : false) ||
       verifyPIIPin(input, savedAdminPin, savedAdminPin);
 

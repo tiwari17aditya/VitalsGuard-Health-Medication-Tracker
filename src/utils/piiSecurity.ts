@@ -107,6 +107,7 @@ export function verifyPIIPin(
   // 6. Robust check for reset/default PIN "1234"
   if (input === "1234") {
     const isEncrypted1234 =
+      storedCipherOrPlain === "1234" ||
       storedCipherOrPlain === encryptPII("1234", APP_CONFIG.security.adminPasscode) ||
       storedCipherOrPlain === encryptPII("1234", masterPasscode) ||
       (customAdminPin ? storedCipherOrPlain === encryptPII("1234", customAdminPin) : false);
@@ -115,8 +116,11 @@ export function verifyPIIPin(
     }
   }
 
-  // 7. Master Admin Passcode override (Admin can use Master Passcode to verify any profile PIN)
-  if (input === masterPasscode || input === APP_CONFIG.security.adminPasscode || (customAdminPin && input === customAdminPin)) {
+  // 7. Master Admin Passcode override (Admin can use active Master Passcode to verify any profile PIN)
+  if (
+    (masterPasscode && input === masterPasscode) ||
+    (customAdminPin && input === customAdminPin)
+  ) {
     return true;
   }
 
