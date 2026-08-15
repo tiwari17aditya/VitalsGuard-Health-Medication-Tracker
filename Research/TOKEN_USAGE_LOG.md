@@ -64,6 +64,7 @@ This log explicitly records estimated Input and Output token consumption, active
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **20:05 IST** | `7b51993e...` — Explicit Role Password Prompts, Admin Log Deletion, Default PIN Reset & Water Wave Animations | `ui-components`, `quality-deployment`, `release-git-docs` | ~24,500 | ~4,800 | ~2,600 | **~80.4% Savings** | Refactored password lock prompts for Admin vs User modes, authorized Admin password for record deletions across all trackers, added 1-click default PIN reset (1234), refactored SVG water glasses with `useId()` and surface wave animations, and added database sync loading banner + manual refresh button. |
 | **20:35 IST** | `7b51993e...` — Supabase Admin PIN Preservation & Global 1234 Override Removal | `database-storage`, `ui-components`, `release-git-docs` | ~22,100 | ~4,200 | ~2,300 | **~81.0% Savings** | Fixed RCA bug where redeployment overwrote stored Supabase Admin PIN back to 1234, removed hardcoded 1234 universal master override in `verifyPIIPin`, and strictly enforced exact user/admin password checks. |
+| **20:47 IST** | `7b51993e...` — Plain Text PIN Display & Transparent Database Storage | `database-storage`, `ui-components`, `release-git-docs` | ~19,400 | ~3,800 | ~1,900 | **~80.4% Savings** | Configured `encryptPII` and `maskPII` in `piiSecurity.ts` and `AdminView.tsx` to store and display cleartext plain text PINs directly in database and Admin Hub table cards. |
 
 
 
