@@ -134,13 +134,14 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Caretaker Control Engine Banner**: Added interactive Caretaker Low-Stock Alert Engine banner on `MedicationTracker.tsx` with live status badges (`⚡ Immediate Auto Alert (ON)` vs `📅 Daily Stock Digest (Everyday)`).
   - **Per-Profile Caretaker Preferences**: Embedded `caretakerEmail` and `lowStockCaretakerNotifyEnabled` fields into `ProfileModal.tsx` and Supabase PostgreSQL DB adapter.
 
-### 14. Multi-Channel Messaging Proof-of-Concept (WhatsApp & Open-Source SMS)
-- **Goal**: Conduct a Proof-of-Concept (POC) using open-source tools, open APIs, and webhooks to test and implement automated WhatsApp and SMS messaging notifications for low stock alerts and dose reminders.
-- **Rationale**: Mobile messaging (WhatsApp / SMS) provides instantaneous, high-visibility alerts for caretakers and patients who check instant messaging more frequently than email.
-- **Proposed Implementation**:
-  - **Open-Source & Messaging API Evaluation**: Evaluate open-source WhatsApp client tools (e.g., `@whiskeysockets/baileys`, `whatsapp-web.js`) alongside messaging webhooks and gateways (e.g. Twilio, Meta Cloud API, TextLocal, generic HTTP SMS gateways).
-  - **Serverless Messaging Dispatcher**: Create `api/send-message.js` or service handlers to process outbound WhatsApp/SMS notification payloads for:
-    - Urgent low medicine stock warnings.
-    - Scheduled & overdue dose reminders.
-  - **Channel Preference UI**: Integrate multi-channel selection checkboxes (Email / WhatsApp / SMS) in User Profile and Caretaker Notification settings.
+### 15. Single Admin Password Authority, Intake Log Stock Restoration & 3-Layer Hybrid State Maps (Released in v1.22.1)
+- **Status**: ✅ **Released in v1.22.1**
+- **Highlights**:
+  - **Single Authoritative Admin Password Engine**: Resolved 3-password collision bug (`1234`, `2580`, `170507`), ensuring only the current single Admin Password authorizes restricted actions.
+  - **Strict Exact-Match Verification**: Eliminated legacy waterfall fallback checks and universal `1234` overrides in `verifyPIIPin`.
+  - **Intake Log Deletion Stock Auto-Restoration**: Fixed inventory tracking so deleting a `"taken"` dose log record automatically restores $+1$ pill to prescription stock in Supabase PostgreSQL and LocalStorage.
+  - **3-Layer Hybrid State Map Persistence**: Added direct cloud database persistence via PostgreSQL `system-settings` row (`doctor_name` config JSON) and dedicated LocalStorage state maps (`vitalsguard_daily_email_map` & `vitalsguard_caretaker_email_map`), guaranteeing toggle states never auto-revert to disabled.
+  - **Security Findings Audit Report**: Generated `Research/SECURITY_FINDINGS.md` documenting root cause analysis, privilege boundaries, and future password hashing roadmaps.
+  - **Developer Hub v1.22.1 Sync**: Refreshed in-app Developer Hub with modern tech stack definitions and full chronological release history.
+
 
