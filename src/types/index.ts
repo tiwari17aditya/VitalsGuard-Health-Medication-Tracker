@@ -22,6 +22,8 @@ export interface UserProfile {
   avatarColor?: string;
   isLocked?: boolean;
   pin?: string;
+  caretakerEmail?: string;
+  lowStockCaretakerNotifyEnabled?: boolean;
   created_at?: string;
 }
 

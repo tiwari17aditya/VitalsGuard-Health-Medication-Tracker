@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { 
   Pill, Plus, CheckCircle, AlertTriangle, RefreshCw, Trash2, Clock, 
-  Edit, Eye, EyeOff, Calendar, Ban, CheckCircle2, XCircle
+  Edit, Eye, EyeOff, Calendar, Ban, CheckCircle2, XCircle, Zap, BellRing, Mail
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { Medication, FoodRelation } from "../types";
@@ -20,7 +20,9 @@ export const MedicationTracker: React.FC = () => {
     refillStock, 
     addOrUpdateMedication, 
     deleteMedication,
-    sendRefillAlertEmail
+    sendRefillAlertEmail,
+    addOrUpdateProfile,
+    caretakerEmail
   } = useApp();
 
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -218,6 +220,81 @@ export const MedicationTracker: React.FC = () => {
             <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
               Prescriptions, specific day schedules & dose timestamps for {activeProfile.name}
             </p>
+          </div>
+
+          {/* Caretaker Low-Stock Notification Control Banner */}
+          <div style={{
+            marginBottom: "16px",
+            padding: "12px 16px",
+            borderRadius: "var(--radius-md)",
+            background: "var(--bg-primary)",
+            border: activeProfile?.lowStockCaretakerNotifyEnabled ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid var(--border-color)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+            width: "100%"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                background: activeProfile?.lowStockCaretakerNotifyEnabled ? "rgba(245, 158, 11, 0.15)" : "var(--bg-secondary)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                {activeProfile?.lowStockCaretakerNotifyEnabled ? (
+                  <Zap size={18} color="#f59e0b" />
+                ) : (
+                  <BellRing size={18} color="var(--primary)" />
+                )}
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700 }}>
+                    Caretaker Low-Stock Alert Engine
+                  </h4>
+                  <span style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    padding: "2px 8px",
+                    borderRadius: "12px",
+                    background: activeProfile?.lowStockCaretakerNotifyEnabled ? "rgba(245, 158, 11, 0.2)" : "var(--bg-secondary)",
+                    color: activeProfile?.lowStockCaretakerNotifyEnabled ? "#f59e0b" : "var(--text-secondary)"
+                  }}>
+                    {activeProfile?.lowStockCaretakerNotifyEnabled ? "⚡ Immediate Auto Alert (ON)" : "📅 Daily Stock Digest (Everyday)"}
+                  </span>
+                </div>
+                <p style={{ margin: "2px 0 0 0", fontSize: "0.8rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Mail size={13} color="var(--primary)" />
+                  {activeProfile?.lowStockCaretakerNotifyEnabled
+                    ? `Instant email automatically sent to caretaker (${activeProfile?.caretakerEmail || caretakerEmail || "Not set"}) on low stock.`
+                    : `Daily stock status digest email sent to caretaker (${activeProfile?.caretakerEmail || caretakerEmail || "Not set"}) every day for low stock.`}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                if (activeProfile) {
+                  addOrUpdateProfile({
+                    ...activeProfile,
+                    lowStockCaretakerNotifyEnabled: !activeProfile.lowStockCaretakerNotifyEnabled
+                  });
+                }
+              }}
+              className="btn btn-secondary btn-sm"
+              style={{
+                borderColor: activeProfile?.lowStockCaretakerNotifyEnabled ? "#f59e0b" : undefined,
+                color: activeProfile?.lowStockCaretakerNotifyEnabled ? "#f59e0b" : "var(--text-primary)"
+              }}
+              title="Toggle between Immediate Auto Alert vs Daily Stock Digest"
+            >
+              {activeProfile?.lowStockCaretakerNotifyEnabled ? "Switch to Daily Digest" : "Enable Immediate Alert ⚡"}
+            </button>
           </div>
 
           {/* Action Bar */}

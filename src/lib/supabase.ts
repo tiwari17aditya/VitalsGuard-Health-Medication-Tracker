@@ -150,7 +150,9 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
               notes: item.notes,
               avatarColor: item.avatar_color || item.avatarColor || "#3b82f6",
               isLocked: isLockedVal,
-              pin: pinVal
+              pin: pinVal,
+              caretakerEmail: item.caretaker_email || item.caretakerEmail,
+              lowStockCaretakerNotifyEnabled: item.low_stock_caretaker_notify_enabled ?? item.lowStockCaretakerNotifyEnabled ?? false
             };
           }) as UserProfile[];
         } else {
@@ -213,6 +215,8 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
       if (fullProfile.gender) payload.gender = fullProfile.gender;
       if (fullProfile.weight) payload.weight = fullProfile.weight;
       if (fullProfile.season) payload.season = fullProfile.season;
+      if (fullProfile.caretakerEmail) payload.caretaker_email = fullProfile.caretakerEmail;
+      if (fullProfile.lowStockCaretakerNotifyEnabled !== undefined) payload.low_stock_caretaker_notify_enabled = fullProfile.lowStockCaretakerNotifyEnabled;
 
       const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
       if (error) {

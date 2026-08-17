@@ -126,15 +126,13 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **Water Tracker Wave Animations**: Refactored `DynamicWaterGlass` with `useId()` and added `@keyframes mini-wave` SVG surface wave animations.
   - **Data Refresh Loading Indicator**: Added `setIsLoading(true)` at start of database refreshes, a glowing glassmorphic loading banner in `App.tsx`, and a **Refresh Data** button in `Header.tsx`.
 
-### 13. Automatic Caretaker Email Notification for Low Medicine Stock & Alert Frequency Toggle
-- **Goal**: Trigger automatic email alerts to the designated caretaker email whenever low medicine stock (`stock <= reorderLevel`) is detected, with a user-configurable toggle setting for immediate dispatch vs. daily recurring digest.
-- **Rationale**: Keeps caretakers informed before essential prescriptions run out, while giving users granular control over email frequency so caretakers aren't spammed unnecessarily.
-- **Proposed Implementation**:
-  - **Caretaker Alert Toggle Button**: Add a low stock caretaker notification toggle control (`lowStockCaretakerNotifyEnabled`) in profile notification and medication settings.
-  - **Immediate Alert vs. Daily Stock Digest**:
-    - **Toggle Enabled (ON)**: Automatically trigger an immediate low stock notification email via `api/send-email.js` to `caretakerEmail` as soon as inventory drops below safety threshold.
-    - **Toggle Disabled (OFF - Default)**: Send a consolidated daily stock status email digest to the caretaker once per day every day for any low stock medications.
-  - **Email Template & Quick Actions**: Include item name, current stock, dosage schedule, reorder threshold, and direct action link in the responsive HTML email payload.
+### 13. Automatic Caretaker Email Notification for Low Medicine Stock & Alert Frequency Toggle (Released in v1.22.0)
+- **Status**: ✅ **Released in v1.22.0**
+- **Highlights**:
+  - **Caretaker Low Stock Alert Engine**: Built automated email notification engine in `AppContext.tsx` and `emailService.ts` that triggers when medication inventory reaches or falls below safety thresholds.
+  - **Immediate vs. Daily Digest Toggle**: Integrated user-configurable toggle switch (`lowStockCaretakerNotifyEnabled`) enabling instant email alert dispatch (ON) or consolidated daily stock status digest email (OFF - Default).
+  - **Caretaker Control Engine Banner**: Added interactive Caretaker Low-Stock Alert Engine banner on `MedicationTracker.tsx` with live status badges (`⚡ Immediate Auto Alert (ON)` vs `📅 Daily Stock Digest (Everyday)`).
+  - **Per-Profile Caretaker Preferences**: Embedded `caretakerEmail` and `lowStockCaretakerNotifyEnabled` fields into `ProfileModal.tsx` and Supabase PostgreSQL DB adapter.
 
 ### 14. Multi-Channel Messaging Proof-of-Concept (WhatsApp & Open-Source SMS)
 - **Goal**: Conduct a Proof-of-Concept (POC) using open-source tools, open APIs, and webhooks to test and implement automated WhatsApp and SMS messaging notifications for low stock alerts and dose reminders.

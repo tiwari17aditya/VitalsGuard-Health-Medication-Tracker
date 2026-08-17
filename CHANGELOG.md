@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.0] - 2026-08-17
+
+### Added & Enhanced
+- **Automatic Caretaker Email Notification for Low Stock (`AppContext.tsx` / `emailService.ts`)**: Built an automatic low-stock email alert engine that detects when medication inventory drops to or below safety thresholds (`stockCount <= minStockAlert`) and dispatches notifications directly to the user's caretaker email address.
+- **Low Stock Notification Mode Toggle (`ProfileModal.tsx` / `MedicationTracker.tsx`)**: Integrated a user-configurable alert mode toggle switch (`lowStockCaretakerNotifyEnabled`):
+  - **⚡ Immediate Auto Alert (ON)**: Triggers instant email notifications to the caretaker email as soon as a low stock dose is logged or edited.
+  - **📅 Daily Stock Digest (OFF - Default)**: Automatically aggregates low stock items into a daily status digest email sent to the caretaker once per day every day.
+- **Caretaker Alert Control Engine Banner (`MedicationTracker.tsx`)**: Rendered an interactive Caretaker Low-Stock Alert Engine banner on the Medication Tracker page with status badges (`⚡ Immediate Auto Alert (ON)` vs `📅 Daily Stock Digest (Everyday)`), caretaker email recipient indicator, and instant toggle controls.
+- **Per-Profile Caretaker Contact Fields (`ProfileModal.tsx` / `supabase.ts`)**: Added dedicated `caretakerEmail` and `lowStockCaretakerNotifyEnabled` fields to the user profile edit form, backed by LocalStorage and PostgreSQL database persistence with zero data loss safety guarantees.
+
 ## [1.21.0] - 2026-08-15
 
 ### Added & Enhanced

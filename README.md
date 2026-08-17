@@ -25,6 +25,7 @@ Detailed release notes and developer changelogs are maintained in [**`CHANGELOG.
 
 | Version | Release Date | Key Highlights |
 | :--- | :--- | :--- |
+| **`v1.22.0`** | 2026-08-17 | Automatic Low-Stock Caretaker Email Alerts, Immediate vs Daily Digest Toggle Switch, Caretaker Alert Engine Control Banner, Per-Profile Contact Fields |
 | **`v1.21.0`** | 2026-08-15 | Explicit Admin vs User Password Lock Prompts, Admin Password Log Deletion Authorization, 1-Click Default PIN Reset (1234), Water Tracker SVG Wave Animations, Data Refresh Loading Banner & Manual Sync |
 | **`v1.20.0`** | 2026-08-10 | Full Month Grid Adherence Calendar, Chevron Month Switching Carets, Today Reset button, Responsive Grid Styling |
 | **`v1.19.1`** | 2026-08-10 | Admin Panel Header Relocation, Admin Visual Accentures |

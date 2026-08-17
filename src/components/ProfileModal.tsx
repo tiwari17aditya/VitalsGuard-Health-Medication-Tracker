@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound, RotateCcw } from "lucide-react";
+import { Users, Plus, Trash2, Edit2, Lock, Unlock, KeyRound, RotateCcw, Mail, BellRing } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { UserProfile } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
@@ -404,6 +404,35 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                 onChange={(e) => setEditingProfile({ ...editingProfile, doctorName: e.target.value })}
                 className="form-input"
               />
+            </div>
+
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Mail size={14} color="var(--primary)" /> Caretaker Email Address
+                </label>
+                <input
+                  type="email"
+                  placeholder="e.g. caretaker@example.com"
+                  value={editingProfile.caretakerEmail || ""}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, caretakerEmail: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <BellRing size={14} color="#f59e0b" /> Low Stock Caretaker Notification Mode
+                </label>
+                <select
+                  value={editingProfile.lowStockCaretakerNotifyEnabled ? "true" : "false"}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, lowStockCaretakerNotifyEnabled: e.target.value === "true" })}
+                  className="form-input"
+                  style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
+                >
+                  <option value="false">📅 Daily Email Digest (Everyday for low stock)</option>
+                  <option value="true">⚡ Immediate Email Alert (Instant on low stock)</option>
+                </select>
+              </div>
             </div>
 
             <div className="grid-2">
