@@ -153,73 +153,87 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
     try {
       const { data, error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).select("*");
       if (error) throw error;
-      if (data) {
-        if (data.length > 0) {
-          return data.map(item => {
-            const hasRemoteLock = item.is_locked !== undefined && item.is_locked !== null;
-            const isLockedVal = hasRemoteLock 
-              ? Boolean(item.is_locked)
-              : (item.isLocked !== undefined ? Boolean(item.isLocked) : Boolean(lockedMap[item.id]));
-
-            const rawPin = item.pin || pinsMap[item.id] || "1234";
-            const pinVal = encryptPII(rawPin);
-
-            const hasRemoteDailyEmail = item.daily_low_stock_email_enabled !== undefined && item.daily_low_stock_email_enabled !== null;
-            const dailyEmailVal = hasRemoteDailyEmail 
-              ? Boolean(item.daily_low_stock_email_enabled)
-              : (item.dailyLowStockEmailEnabled !== undefined ? Boolean(item.dailyLowStockEmailEnabled) : Boolean(dailyEmailMap[item.id]));
-
-            const remoteCaretakerEmail = item.caretaker_email || item.caretakerEmail;
-            const caretakerEmailVal = (remoteCaretakerEmail && remoteCaretakerEmail.trim() !== "")
-              ? remoteCaretakerEmail
-              : (caretakerEmailMap[item.id] || "");
-
-            // If Supabase database column contains unencrypted cleartext PIN, automatically update database to encrypted PII ciphertext
-            if (item.pin && !item.pin.startsWith("PII_ENC:")) {
-              supabase.from(APP_CONFIG.supabaseTables.profiles).update({ pin: pinVal }).eq("id", item.id).then();
+      if (data && data.length > 0) {
+        // 1. First parse remote PostgreSQL system-settings for cloud-stored settings maps
+        const remoteSettings = data.find(item => item.id === "system-settings");
+        if (remoteSettings && remoteSettings.doctor_name) {
+          try {
+            const parsedConfig = JSON.parse(remoteSettings.doctor_name);
+            if (parsedConfig.dailyEmailMap) {
+              Object.assign(dailyEmailMap, parsedConfig.dailyEmailMap);
+              saveDailyLowStockEmailMap(dailyEmailMap);
             }
-
-            // Keep local maps synchronized
-            lockedMap[item.id] = isLockedVal;
-            saveLockedProfilesMap(lockedMap);
-            pinsMap[item.id] = pinVal;
-            saveProfilePinsMap(pinsMap);
-            dailyEmailMap[item.id] = dailyEmailVal;
-            saveDailyLowStockEmailMap(dailyEmailMap);
-            if (caretakerEmailVal) {
-              caretakerEmailMap[item.id] = caretakerEmailVal;
+            if (parsedConfig.caretakerEmailMap) {
+              Object.assign(caretakerEmailMap, parsedConfig.caretakerEmailMap);
               saveCaretakerEmailMap(caretakerEmailMap);
             }
-
-            return {
-              id: item.id,
-              name: item.name,
-              role: item.role || "Parent",
-              age: item.age,
-              targetGlucoseFasting: item.target_glucose_fasting || item.targetGlucoseFasting,
-              targetGlucosePostMeal: item.target_glucose_post_meal || item.targetGlucosePostMeal,
-              targetBP: item.target_bp || item.targetBP,
-              targetWater: item.target_water || item.targetWater || 2000,
-              gender: item.gender || "Female",
-              weight: item.weight || 60,
-              season: item.season || "Spring/Autumn",
-              emergencyContact: item.emergency_contact || item.emergencyContact,
-              doctorName: item.doctor_name || item.doctorName,
-              notes: item.notes,
-              avatarColor: item.avatar_color || item.avatarColor || "#3b82f6",
-              isLocked: isLockedVal,
-              pin: pinVal,
-              caretakerEmail: caretakerEmailVal,
-              dailyLowStockEmailEnabled: dailyEmailVal
-            };
-          }) as UserProfile[];
-        } else {
-          console.log("Supabase profiles table is empty. Seeding defaults...");
-          for (const p of APP_CONFIG.defaultProfiles) {
-            await saveProfileDB(p as UserProfile);
-          }
-          return APP_CONFIG.defaultProfiles as UserProfile[];
+          } catch {}
         }
+
+        return data.map(item => {
+          const hasRemoteLock = item.is_locked !== undefined && item.is_locked !== null;
+          const isLockedVal = hasRemoteLock 
+            ? Boolean(item.is_locked)
+            : (item.isLocked !== undefined ? Boolean(item.isLocked) : Boolean(lockedMap[item.id]));
+
+          const rawPin = item.pin || pinsMap[item.id] || "1234";
+          const pinVal = encryptPII(rawPin);
+
+          // Resolve daily low stock digest toggle directly from DB system-settings map or profile column
+          const dailyEmailVal = dailyEmailMap[item.id] !== undefined
+            ? Boolean(dailyEmailMap[item.id])
+            : (item.daily_low_stock_email_enabled !== undefined && item.daily_low_stock_email_enabled !== null
+                ? Boolean(item.daily_low_stock_email_enabled)
+                : Boolean(item.dailyLowStockEmailEnabled));
+
+          const remoteCaretakerEmail = item.caretaker_email || item.caretakerEmail || (item.emergency_contact?.includes("@") ? item.emergency_contact : "");
+          const caretakerEmailVal = caretakerEmailMap[item.id] || (remoteCaretakerEmail && remoteCaretakerEmail.trim() !== "" ? remoteCaretakerEmail : "");
+
+          // If Supabase database column contains unencrypted cleartext PIN, automatically update database to encrypted PII ciphertext
+          if (item.pin && !item.pin.startsWith("PII_ENC:")) {
+            supabase.from(APP_CONFIG.supabaseTables.profiles).update({ pin: pinVal }).eq("id", item.id).then();
+          }
+
+          // Keep local maps synchronized
+          lockedMap[item.id] = isLockedVal;
+          saveLockedProfilesMap(lockedMap);
+          pinsMap[item.id] = pinVal;
+          saveProfilePinsMap(pinsMap);
+          dailyEmailMap[item.id] = dailyEmailVal;
+          saveDailyLowStockEmailMap(dailyEmailMap);
+          if (caretakerEmailVal) {
+            caretakerEmailMap[item.id] = caretakerEmailVal;
+            saveCaretakerEmailMap(caretakerEmailMap);
+          }
+
+          return {
+            id: item.id,
+            name: item.name,
+            role: item.role || "Parent",
+            age: item.age,
+            targetGlucoseFasting: item.target_glucose_fasting || item.targetGlucoseFasting,
+            targetGlucosePostMeal: item.target_glucose_post_meal || item.targetGlucosePostMeal,
+            targetBP: item.target_bp || item.targetBP,
+            targetWater: item.target_water || item.targetWater || 2000,
+            gender: item.gender || "Female",
+            weight: item.weight || 60,
+            season: item.season || "Spring/Autumn",
+            emergencyContact: item.emergency_contact || item.emergencyContact,
+            doctorName: item.doctor_name || item.doctorName,
+            notes: item.notes,
+            avatarColor: item.avatar_color || item.avatarColor || "#3b82f6",
+            isLocked: isLockedVal,
+            pin: pinVal,
+            caretakerEmail: caretakerEmailVal,
+            dailyLowStockEmailEnabled: dailyEmailVal
+          };
+        }) as UserProfile[];
+      } else {
+        console.log("Supabase profiles table is empty. Seeding defaults...");
+        for (const p of APP_CONFIG.defaultProfiles) {
+          await saveProfileDB(p as UserProfile);
+        }
+        return APP_CONFIG.defaultProfiles as UserProfile[];
       }
     } catch (err) {
       console.warn("Supabase fetchProfiles fallback to LocalStorage:", err);
@@ -237,7 +251,7 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
 }
 
 export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> {
-  // Update local lock, pin, daily email, and caretaker email maps
+  // 1. Update local lock and pin maps
   const lockedMap = getLockedProfilesMap();
   lockedMap[profile.id] = Boolean(profile.isLocked);
   saveLockedProfilesMap(lockedMap);
@@ -248,6 +262,7 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
   pinsMap[profile.id] = encryptedPin;
   saveProfilePinsMap(pinsMap);
 
+  // 2. Update local daily email toggle and caretaker email maps
   const dailyEmailMap = getDailyLowStockEmailMap();
   if (profile.dailyLowStockEmailEnabled !== undefined) {
     dailyEmailMap[profile.id] = Boolean(profile.dailyLowStockEmailEnabled);
@@ -263,9 +278,12 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
   const fullProfile: UserProfile = {
     ...profile,
     pin: encryptedPin,
-    isLocked: Boolean(profile.isLocked)
+    isLocked: Boolean(profile.isLocked),
+    dailyLowStockEmailEnabled: profile.dailyLowStockEmailEnabled !== undefined ? Boolean(profile.dailyLowStockEmailEnabled) : Boolean(dailyEmailMap[profile.id]),
+    caretakerEmail: profile.caretakerEmail || caretakerEmailMap[profile.id] || ""
   };
 
+  // 3. Save profile to Supabase PostgreSQL database
   if (isSupabaseConfigured && supabase) {
     try {
       const payload: any = {
@@ -277,7 +295,7 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
         target_glucose_post_meal: fullProfile.targetGlucosePostMeal,
         target_bp: fullProfile.targetBP,
         target_water: fullProfile.targetWater || 2000,
-        emergency_contact: fullProfile.emergencyContact,
+        emergency_contact: fullProfile.caretakerEmail || fullProfile.emergencyContact,
         doctor_name: fullProfile.doctorName,
         notes: fullProfile.notes,
         avatar_color: fullProfile.avatarColor || "#3b82f6",
@@ -292,7 +310,7 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
 
       const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
       if (error) {
-        // Resilient fallback retry keeping security fields
+        // Resilient fallback retry keeping core fields
         const corePayload = {
           id: fullProfile.id,
           name: fullProfile.name,
@@ -302,20 +320,34 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
           target_glucose_post_meal: fullProfile.targetGlucosePostMeal,
           target_bp: fullProfile.targetBP,
           target_water: fullProfile.targetWater || 2000,
-          emergency_contact: fullProfile.emergencyContact,
+          emergency_contact: fullProfile.caretakerEmail || fullProfile.emergencyContact,
           doctor_name: fullProfile.doctorName,
           notes: fullProfile.notes,
           avatar_color: fullProfile.avatarColor || "#3b82f6",
           is_locked: fullProfile.isLocked,
           pin: fullProfile.pin
         };
-        const { error: retryErr } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(corePayload);
-        if (retryErr) console.warn("Supabase corePayload upsert retry failed:", retryErr);
+        await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(corePayload);
+      }
+
+      // 4. Also synchronize the complete dailyEmailMap & caretakerEmailMap into the system-settings row in Supabase PostgreSQL
+      if (fullProfile.id !== "system-settings") {
+        const settingsPayload = {
+          id: "system-settings",
+          name: "System Settings",
+          role: "System",
+          doctor_name: JSON.stringify({
+            dailyEmailMap,
+            caretakerEmailMap
+          })
+        };
+        supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(settingsPayload).then();
       }
     } catch (err) {
       console.warn("Supabase saveProfile fallback to LocalStorage:", err);
     }
   }
+
   const current = loadFromStorage<UserProfile[]>(STORAGE_KEYS.PROFILES, APP_CONFIG.defaultProfiles as UserProfile[]);
   const index = current.findIndex(p => p.id === fullProfile.id);
   if (index >= 0) current[index] = fullProfile;
