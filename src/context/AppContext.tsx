@@ -776,8 +776,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteMedicationLog = async (logId: string) => {
     try {
+      const targetLog = medicationLogs.find(l => l.id === logId);
       await deleteMedicationLogDB(logId);
       setMedicationLogs(prev => prev.filter(l => l.id !== logId));
+
+      if (targetLog && targetLog.status === "taken") {
+        const qtyToRestore = targetLog.quantityTaken || 1;
+        const targetMed = medications.find(m => m.id === targetLog.medicationId);
+        if (targetMed) {
+          const restoredStock = targetMed.stockCount + qtyToRestore;
+          const updatedMed = { ...targetMed, stockCount: restoredStock };
+
+          // Save updated pill inventory to Supabase PostgreSQL DB & LocalStorage
+          await saveMedicationDB(updatedMed);
+          setMedications(prev => prev.map(m => m.id === updatedMed.id ? updatedMed : m));
+
+          logUserAction(
+            "UI_INTERACTION", 
+            `Deleted intake log for ${targetMed.name} and restored ${qtyToRestore} pill(s) to stock (Total: ${restoredStock} pills)`
+          );
+          showToast(
+            "info", 
+            "Log Deleted & Stock Restored", 
+            `Intake log removed. Restored ${qtyToRestore} pill(s) back to ${targetMed.name} (Total stock: ${restoredStock} pills).`
+          );
+          return;
+        }
+      }
+
       showToast("info", "Log Deleted", "Intake log removed.");
     } catch (err: any) {
       showToast("error", "Delete Error", err.message || "Could not delete log.");
