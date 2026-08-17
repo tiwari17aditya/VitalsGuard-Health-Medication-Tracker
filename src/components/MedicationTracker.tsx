@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { 
   Pill, Plus, CheckCircle, AlertTriangle, RefreshCw, Trash2, Clock, 
-  Edit, Eye, EyeOff, Calendar, Ban, CheckCircle2, XCircle, Zap, BellRing, Mail
+  Edit, Eye, EyeOff, Calendar, Ban, CheckCircle2, XCircle, BellRing, Mail
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { Medication, FoodRelation } from "../types";
 import { AdminAuthModal } from "./AdminAuthModal";
+import { isValidEmail } from "../services/emailService";
 
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -22,7 +23,8 @@ export const MedicationTracker: React.FC = () => {
     deleteMedication,
     sendRefillAlertEmail,
     addOrUpdateProfile,
-    caretakerEmail
+    caretakerEmail,
+    showToast
   } = useApp();
 
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -30,6 +32,55 @@ export const MedicationTracker: React.FC = () => {
   const [refillMedId, setRefillMedId] = useState<string | null>(null);
   const [addedPills, setAddedPills] = useState<number>(30);
   const [viewFilter, setViewFilter] = useState<"today" | "all">("today");
+
+  // Caretaker email prompt modal states
+  const [showCaretakerModal, setShowCaretakerModal] = useState<boolean>(false);
+  const [caretakerEmailInput, setCaretakerEmailInput] = useState<string>("");
+
+  const handleToggleDailyDigest = () => {
+    if (!activeProfile) return;
+
+    if (activeProfile.dailyLowStockEmailEnabled) {
+      addOrUpdateProfile({
+        ...activeProfile,
+        dailyLowStockEmailEnabled: false
+      });
+      showToast("info", "Daily Digest Disabled", "Auto-emails disabled. You can check low-stock alerts manually on the website dashboard.");
+    } else {
+      const currentEmail = (activeProfile.caretakerEmail || caretakerEmail || "").trim();
+      if (isValidEmail(currentEmail)) {
+        addOrUpdateProfile({
+          ...activeProfile,
+          dailyLowStockEmailEnabled: true,
+          caretakerEmail: currentEmail
+        });
+        showToast("success", "Daily Digest Enabled", `Automatic daily low-stock emails will be sent to ${currentEmail}.`);
+      } else {
+        setCaretakerEmailInput(currentEmail);
+        setShowCaretakerModal(true);
+      }
+    }
+  };
+
+  const handleSaveCaretakerEmailAndEnable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeProfile) return;
+
+    const trimmed = caretakerEmailInput.trim();
+    if (!isValidEmail(trimmed)) {
+      showToast("error", "Invalid Email Format", "Please enter a valid email address (e.g. caretaker@example.com).");
+      return;
+    }
+
+    await addOrUpdateProfile({
+      ...activeProfile,
+      caretakerEmail: trimmed,
+      dailyLowStockEmailEnabled: true
+    });
+
+    setShowCaretakerModal(false);
+    showToast("success", "Daily Digest Enabled", `Caretaker email saved and automatic daily low-stock emails enabled for ${trimmed}.`);
+  };
 
   // Time picker state for taking dose (defaults to current HH:MM)
   const getCurrentHHMM = () => {
@@ -222,13 +273,13 @@ export const MedicationTracker: React.FC = () => {
             </p>
           </div>
 
-          {/* Caretaker Low-Stock Notification Control Banner */}
+          {/* Caretaker Daily Low-Stock Digest Banner */}
           <div style={{
             marginBottom: "16px",
             padding: "12px 16px",
             borderRadius: "var(--radius-md)",
             background: "var(--bg-primary)",
-            border: activeProfile?.lowStockCaretakerNotifyEnabled ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid var(--border-color)",
+            border: activeProfile?.dailyLowStockEmailEnabled ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid var(--border-color)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -241,59 +292,48 @@ export const MedicationTracker: React.FC = () => {
                 width: "36px",
                 height: "36px",
                 borderRadius: "50%",
-                background: activeProfile?.lowStockCaretakerNotifyEnabled ? "rgba(245, 158, 11, 0.15)" : "var(--bg-secondary)",
+                background: activeProfile?.dailyLowStockEmailEnabled ? "rgba(16, 185, 129, 0.15)" : "var(--bg-secondary)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center"
               }}>
-                {activeProfile?.lowStockCaretakerNotifyEnabled ? (
-                  <Zap size={18} color="#f59e0b" />
-                ) : (
-                  <BellRing size={18} color="var(--primary)" />
-                )}
+                <BellRing size={18} color={activeProfile?.dailyLowStockEmailEnabled ? "#10b981" : "var(--text-secondary)"} />
               </div>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700 }}>
-                    Caretaker Low-Stock Alert Engine
+                    Caretaker Daily Low-Stock Digest
                   </h4>
                   <span style={{
                     fontSize: "0.75rem",
                     fontWeight: 600,
                     padding: "2px 8px",
                     borderRadius: "12px",
-                    background: activeProfile?.lowStockCaretakerNotifyEnabled ? "rgba(245, 158, 11, 0.2)" : "var(--bg-secondary)",
-                    color: activeProfile?.lowStockCaretakerNotifyEnabled ? "#f59e0b" : "var(--text-secondary)"
+                    background: activeProfile?.dailyLowStockEmailEnabled ? "rgba(16, 185, 129, 0.2)" : "var(--bg-secondary)",
+                    color: activeProfile?.dailyLowStockEmailEnabled ? "#10b981" : "var(--text-secondary)"
                   }}>
-                    {activeProfile?.lowStockCaretakerNotifyEnabled ? "⚡ Immediate Auto Alert (ON)" : "📅 Daily Stock Digest (Everyday)"}
+                    {activeProfile?.dailyLowStockEmailEnabled ? "📅 Daily Digest Enabled (ON)" : "⏸️ Auto-Emails Disabled (OFF)"}
                   </span>
                 </div>
                 <p style={{ margin: "2px 0 0 0", fontSize: "0.8rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
                   <Mail size={13} color="var(--primary)" />
-                  {activeProfile?.lowStockCaretakerNotifyEnabled
-                    ? `Instant email automatically sent to caretaker (${activeProfile?.caretakerEmail || caretakerEmail || "Not set"}) on low stock.`
-                    : `Daily stock status digest email sent to caretaker (${activeProfile?.caretakerEmail || caretakerEmail || "Not set"}) every day for low stock.`}
+                  {activeProfile?.dailyLowStockEmailEnabled
+                    ? `Automatic daily digest email sent to caretaker (${activeProfile?.caretakerEmail || caretakerEmail || "Not set"}) for low stock items.`
+                    : `Auto-emails disabled. User manually checks low-stock alerts on the website.`}
                 </p>
               </div>
             </div>
 
             <button
-              onClick={() => {
-                if (activeProfile) {
-                  addOrUpdateProfile({
-                    ...activeProfile,
-                    lowStockCaretakerNotifyEnabled: !activeProfile.lowStockCaretakerNotifyEnabled
-                  });
-                }
-              }}
+              onClick={handleToggleDailyDigest}
               className="btn btn-secondary btn-sm"
               style={{
-                borderColor: activeProfile?.lowStockCaretakerNotifyEnabled ? "#f59e0b" : undefined,
-                color: activeProfile?.lowStockCaretakerNotifyEnabled ? "#f59e0b" : "var(--text-primary)"
+                borderColor: activeProfile?.dailyLowStockEmailEnabled ? "#10b981" : undefined,
+                color: activeProfile?.dailyLowStockEmailEnabled ? "#10b981" : "var(--text-primary)"
               }}
-              title="Toggle between Immediate Auto Alert vs Daily Stock Digest"
+              title={activeProfile?.dailyLowStockEmailEnabled ? "Disable automatic daily emails" : "Enable automatic daily low-stock email digest"}
             >
-              {activeProfile?.lowStockCaretakerNotifyEnabled ? "Switch to Daily Digest" : "Enable Immediate Alert ⚡"}
+              {activeProfile?.dailyLowStockEmailEnabled ? "Disable Daily Digest ⏸️" : "Enable Daily Digest 📅"}
             </button>
           </div>
 
@@ -906,6 +946,48 @@ export const MedicationTracker: React.FC = () => {
           expectedPin={activeProfile?.pin}
           subtitle={`Enter User Password or Admin Password to delete this ${pendingDeleteAction.type === "medication" ? "prescription" : "intake log"}.`}
         />
+      )}
+
+      {/* CARETAKER EMAIL PROMPT MODAL */}
+      {showCaretakerModal && (
+        <div className="modal-overlay" onClick={() => setShowCaretakerModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "450px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+                <Mail color="var(--primary)" size={20} /> Set Caretaker Email Address
+              </h3>
+              <button onClick={() => setShowCaretakerModal(false)} className="btn btn-secondary btn-sm">✕</button>
+            </div>
+
+            <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "16px" }}>
+              To enable automatic daily low-stock digest emails for <strong>{activeProfile?.name}</strong>, please enter a valid email address where alerts should be sent.
+            </p>
+
+            <form onSubmit={handleSaveCaretakerEmailAndEnable}>
+              <div className="form-group" style={{ marginBottom: "20px" }}>
+                <label className="form-label">Caretaker Email Address</label>
+                <input
+                  type="email"
+                  placeholder="e.g. caretaker@example.com"
+                  value={caretakerEmailInput}
+                  onChange={(e) => setCaretakerEmailInput(e.target.value)}
+                  className="form-input"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                  Save & Enable Daily Digest 📅
+                </button>
+                <button type="button" onClick={() => setShowCaretakerModal(false)} className="btn btn-secondary">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
     </div>

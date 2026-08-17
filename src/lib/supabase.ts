@@ -152,7 +152,7 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
               isLocked: isLockedVal,
               pin: pinVal,
               caretakerEmail: item.caretaker_email || item.caretakerEmail,
-              lowStockCaretakerNotifyEnabled: item.low_stock_caretaker_notify_enabled ?? item.lowStockCaretakerNotifyEnabled ?? false
+              dailyLowStockEmailEnabled: item.daily_low_stock_email_enabled ?? item.dailyLowStockEmailEnabled ?? false
             };
           }) as UserProfile[];
         } else {
@@ -216,7 +216,7 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
       if (fullProfile.weight) payload.weight = fullProfile.weight;
       if (fullProfile.season) payload.season = fullProfile.season;
       if (fullProfile.caretakerEmail) payload.caretaker_email = fullProfile.caretakerEmail;
-      if (fullProfile.lowStockCaretakerNotifyEnabled !== undefined) payload.low_stock_caretaker_notify_enabled = fullProfile.lowStockCaretakerNotifyEnabled;
+      if (fullProfile.dailyLowStockEmailEnabled !== undefined) payload.daily_low_stock_email_enabled = fullProfile.dailyLowStockEmailEnabled;
 
       const { error } = await supabase.from(APP_CONFIG.supabaseTables.profiles).upsert(payload);
       if (error) {

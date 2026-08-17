@@ -421,16 +421,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
               </div>
               <div className="form-group">
                 <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <BellRing size={14} color="#f59e0b" /> Low Stock Caretaker Notification Mode
+                  <BellRing size={14} color="#f59e0b" /> Daily Caretaker Email Digest
                 </label>
                 <select
-                  value={editingProfile.lowStockCaretakerNotifyEnabled ? "true" : "false"}
-                  onChange={(e) => setEditingProfile({ ...editingProfile, lowStockCaretakerNotifyEnabled: e.target.value === "true" })}
+                  value={editingProfile.dailyLowStockEmailEnabled ? "true" : "false"}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, dailyLowStockEmailEnabled: e.target.value === "true" })}
                   className="form-input"
                   style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
                 >
-                  <option value="false">📅 Daily Email Digest (Everyday for low stock)</option>
-                  <option value="true">⚡ Immediate Email Alert (Instant on low stock)</option>
+                  <option value="false">⏸️ Disabled (Manual Website Low Stock Check)</option>
+                  <option value="true">📅 Enabled (Automatic Daily Email Digest for Low Stock)</option>
                 </select>
               </div>
             </div>

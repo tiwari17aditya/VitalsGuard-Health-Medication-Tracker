@@ -23,7 +23,7 @@ export interface UserProfile {
   isLocked?: boolean;
   pin?: string;
   caretakerEmail?: string;
-  lowStockCaretakerNotifyEnabled?: boolean;
+  dailyLowStockEmailEnabled?: boolean;
   created_at?: string;
 }
 

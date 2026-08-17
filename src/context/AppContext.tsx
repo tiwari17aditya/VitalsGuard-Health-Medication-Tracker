@@ -16,7 +16,7 @@ import {
   isSupabaseConfigured,
   supabase
 } from "../lib/supabase";
-import { sendEmailNotification, generateRefillAlertHTML, generateDailyCheckHTML } from "../services/emailService";
+import { sendEmailNotification, generateRefillAlertHTML, generateDailyCheckHTML, isValidEmail } from "../services/emailService";
 import { encryptPII } from "../utils/piiSecurity";
 
 
@@ -661,7 +661,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (saved.stockCount <= saved.minStockAlert) {
         showToast("warning", "Low Stock Alert", `Only ${saved.stockCount} pills left for ${saved.name}!`);
-        await checkAndAutoDispatchLowStockEmail(saved.profileId, saved);
       }
     } catch (err: any) {
       showToast("error", "Medication Error", err.message || "Failed to save medication.");
@@ -732,7 +731,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             "⚠️ Refill Alert Needed!", 
             `${updatedMed.name} stock is down to ${updatedMed.stockCount} pills!`
           );
-          await checkAndAutoDispatchLowStockEmail(updatedMed.profileId, updatedMed);
         }
       }
 
@@ -1090,37 +1088,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const checkAndAutoDispatchLowStockEmail = async (profileId: string, med: Medication) => {
-    const prof = profiles.find(p => p.id === profileId) || activeProfile;
-    if (!prof) return;
-
-    // Check if immediate low stock notification toggle is enabled for this profile
-    const isImmediateEnabled = prof.lowStockCaretakerNotifyEnabled ?? false;
-    if (!isImmediateEnabled) return; // Daily digest runner will handle low stock when OFF
-
-    if (med.stockCount <= med.minStockAlert) {
-      const recipient = (prof.caretakerEmail || caretakerEmail || "").trim();
-      if (!recipient) return;
-
-      const throttleKey = `vitalsguard_low_stock_sent_${med.id}_${med.stockCount}`;
-      if (sessionStorage.getItem(throttleKey)) return;
-      sessionStorage.setItem(throttleKey, "true");
-
-      const htmlContent = generateRefillAlertHTML(prof, [med]);
-      const res = await sendEmailNotification({
-        to: recipient,
-        subject: `⚡ Immediate Low Stock Alert for ${prof.name}: ${med.name} (${med.stockCount} pills remaining)`,
-        htmlContent,
-        type: "refill_alert"
-      });
-
-      if (res.success) {
-        showToast("warning", "⚡ Immediate Caretaker Alert Sent", `Low stock alert for ${med.name} emailed to caretaker (${recipient})`);
-        logUserAction("EMAIL_SENT", `Immediate low stock email sent for ${med.name} (${med.stockCount} pills left) to ${recipient}`);
-      }
-    }
-  };
-
   const sendRefillAlertEmail = async (targetProfileId?: string) => {
     const prof = profiles.find(p => p.id === (targetProfileId || activeProfileId)) || activeProfile;
     if (!prof) return;
@@ -1132,8 +1099,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const targetRecipient = (prof.caretakerEmail || caretakerEmail || "").trim();
-    if (!targetRecipient) {
-      showToast("error", "Missing Email", `Please configure a Caretaker Email address for ${prof.name} in Profile Settings.`);
+    if (!targetRecipient || !isValidEmail(targetRecipient)) {
+      showToast("error", "Missing Email", `Please configure a valid Caretaker Email address for ${prof.name} in Profile Settings.`);
       return;
     }
 
@@ -1153,7 +1120,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Automatic Daily Low-Stock Digest Scheduler (Runs when immediate notify is OFF)
+  // Automatic Daily Low-Stock Digest Scheduler (Runs ONLY when dailyLowStockEmailEnabled is ON)
   useEffect(() => {
     if (!medications || medications.length === 0 || !profiles || profiles.length === 0) return;
     const todayStr = new Date().toISOString().split("T")[0];
@@ -1163,8 +1130,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (lastSentDate === todayStr) return; // Processed today
 
     const eligibleProfiles = profiles.filter(p => {
-      const isImmediate = p.lowStockCaretakerNotifyEnabled ?? false;
-      if (isImmediate) return false; // Immediate mode handles alerts on trigger
+      const isDailyEnabled = p.dailyLowStockEmailEnabled ?? false;
+      if (!isDailyEnabled) return false; // Auto-emails disabled when toggle is OFF
       const lowMeds = medications.filter(m => m.profileId === p.id && m.stockCount <= m.minStockAlert);
       return lowMeds.length > 0;
     });
@@ -1173,7 +1140,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       eligibleProfiles.forEach(async prof => {
         const lowMeds = medications.filter(m => m.profileId === prof.id && m.stockCount <= m.minStockAlert);
         const recipient = (prof.caretakerEmail || caretakerEmail || "").trim();
-        if (!recipient || lowMeds.length === 0) return;
+        if (!recipient || !isValidEmail(recipient) || lowMeds.length === 0) return;
 
         const htmlContent = generateRefillAlertHTML(prof, lowMeds);
         await sendEmailNotification({
