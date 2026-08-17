@@ -100,12 +100,54 @@ export function saveProfilePinsMap(map: Record<string, string>): void {
   }
 }
 
+// Helper for profile daily low stock email toggle persistence
+const DAILY_EMAIL_KEY = "vitalsguard_daily_email_map";
+
+export function getDailyLowStockEmailMap(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(DAILY_EMAIL_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveDailyLowStockEmailMap(map: Record<string, boolean>): void {
+  try {
+    localStorage.setItem(DAILY_EMAIL_KEY, JSON.stringify(map));
+  } catch (err) {
+    console.warn("Error saving daily email map:", err);
+  }
+}
+
+// Helper for profile caretaker email persistence
+const CARETAKER_EMAIL_MAP_KEY = "vitalsguard_caretaker_email_map";
+
+export function getCaretakerEmailMap(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(CARETAKER_EMAIL_MAP_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveCaretakerEmailMap(map: Record<string, string>): void {
+  try {
+    localStorage.setItem(CARETAKER_EMAIL_MAP_KEY, JSON.stringify(map));
+  } catch (err) {
+    console.warn("Error saving caretaker email map:", err);
+  }
+}
+
 // DATABASE ADAPTER IMPLEMENTATION
 
 // --- PROFILES ---
 export async function fetchProfiles(): Promise<UserProfile[]> {
   const lockedMap = getLockedProfilesMap();
   const pinsMap = getProfilePinsMap();
+  const dailyEmailMap = getDailyLowStockEmailMap();
+  const caretakerEmailMap = getCaretakerEmailMap();
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -122,6 +164,16 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
             const rawPin = item.pin || pinsMap[item.id] || "1234";
             const pinVal = encryptPII(rawPin);
 
+            const hasRemoteDailyEmail = item.daily_low_stock_email_enabled !== undefined && item.daily_low_stock_email_enabled !== null;
+            const dailyEmailVal = hasRemoteDailyEmail 
+              ? Boolean(item.daily_low_stock_email_enabled)
+              : (item.dailyLowStockEmailEnabled !== undefined ? Boolean(item.dailyLowStockEmailEnabled) : Boolean(dailyEmailMap[item.id]));
+
+            const remoteCaretakerEmail = item.caretaker_email || item.caretakerEmail;
+            const caretakerEmailVal = (remoteCaretakerEmail && remoteCaretakerEmail.trim() !== "")
+              ? remoteCaretakerEmail
+              : (caretakerEmailMap[item.id] || "");
+
             // If Supabase database column contains unencrypted cleartext PIN, automatically update database to encrypted PII ciphertext
             if (item.pin && !item.pin.startsWith("PII_ENC:")) {
               supabase.from(APP_CONFIG.supabaseTables.profiles).update({ pin: pinVal }).eq("id", item.id).then();
@@ -132,6 +184,12 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
             saveLockedProfilesMap(lockedMap);
             pinsMap[item.id] = pinVal;
             saveProfilePinsMap(pinsMap);
+            dailyEmailMap[item.id] = dailyEmailVal;
+            saveDailyLowStockEmailMap(dailyEmailMap);
+            if (caretakerEmailVal) {
+              caretakerEmailMap[item.id] = caretakerEmailVal;
+              saveCaretakerEmailMap(caretakerEmailMap);
+            }
 
             return {
               id: item.id,
@@ -151,8 +209,8 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
               avatarColor: item.avatar_color || item.avatarColor || "#3b82f6",
               isLocked: isLockedVal,
               pin: pinVal,
-              caretakerEmail: item.caretaker_email || item.caretakerEmail,
-              dailyLowStockEmailEnabled: item.daily_low_stock_email_enabled ?? item.dailyLowStockEmailEnabled ?? false
+              caretakerEmail: caretakerEmailVal,
+              dailyLowStockEmailEnabled: dailyEmailVal
             };
           }) as UserProfile[];
         } else {
@@ -172,12 +230,14 @@ export async function fetchProfiles(): Promise<UserProfile[]> {
   return localProfiles.map(p => ({
     ...p,
     isLocked: p.isLocked !== undefined ? p.isLocked : Boolean(lockedMap[p.id]),
-    pin: p.pin || pinsMap[p.id] || "1234"
+    pin: p.pin || pinsMap[p.id] || "1234",
+    caretakerEmail: p.caretakerEmail || caretakerEmailMap[p.id] || "",
+    dailyLowStockEmailEnabled: p.dailyLowStockEmailEnabled !== undefined ? p.dailyLowStockEmailEnabled : Boolean(dailyEmailMap[p.id])
   }));
 }
 
 export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> {
-  // Update local lock and pin maps
+  // Update local lock, pin, daily email, and caretaker email maps
   const lockedMap = getLockedProfilesMap();
   lockedMap[profile.id] = Boolean(profile.isLocked);
   saveLockedProfilesMap(lockedMap);
@@ -187,6 +247,18 @@ export async function saveProfileDB(profile: UserProfile): Promise<UserProfile> 
   const encryptedPin = encryptPII(rawPin);
   pinsMap[profile.id] = encryptedPin;
   saveProfilePinsMap(pinsMap);
+
+  const dailyEmailMap = getDailyLowStockEmailMap();
+  if (profile.dailyLowStockEmailEnabled !== undefined) {
+    dailyEmailMap[profile.id] = Boolean(profile.dailyLowStockEmailEnabled);
+    saveDailyLowStockEmailMap(dailyEmailMap);
+  }
+
+  const caretakerEmailMap = getCaretakerEmailMap();
+  if (profile.caretakerEmail) {
+    caretakerEmailMap[profile.id] = profile.caretakerEmail;
+    saveCaretakerEmailMap(caretakerEmailMap);
+  }
 
   const fullProfile: UserProfile = {
     ...profile,
