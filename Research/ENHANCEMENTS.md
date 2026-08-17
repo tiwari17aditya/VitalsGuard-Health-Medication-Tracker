@@ -125,3 +125,24 @@ This document records feature requests, UI/UX enhancements, and technical propos
   - **1-Click Reset Password to Default (1234)**: Integrated 1-click reset buttons in `AdminAuthModal`, `AdminView`, `ProfileModal`, and `ChangePinModal`.
   - **Water Tracker Wave Animations**: Refactored `DynamicWaterGlass` with `useId()` and added `@keyframes mini-wave` SVG surface wave animations.
   - **Data Refresh Loading Indicator**: Added `setIsLoading(true)` at start of database refreshes, a glowing glassmorphic loading banner in `App.tsx`, and a **Refresh Data** button in `Header.tsx`.
+
+### 13. Automatic Caretaker Email Notification for Low Medicine Stock & Alert Frequency Toggle
+- **Goal**: Trigger automatic email alerts to the designated caretaker email whenever low medicine stock (`stock <= reorderLevel`) is detected, with a user-configurable toggle setting for immediate dispatch vs. daily recurring digest.
+- **Rationale**: Keeps caretakers informed before essential prescriptions run out, while giving users granular control over email frequency so caretakers aren't spammed unnecessarily.
+- **Proposed Implementation**:
+  - **Caretaker Alert Toggle Button**: Add a low stock caretaker notification toggle control (`lowStockCaretakerNotifyEnabled`) in profile notification and medication settings.
+  - **Immediate Alert vs. Daily Stock Digest**:
+    - **Toggle Enabled (ON)**: Automatically trigger an immediate low stock notification email via `api/send-email.js` to `caretakerEmail` as soon as inventory drops below safety threshold.
+    - **Toggle Disabled (OFF - Default)**: Send a consolidated daily stock status email digest to the caretaker once per day every day for any low stock medications.
+  - **Email Template & Quick Actions**: Include item name, current stock, dosage schedule, reorder threshold, and direct action link in the responsive HTML email payload.
+
+### 14. Multi-Channel Messaging Proof-of-Concept (WhatsApp & Open-Source SMS)
+- **Goal**: Conduct a Proof-of-Concept (POC) using open-source tools, open APIs, and webhooks to test and implement automated WhatsApp and SMS messaging notifications for low stock alerts and dose reminders.
+- **Rationale**: Mobile messaging (WhatsApp / SMS) provides instantaneous, high-visibility alerts for caretakers and patients who check instant messaging more frequently than email.
+- **Proposed Implementation**:
+  - **Open-Source & Messaging API Evaluation**: Evaluate open-source WhatsApp client tools (e.g., `@whiskeysockets/baileys`, `whatsapp-web.js`) alongside messaging webhooks and gateways (e.g. Twilio, Meta Cloud API, TextLocal, generic HTTP SMS gateways).
+  - **Serverless Messaging Dispatcher**: Create `api/send-message.js` or service handlers to process outbound WhatsApp/SMS notification payloads for:
+    - Urgent low medicine stock warnings.
+    - Scheduled & overdue dose reminders.
+  - **Channel Preference UI**: Integrate multi-channel selection checkboxes (Email / WhatsApp / SMS) in User Profile and Caretaker Notification settings.
+
