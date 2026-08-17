@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.1] - 2026-08-17
+
+### Fixed & Enhanced
+- **Single Authoritative Admin Password Engine (`piiSecurity.ts` / `AdminAuthModal.tsx` / `AppContext.tsx`)**: Resolved multi-password collision bug where `1234`, `2580`, and `170507` were all simultaneously accepted as Admin Passwords. Unified Admin Password into a single synchronized authoritative state across `system-settings.notes`, `admin` profile row, and `vitalsguard_admin_pin`.
+- **Strict Exact-Match Verification (`piiSecurity.ts`)**: Removed hardcoded `1234` universal override in `verifyPIIPin`. If a user/admin sets a custom password, old historical PINs and `1234` are strictly rejected.
+- **Intake Dose Log Deletion Stock Auto-Restoration (`AppContext.tsx`)**: Fixed medication inventory sync where deleting a `"taken"` dose log record from dose history or calendar now automatically restores the taken pill count ($+1$ pill) back to prescription inventory in both Supabase PostgreSQL and LocalStorage.
+- **3-Layer Hybrid State Map Persistence (`supabase.ts`)**: Implemented persistent LocalStorage maps (`vitalsguard_daily_email_map` & `vitalsguard_caretaker_email_map`) ensuring the Daily Low-Stock Digest toggle state never reverts to disabled during background database refreshes.
+- **Security Audit & Findings Report (`Research/SECURITY_FINDINGS.md`)**: Published comprehensive vulnerability audit documenting RCA, mitigation steps, and future client-side cryptographic hashing roadmap.
+- **Developer Hub v1.22.1 Update (`DeveloperModal.tsx`)**: Updated Tech Stack (React 19 + Vite 8) and synchronized full chronological version history in the in-app Developer Hub.
+
 ## [1.22.0] - 2026-08-17
 
 ### Added & Enhanced

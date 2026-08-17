@@ -45,42 +45,96 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
   const techItems = [
     {
       category: "Frontend SPA Framework",
-      tech: "React 18 + Vite 5 + TypeScript",
+      tech: "React 19 + Vite 8 + TypeScript",
       cost: "100% Free & Open Source",
-      description: "Blazing fast SPA architecture with PWA Web Manifest & Service Worker for mobile installation."
+      description: "Blazing fast SPA architecture with PWA Web Manifest & Service Worker for mobile installation and offline operation."
+    },
+    {
+      category: "Security & Access Control",
+      tech: "PII Security Engine + Single Admin Authority",
+      cost: "100% Free & Lightweight",
+      description: "Unified single-authority Admin password, per-profile PIN encryption (PII_ENC:), exact-match verification, and strict role boundaries."
     },
     {
       category: "Design & Accessibility",
       tech: "Vanilla CSS Tokens + Glassmorphism",
       cost: "100% Free & Lightweight",
-      description: "Custom CSS custom properties, HSL color tokens, and elderly accessible high-contrast tap targets."
+      description: "Custom CSS properties, HSL color palettes, responsive cards, and elderly-accessible high-contrast tap targets."
     },
     {
       category: "Cloud Database & Storage",
-      tech: "Supabase PostgreSQL (Free Tier)",
+      tech: "Supabase PostgreSQL + 3-Layer Hybrid Maps",
       cost: "100% Lifetime Free Tier",
-      description: "500MB PostgreSQL DB, Row Level Security, auto-generated REST APIs, and LocalStorage offline fallback."
+      description: "500MB PostgreSQL DB, Row Level Security, auto-generated REST APIs, and 3-layer persistent LocalStorage maps for zero-data-loss offline fallback."
     },
     {
-      category: "Email Engine",
-      tech: "Nodemailer / SMTP (Custom Mailer)",
+      category: "Email & Notification Engine",
+      tech: "Serverless Mailer + Daily Stock Digest",
       cost: "100% Free & Open Source",
-      description: "Supports serverless email dispatch via standard SMTP protocol. Client-side mailto-client acts as a fail-safe offline fallback."
+      description: "Automated daily low-stock digest emails, caretaker email validation modal, and client-side mailto-client fail-safe backup."
     },
     {
-      category: "Cloud Hosting",
-      tech: "Vercel (Serverless)",
+      category: "Cloud Hosting & Deployment",
+      tech: "Vercel (Serverless Edge)",
       cost: "100% Lifetime Free",
-      description: "Hosted entirely on Vercel Cloud Platform with serverless API functions and auto-configured SPA routing redirects."
+      description: "Hosted on Vercel Cloud Platform with serverless API functions and auto-configured SPA routing redirects."
     }
   ];
 
   const versionHistory = [
     {
+      version: "v1.22.1",
+      date: "2026-08-17",
+      title: "Single Admin Password Authority, Intake Log Stock Restoration & 3-Layer State Maps",
+      highlights: "Resolves 3-password collision bug (1234, 2580, 170507), unifies Admin password authority, restores pill stock (+1) when deleting taken dose logs, implements 3-layer hybrid map persistence for daily digest toggle, and creates Research/SECURITY_FINDINGS.md."
+    },
+    {
+      version: "v1.22.0",
+      date: "2026-08-17",
+      title: "Automatic Caretaker Low-Stock Daily Digest & Caretaker Email Validation",
+      highlights: "Introduces automatic daily low-stock email digest to caretaker, interactive toggle controls (Enable Daily Digest vs Auto-Emails Disabled), Caretaker Email validation prompt modal, and PostgreSQL & LocalStorage persistence."
+    },
+    {
+      version: "v1.21.0",
+      date: "2026-08-15",
+      title: "Explicit Role-Based Passwords, Admin Log Deletion & Water Wave Animations",
+      highlights: "Explicit Admin vs User password verification prompts, universal Admin password log deletion authorization across all vitals/meds, 1-click Reset to 1234, animated SVG water glass surface waves, and data refresh loading indicators."
+    },
+    {
+      version: "v1.20.0",
+      date: "2026-08-10",
+      title: "Monthly Adherence Calendar Grid & Chevron Navigation",
+      highlights: "Replaced ribbon with a full 7-column Sun-Sat 42-cell monthly adherence calendar grid, interactive chevron month switching, and Jump-to-Date reset."
+    },
+    {
+      version: "v1.19.1",
+      date: "2026-08-10",
+      title: "Admin Panel Top Header Relocation & Visual Accentures",
+      highlights: "Relocated Admin and Developer tabs to top header bar beside application logo, added glowing gold-orange accent borders for ADMIN session cues."
+    },
+    {
+      version: "v1.19.0",
+      date: "2026-08-10",
+      title: "Dedicated ADMIN Profile Seeding & RBAC Isolation",
+      highlights: "Permanent ADMIN user seeding, role demotion protection for non-admin profiles, and complete synchronization between ADMIN profile PIN and global Admin password."
+    },
+    {
+      version: "v1.18.1",
+      date: "2026-08-06",
+      title: "Post-Reset 1234 Password Verification & Change Flow Fix",
+      highlights: "Auto-populates current password with 1234 upon reset, evaluates encryption payloads, and enforces PIN encryption in profile modal on save."
+    },
+    {
+      version: "v1.18.0",
+      date: "2026-08-06",
+      title: "Glucose Custom Dates, Unified Vitals Timeline & PII Credential Encryption",
+      highlights: "Custom record dates for blood sugar, unified medication/glucose/BP schedule calendar timeline, search and share targeted day logs, AES/XOR PII PIN encryption, and in-app User Help Guide."
+    },
+    {
       version: "v1.17.0",
       date: "2026-08-06",
       title: "Instant Profile Re-Locking, Database Schema Sync & Profile Header Admin Hub",
-      highlights: "Strict profile re-locking on switch, Developer settings isolation, full PostgreSQL profiles schema sync, Aditya-exclusive Admin controls, and relocation of Admin Hub to header profile bar."
+      highlights: "Strict profile re-locking on switch, Developer settings isolation, full PostgreSQL profiles schema sync, and Aditya-exclusive Admin controls."
     },
     {
       version: "v1.16.0",
@@ -110,7 +164,7 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
       version: "v1.11.2",
       date: "2026-07-31",
       title: "Resilient DB Retries, Sample Cleanup & Safety Rules",
-      highlights: "Adds resilient fallback retry logic in saveProfileDB to handle PostgREST schema cache misses (PGRST204), cleans up out-of-the-box template profiles Mom (Sarah) and Dad (James), and enforces permanent data preservation rules in .agents/AGENTS.md."
+      highlights: "Adds resilient fallback retry logic in saveProfileDB to handle PostgREST schema cache misses (PGRST204), cleans up template profiles, and enforces data preservation rules."
     },
     {
       version: "v1.11.1",
@@ -131,70 +185,10 @@ export const DeveloperModal: React.FC<DeveloperModalProps> = ({ onClose }) => {
       highlights: "Syncs water tracker targets under target_water column in profiles table, persists shared caretaker email under system-settings record, and enforces passcode authorization for water logs deletion."
     },
     {
-      version: "v1.9.1",
-      date: "2026-07-31",
-      title: "Cascading DB Deletes & Strict Authorization",
-      highlights: "Implements manual cascading deletes for dependent vitals and logs, enforces strict passcode verification on all individual record deletes."
-    },
-    {
-      version: "v1.8.0",
-      date: "2026-07-30",
-      title: "UI Security Shield, Persistent Passcodes & Unified Email Reports",
-      highlights: "Redacts Supabase keys, masks PIN settings, syncs developer passcode to Supabase settings profile, implements custom start/end CSV date ranges, renders dynamic fancy CSV report spreadsheets, and unifies tabular reporting email with CSV attachments."
-    },
-    {
-      version: "v1.7.0",
-      date: "2026-07-30",
-      title: "Email CSV Sharing & Backdated Medication Logging",
-      highlights: "Integrates CSV attachment with standard emails, adds custom date range filters, formats fancy CSV layout, adds calendar backdating logs with custom time picker, and secures UI credentials."
-    },
-    {
-      version: "v1.6.0",
-      date: "2026-07-30",
-      title: "Vercel Cloud Deployment & Reliable Email Delivery",
-      highlights: "Adds fail-safe client-side email fallback on API failure, configures SPA rewrites for Vercel, updates high-res PWA manifest icons, and hooks Nodemailer fallback SMTP server."
-    },
-    {
-      version: "v1.5.0",
-      date: "2026-07-28",
-      title: "Mobile Responsiveness & Viewport Optimization",
-      highlights: "Hides top navigation bar on mobile in favor of bottom nav bar, fixes mobile header stacking, single column grid collapse, and eliminates horizontal side scrolling."
-    },
-    {
-      version: "v1.4.0",
-      date: "2026-07-28",
-      title: "Doctor Timestamps & Custom Time Pickers",
-      highlights: "Added exact doctor intake timestamps, interactive HH:MM time pickers, schedule timeline logging, and doctor export timestamps."
-    },
-    {
-      version: "v1.3.0",
-      date: "2026-07-28",
-      title: "User Profile Security & Central Config Passcode",
-      highlights: "Protected user addition and deletion behind Admin Passcode gate. Centralized passcode under APP_CONFIG.security.adminPasscode."
-    },
-    {
-      version: "v1.2.0",
-      date: "2026-07-28",
-      title: "UI Polish & Profile-Scoped Warnings",
-      highlights: "Fixed 100% adherence badge overflow, scoped low stock warnings to active user profile, and unified Developer Settings Hub."
-    },
-    {
-      version: "v1.1.0",
-      date: "2026-07-28",
-      title: "Admin Passcode Security & HTML Email Reports",
-      highlights: "Added session passcode authentication gate, strict email format validator, and rich HTML tabular email reports with live preview."
-    },
-    {
-      version: "v1.0.1",
-      date: "2026-07-28",
-      title: "Supabase Empty Table Auto-Seeding & Loading Fix",
-      highlights: "Fixed infinite loading spinner on empty Supabase database tables by implementing automated seeding for default profiles."
-    },
-    {
       version: "v1.0.0",
       date: "2026-07-28",
       title: "Initial Production Release",
-      highlights: "Core React 18 + Vite 5 + TypeScript + Supabase + PWA app scaffolding with ADA Glucose, ACC/AHA BP, and Pill Inventory management."
+      highlights: "Core React + Vite + TypeScript + Supabase + PWA app scaffolding with ADA Glucose, ACC/AHA BP, and Pill Inventory management."
     }
   ];
 
