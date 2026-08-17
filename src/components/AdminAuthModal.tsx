@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Lock, Key, ShieldCheck, AlertCircle, RotateCcw } from "lucide-react";
 import { APP_CONFIG } from "../config/app.config";
-import { verifyPIIPin, encryptPII } from "../utils/piiSecurity";
+import { verifyPIIPin, encryptPII, maskPII } from "../utils/piiSecurity";
 import { useApp } from "../context/AppContext";
 
 export interface AdminAuthModalProps {
@@ -68,26 +68,28 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     e.preventDefault();
     const input = pinInput.trim();
 
+    // 1. Single Active Admin Password resolution
     const adminProfile = profiles.find(p => p.id === "admin");
-    const savedAdminPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
+    const activeAdminPin = (adminProfile?.pin ? maskPII(adminProfile.pin) : "") || localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
 
-    // Check if input matches the active Admin Password
-    const isAdminValid =
-      input === savedAdminPin ||
-      (adminProfile?.pin ? verifyPIIPin(input, adminProfile.pin, savedAdminPin) : false) ||
-      verifyPIIPin(input, savedAdminPin, savedAdminPin);
+    const isAdminValid = verifyPIIPin(input, activeAdminPin, activeAdminPin);
 
-    const targetPin = expectedPin || activeProfile?.pin || "1234";
-    const isUserValid = verifyPIIPin(input, targetPin, savedAdminPin);
+    // 2. Target User Profile Password resolution
+    const targetProf = (targetProfileId ? profiles.find(p => p.id === targetProfileId) : null) || activeProfile;
+    const targetUserPin = (targetProf?.pin ? maskPII(targetProf.pin) : "") || expectedPin || "1234";
+
+    const isUserValid = verifyPIIPin(input, targetUserPin, activeAdminPin);
 
     let isValid = false;
     if (mode === "admin") {
+      // Strictly ONLY the active Admin Password is valid for Admin activities
       isValid = isAdminValid;
     } else if (mode === "user") {
+      // User Password accepted, with Master Admin Password as fallback recovery
       isValid = isUserValid || isAdminValid;
     } else {
-      // delete_log or either: accepts EITHER Admin password OR User password!
-      isValid = isAdminValid || isUserValid;
+      // delete_log or either: accepts User password OR Admin password
+      isValid = isUserValid || isAdminValid;
     }
 
     if (isValid) {

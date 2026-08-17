@@ -14,10 +14,11 @@ import {
   fetchWaterItems, saveWaterItemDB, deleteWaterItemDB,
   loadFromStorage, STORAGE_KEYS,
   isSupabaseConfigured,
-  supabase
+  supabase,
+  getProfilePinsMap,
+  saveProfilePinsMap
 } from "../lib/supabase";
 import { sendEmailNotification, generateRefillAlertHTML, generateDailyCheckHTML, isValidEmail } from "../services/emailService";
-import { encryptPII } from "../utils/piiSecurity";
 
 
 
@@ -370,15 +371,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (profsRes.status === "fulfilled" && profsRes.value) {
         let loadedProfiles = profsRes.value;
+        let activeAdminPin = APP_CONFIG.security.adminPasscode;
         const systemSettings = loadedProfiles.find(p => p.id === "system-settings");
         if (systemSettings) {
           if (systemSettings.notes) {
-            localStorage.setItem("vitalsguard_admin_pin", systemSettings.notes);
+            activeAdminPin = systemSettings.notes.trim();
+            localStorage.setItem("vitalsguard_admin_pin", activeAdminPin);
+          } else {
+            activeAdminPin = (localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode).trim();
           }
           if (systemSettings.emergencyContact) {
             localStorage.setItem("vitalsguard_caretaker_email", systemSettings.emergencyContact);
             setCaretakerEmailState(systemSettings.emergencyContact);
           }
+        } else {
+          activeAdminPin = (localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode).trim();
         }
         loadedProfiles = loadedProfiles.filter(p => p.id !== "system-settings");
 
@@ -391,7 +398,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return p;
         });
 
-        const currentAdminPin = localStorage.getItem("vitalsguard_admin_pin") || APP_CONFIG.security.adminPasscode;
         const adminIndex = loadedProfiles.findIndex(p => p.id === "admin");
 
         if (adminIndex === -1) {
@@ -409,21 +415,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             targetWater: 2500,
             avatarColor: "#dc2626", // Admin red
             isLocked: true,
-            pin: encryptPII(currentAdminPin)
+            pin: activeAdminPin
           };
           saveProfileDB(adminProfile).then();
           loadedProfiles = [adminProfile, ...loadedProfiles];
         } else {
           const existingAdmin = loadedProfiles[adminIndex];
-          const effectiveAdminPin = existingAdmin.pin || encryptPII(currentAdminPin);
+          const updatedAdminPin = activeAdminPin || existingAdmin.pin || "1234";
           
-          // Ensure role and name are strictly ADMIN without overwriting stored custom PIN
-          if (existingAdmin.role !== "Admin" || existingAdmin.name !== "ADMIN" || !existingAdmin.pin) {
+          if (existingAdmin.role !== "Admin" || existingAdmin.name !== "ADMIN" || existingAdmin.pin !== updatedAdminPin) {
             const updatedAdmin = {
               ...existingAdmin,
               name: "ADMIN",
               role: "Admin",
-              pin: effectiveAdminPin
+              pin: updatedAdminPin
             };
             saveProfileDB(updatedAdmin).then();
             loadedProfiles = loadedProfiles.map(p => p.id === "admin" ? updatedAdmin : p);
@@ -1182,27 +1187,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [medications, profiles, caretakerEmail]);
 
   const updateAdminPasscode = async (newPin: string) => {
-    localStorage.setItem("vitalsguard_admin_pin", newPin);
+    const trimmedPin = newPin.trim();
+    localStorage.setItem("vitalsguard_admin_pin", trimmedPin);
+    
+    // Update local profile pins map
+    const pinsMap = getProfilePinsMap();
+    pinsMap["admin"] = trimmedPin;
+    saveProfilePinsMap(pinsMap);
+
     try {
       await saveProfileDB({
         id: "system-settings",
         name: "System Settings",
         role: "System",
-        notes: newPin
+        notes: trimmedPin
       } as UserProfile);
 
       // Keep ADMIN profile PIN in sync
-      const adminPinEnc = encryptPII(newPin);
       const existingAdmin = profiles.find(p => p.id === "admin");
       if (existingAdmin) {
-        const updatedAdmin = { ...existingAdmin, pin: adminPinEnc };
+        const updatedAdmin = { ...existingAdmin, pin: trimmedPin };
         await saveProfileDB(updatedAdmin);
         setProfiles(prev => prev.map(p => p.id === "admin" ? updatedAdmin : p));
       }
     } catch (err) {
       console.warn("Error saving passcode profile:", err);
     }
-    logUserAction("PROFILE_UPDATED", "Admin passcode updated in database");
+    logUserAction("PROFILE_UPDATED", "Admin password updated in database");
   };
 
   return (
